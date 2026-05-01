@@ -1,12 +1,12 @@
 /**
- * telemetryService — 采集值查询服务
+ * telemetryService — 采集值查询 & 写入服务
  *
  * 依赖表：
  *   - iot_telemetry  (ts, point_id, value_num, value_str)
  *   - iot_data_point (id, space_id, ...)
  */
 
-import { getTable } from "./sqliteMirrorRepository"
+import { getTable, setTable } from "./sqliteMirrorRepository"
 
 // ── 类型 ──────────────────────────────────────────────────────────────────────
 
@@ -85,4 +85,53 @@ export function listTelemetry(query: TelemetryListQuery): TelemetryRow[] {
     valueNum: r.value_num,
     valueStr: r.value_str,
   }))
+}
+
+// ── addTelemetry ──────────────────────────────────────────────────────────────
+
+export interface AddTelemetryParams {
+  /** 数据点 ID（需在 iot_data_point 中存在） */
+  pointId: number
+  /** 采集值 */
+  valueNum: number
+  /** 可选：时间戳，不传则使用当前时间 */
+  ts?: string
+}
+
+export type AddTelemetryResult =
+  | { ok: true;  ts: string }
+  | { ok: false; error: string }
+
+/**
+ * 新增模拟采集值，写入 iot_telemetry。
+ *
+ * 流程：
+ *   1. 校验 pointId 在 iot_data_point 中存在，否则返回 { ok: false }
+ *   2. 取当前 iot_telemetry 全表，追加新记录
+ *   3. setTable 写回 localStorage
+ *   4. 返回 { ok: true, ts }
+ */
+export function addTelemetry(params: AddTelemetryParams): AddTelemetryResult {
+  const { pointId, valueNum } = params
+
+  // ── 1. 校验 pointId 存在 ──────────────────────────────────────────────────
+  const points = getTable<{ id: number }>("iot_data_point")
+  const exists = points.some((p) => p.id === pointId)
+  if (!exists) {
+    return { ok: false, error: `iot_data_point 中不存在 id=${pointId}` }
+  }
+
+  // ── 2. 确定 ts ────────────────────────────────────────────────────────────
+  const ts = params.ts ?? new Date().toISOString().replace("T", " ").substring(0, 19)
+
+  // ── 3. 追加并写回 ─────────────────────────────────────────────────────────
+  const all = getTable<{ ts: string; point_id: number; value_num: number | null; value_str: string | null }>(
+    "iot_telemetry"
+  )
+  setTable("iot_telemetry", [
+    ...all,
+    { ts, point_id: pointId, value_num: valueNum, value_str: null },
+  ])
+
+  return { ok: true, ts }
 }
