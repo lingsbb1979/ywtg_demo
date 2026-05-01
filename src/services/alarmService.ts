@@ -131,3 +131,163 @@ export function listAlarms(query: AlarmListQuery = {}): AlarmListItem[] {
     }
   })
 }
+
+// ── getAlarm ─────────────────────────────────────────────────────────────────
+
+/** 处置建议静态映射（按告警等级） */
+const DISPOSAL_SUGGESTION: Readonly<Record<string, string>> = {
+  RED:    "立即启动应急响应，联系相关主管部门和专业机构，必要时疏散人员并封闭建筑",
+  ORANGE: "尽快安排专业人员现场核查，制定处置方案，完成工单派单与闭环处置",
+  YELLOW: "加强监测频次，安排巡检并关注变化趋势，超过阈值立即升级处置",
+  GREEN:  "当前状态正常，保持常规监测",
+}
+
+export interface AlarmThresholds {
+  green?:  { min?: number | null; max?: number | null }
+  yellow?: { min?: number | null; max?: number | null }
+  orange?: { min?: number | null; max?: number | null }
+  red?:    { min?: number | null; max?: number | null }
+}
+
+export interface AlarmDetail extends AlarmListItem {
+  /** alarm_record 扩展字段 */
+  rootCause:     string | null
+  rawData:       string | null
+  aggregateFlag: number | null
+  sensorId:      number | null
+  deviceId:      string | null
+  updateTime:    string | null
+  /** 来自 iot_data_point */
+  dataPointName: string | null
+  unit:          string | null
+  /** 来自 space_analysis_config.risk_level_json（按 building_id + 数据点关联 metric） */
+  thresholds:    AlarmThresholds | null
+  /** 处置建议（静态） */
+  disposalSuggestion: string
+}
+
+export type GetAlarmResult =
+  | { ok: true;  data: AlarmDetail }
+  | { ok: false; error: string }
+
+/**
+ * 查询单条告警详情，包含来源数据、阈值、建筑信息和处置建议。
+ *
+ * @param id alarm_record.id
+ */
+export function getAlarm(id: number): GetAlarmResult {
+  const rows = getTable<{
+    id:            number
+    alarm_id:      string | null
+    alarm_code:    string | null
+    device_id:     string | null
+    building_id:   number | null
+    sensor_id:     number | null
+    alarm_title:   string | null
+    alarm_type:    string | null
+    alarm_level:   string | null
+    alarm_content: string | null
+    root_cause:    string | null
+    aggregate_flag: number | null
+    raw_data:      string | null
+    status:        string | null
+    trigger_time:  string | null
+    handle_time:   string | null
+    handle_user:   string | null
+    create_time:   string | null
+    update_time:   string | null
+  }>("alarm_record")
+
+  const row = rows.find((r) => r.id === id)
+  if (!row) {
+    return { ok: false, error: `alarm_record 中不存在 id=${id} 的告警` }
+  }
+
+  // ── 建筑信息 ────────────────────────────────────────────────────────────
+  const spaceMap = buildSpaceMap()
+  const space = row.building_id != null ? (spaceMap.get(row.building_id) ?? null) : null
+
+  // ── 数据点信息 ──────────────────────────────────────────────────────────
+  let dataPointName: string | null = null
+  let unit: string | null = null
+
+  if (row.sensor_id != null) {
+    const dataPoints = getTable<{
+      id: number
+      name: string
+      point_name: string | null
+      unit_type_id: number | null
+    }>("iot_data_point")
+    const dp = dataPoints.find((p) => p.id === row.sensor_id)
+    if (dp) {
+      dataPointName = dp.point_name ?? dp.name ?? null
+      // unit_type_id: 1=mm, 2=°(度), 3=mm/d  （与 seedDataPoints 对应）
+      const UNIT_MAP: Record<number, string> = { 1: "mm", 2: "°", 3: "mm/d" }
+      unit = dp.unit_type_id != null ? (UNIT_MAP[dp.unit_type_id] ?? null) : null
+    }
+  }
+
+  // ── 阈值信息（来自 space_analysis_config.risk_level_json） ──────────────
+  let thresholds: AlarmThresholds | null = null
+
+  if (row.building_id != null && row.sensor_id != null) {
+    // 通过 sensor_id → iot_data_point.factor_id → space_analysis_config.metric_id
+    const dataPoints = getTable<{ id: number; factor_id: number | null }>("iot_data_point")
+    const dp = dataPoints.find((p) => p.id === row.sensor_id)
+    if (dp && dp.factor_id != null) {
+      const configs = getTable<{
+        space_id:        number
+        metric_id:       number
+        risk_level_json: string | null
+        is_enabled:      number
+      }>("space_analysis_config")
+      const cfg = configs.find(
+        (c) => c.space_id === row.building_id && c.metric_id === dp.factor_id && c.is_enabled === 1
+      )
+      if (cfg && cfg.risk_level_json) {
+        try {
+          thresholds = JSON.parse(cfg.risk_level_json) as AlarmThresholds
+        } catch {
+          thresholds = null
+        }
+      }
+    }
+  }
+
+  // ── 处置建议 ────────────────────────────────────────────────────────────
+  const disposalSuggestion =
+    DISPOSAL_SUGGESTION[row.alarm_level ?? ""] ?? DISPOSAL_SUGGESTION["GREEN"]
+
+  const data: AlarmDetail = {
+    // 基础（AlarmListItem）
+    id:           row.id,
+    alarmId:      row.alarm_id      ?? null,
+    alarmCode:    row.alarm_code    ?? null,
+    buildingId:   row.building_id,
+    buildingCode: space ? space.spaceCode : null,
+    buildingName: space ? space.name      : null,
+    alarmTitle:   row.alarm_title   ?? null,
+    alarmType:    row.alarm_type    ?? null,
+    alarmLevel:   row.alarm_level   ?? null,
+    alarmContent: row.alarm_content ?? null,
+    status:       row.status        ?? null,
+    triggerTime:  row.trigger_time  ?? null,
+    handleTime:   row.handle_time   ?? null,
+    handleUser:   row.handle_user   ?? null,
+    createTime:   row.create_time   ?? null,
+    // 扩展
+    rootCause:     row.root_cause    ?? null,
+    rawData:       row.raw_data      ?? null,
+    aggregateFlag: row.aggregate_flag ?? null,
+    sensorId:      row.sensor_id     ?? null,
+    deviceId:      row.device_id     ?? null,
+    updateTime:    row.update_time   ?? null,
+    // 关联
+    dataPointName,
+    unit,
+    thresholds,
+    disposalSuggestion,
+  }
+
+  return { ok: true, data }
+}
