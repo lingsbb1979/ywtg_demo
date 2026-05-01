@@ -145,6 +145,32 @@ export function getById<T extends Row = Row>(
   return row ? { ...row } : null
 }
 
+// ── T15.19 update() ──────────────────────────────────────────────────────────
+
+/**
+ * 按 id 对单行做局部更新（patch merge）。
+ *
+ * @param tableName  真实表名
+ * @param id         目标行的 id（number | string）
+ * @param patch      要合并的字段对象；patch.id 会被忽略，不允许修改主键
+ * @returns 找到并更新返回 true；未找到或表不存在返回 false
+ */
+export function update<T extends Row = Row>(
+  tableName: TableName,
+  id: number | string,
+  patch: Partial<T>,
+): boolean {
+  const rows = getTable<T>(tableName)
+  const idx = rows.findIndex((r) => (r as any).id === id)
+  if (idx === -1) return false
+
+  // 合并 patch，但忽略 id 字段防止主键篡改
+  const { id: _ignored, ...safePatch } = patch as any
+  rows[idx] = { ...rows[idx], ...safePatch }
+  setTable(tableName, rows)
+  return true
+}
+
 // ── 保留旧接口（向后兼容 T15.4 已有引用）────────────────────────────────────
 
 /** @deprecated 请使用 getTable() */
@@ -171,6 +197,7 @@ export default {
   resetTables,
   list,
   getById,
+  update,
   readTable,
   writeTable,
   readTableAsync,
