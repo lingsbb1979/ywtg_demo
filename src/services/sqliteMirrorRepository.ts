@@ -127,6 +127,24 @@ export function list<T extends Row = Row>(
     .map((r) => ({ ...r }))
 }
 
+// ── T15.17 getById() ─────────────────────────────────────────────────────────
+
+/**
+ * 按 id 字段查询单行详情。
+ *
+ * @param tableName  真实表名（TableName 类型约束）
+ * @param id         number 或 string，与行中 `id` 字段严格相等比较
+ * @returns 找到时返回行的浅拷贝，未找到或表不存在时返回 null
+ */
+export function getById<T extends Row = Row>(
+  tableName: TableName,
+  id: number | string,
+): T | null {
+  const rows = getTable<T>(tableName)
+  const row = rows.find((r) => (r as any).id === id)
+  return row ? { ...row } : null
+}
+
 // ── 保留旧接口（向后兼容 T15.4 已有引用）────────────────────────────────────
 
 /** @deprecated 请使用 getTable() */
@@ -152,6 +170,7 @@ export default {
   setTable,
   resetTables,
   list,
+  getById,
   readTable,
   writeTable,
   readTableAsync,
