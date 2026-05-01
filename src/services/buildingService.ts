@@ -1,16 +1,17 @@
 /**
- * T15.34 / T15.35 — 建筑列表 & 建筑详情查询 buildingService
+ * T15.34 / T15.35 / T15.36 — 建筑列表、建筑详情 & 风险色更新 buildingService
  *
  * 从 localStorage（SQLiteMirror）中查询 iot_space（type="2" 建筑行），
  * 并关联 space_analysis_archive（最新风险等级）、digital_archive（档案状态）、
  * sys_organization（责任单位）、work_order（关联工单）。
  *
  * 导出：
- *   listBuildings(query?)  — 按区域、关键字、风险等级筛选建筑列表（T15.34）
- *   getBuilding(id)        — 查询单栋建筑详情（T15.35）
+ *   listBuildings(query?)              — 按区域、关键字、风险等级筛选建筑列表（T15.34）
+ *   getBuilding(id)                    — 查询单栋建筑详情（T15.35）
+ *   updateBuildingRiskColor(id, level) — 更新建筑风险色，写入 space_analysis_archive（T15.36）
  */
 
-import { getTable } from "./sqliteMirrorRepository"
+import { getTable, setTable } from "./sqliteMirrorRepository"
 
 // ── 区域 → 责任住建局静态映射 ─────────────────────────────────────────────────
 // 来自 seedSpaceRelation（T15.28）区域节点 id 与 seedOrganization（T15.25）org id 的对应关系
@@ -306,4 +307,93 @@ export function getBuilding(id: number): BuildingDetail | null {
     workOrders,
     archiveId:       archive?.id ?? null,
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// T15.36 — 建筑风险色更新
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * 风险色 → digital_archive.status 映射：
+ *   GREEN  → 10（安全）
+ *   YELLOW → 20（关注）
+ *   ORANGE → 30（警示）
+ *   RED    → 40（危险）
+ */
+const RISK_LEVEL_TO_ARCHIVE_STATUS: Readonly<Record<string, number>> = {
+  GREEN:  10,
+  YELLOW: 20,
+  ORANGE: 30,
+  RED:    40,
+}
+
+/**
+ * 更新指定建筑的风险色。
+ *
+ * 通过向 space_analysis_archive 追加一条带当前（或指定）时间戳的记录，
+ * 使 listBuildings / getBuilding 立即反映新颜色。
+ * 同时联动更新 digital_archive.status（若档案存在）。
+ *
+ * @param buildingId   iot_space.id（必须是 type="2" 建筑节点）
+ * @param riskLevel    新风险色：GREEN / YELLOW / ORANGE / RED
+ * @param calcTime     可选；默认使用 ISO 格式当前时间
+ * @returns true 成功，false 建筑不存在
+ */
+export function updateBuildingRiskColor(
+  buildingId: number,
+  riskLevel: string,
+  calcTime?: string,
+): boolean {
+  // ── 校验建筑存在（type="2"）─────────────────────────────────────────────
+  const spaces = getTable("iot_space") as Array<{ id: number; type: string }>
+  const building = spaces.find((r) => r.type === "2" && r.id === buildingId)
+  if (!building) return false
+
+  // ── 写入 space_analysis_archive ──────────────────────────────────────────
+  const existing = getTable("space_analysis_archive") as Array<{
+    id: number
+    space_id: number
+    metric_id: number
+    calc_time: string | null
+    value_num: number | null
+    risk_level: string
+    status_code: string | null
+    source_data_ids: string | null
+    create_time: string
+  }>
+
+  const maxId = existing.reduce((m, r) => Math.max(m, r.id), 0)
+  const ts = calcTime ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  const newRow = {
+    id:              maxId + 1,
+    space_id:        buildingId,
+    metric_id:       0,           // 0 表示人工/场景触发
+    calc_time:       ts,
+    value_num:       null as number | null,
+    risk_level:      riskLevel,
+    status_code:     riskLevel,
+    source_data_ids: null as string | null,
+    create_time:     ts,
+  }
+
+  setTable("space_analysis_archive", [...existing, newRow])
+
+  // ── 联动更新 digital_archive.status ────────────────────────────────────
+  const archiveStatus = RISK_LEVEL_TO_ARCHIVE_STATUS[riskLevel]
+  if (archiveStatus !== undefined) {
+    const archives = getTable("digital_archive") as Array<{
+      id: number
+      building_id: number
+      base_info_version: string
+      last_audit_time: string | null
+      status: number
+    }>
+    const updated = archives.map((a) =>
+      a.building_id === buildingId ? { ...a, status: archiveStatus } : a
+    )
+    setTable("digital_archive", updated)
+  }
+
+  return true
 }
