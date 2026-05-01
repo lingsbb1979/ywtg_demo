@@ -195,3 +195,97 @@ export function calculateBuildingRisk(
 
   return { ok: true, buildingId, calcTime: ts, metrics }
 }
+
+// ── getAnalysisResult ─────────────────────────────────────────────────────────
+
+export interface AnalysisMetricResult {
+  metricId:      number
+  latestValue:   number
+  riskLevel:     string
+  calcTime:      string
+  /** 阈值参数（原始 params_json 解析结果） */
+  thresholds:    Record<string, unknown>
+  /** 风险区间描述（原始 risk_level_json 解析结果） */
+  riskLevelDesc: Record<string, unknown>
+  /** 因子代码（从 params_json.factor_code 读取，综合评分为 "SCORE"） */
+  factorCode:    string
+  /** 单位（从 params_json.unit 读取，综合评分为 ""） */
+  unit:          string
+}
+
+export type GetAnalysisResultResult =
+  | { ok: true;  buildingId: number; metrics: AnalysisMetricResult[] }
+  | { ok: false; buildingId: number; error: string }
+
+/**
+ * 查询单建筑最新分析结果。
+ *
+ * 流程：
+ *   1. 验证建筑存在（iot_space type="2"）
+ *   2. 读取 space_analysis_config（is_enabled=1）作为 metric 基准
+ *   3. 从 space_analysis_archive 按 space_id 筛选，每个 metric_id 取最新一条（calc_time 最大）
+ *   4. 将 archive 结果与 config 中的 thresholds / riskLevelDesc / factorCode / unit 合并
+ *   5. 返回聚合结果
+ */
+export function getAnalysisResult(buildingId: number): GetAnalysisResultResult {
+  // ── 1. 验证建筑存在 ───────────────────────────────────────────────────────
+  const spaces = getTable<{ id: number; type: string }>("iot_space")
+  const building = spaces.find((s) => s.id === buildingId && s.type === "2")
+  if (!building) {
+    return { ok: false, buildingId, error: `iot_space 中不存在 id=${buildingId} 且 type="2" 的建筑` }
+  }
+
+  // ── 2. 读取分析配置 ───────────────────────────────────────────────────────
+  const configs = getTable<{
+    space_id: number
+    metric_id: number
+    is_enabled: number
+    params_json: string
+    risk_level_json: string
+  }>("space_analysis_config").filter(
+    (c) => c.space_id === buildingId && c.is_enabled === 1
+  )
+
+  // ── 3. 读取 archive，按 metric_id 取最新一条 ─────────────────────────────
+  const archives = getTable<{
+    space_id: number
+    metric_id: number
+    calc_time: string
+    value_num: number
+    risk_level: string
+  }>("space_analysis_archive").filter((r) => r.space_id === buildingId)
+
+  // 按 metric_id 聚合，取 calc_time 最大的记录
+  const latestByMetric = new Map<number, { calc_time: string; value_num: number; risk_level: string }>()
+  for (const rec of archives) {
+    const existing = latestByMetric.get(rec.metric_id)
+    if (!existing || rec.calc_time > existing.calc_time) {
+      latestByMetric.set(rec.metric_id, {
+        calc_time:  rec.calc_time,
+        value_num:  rec.value_num,
+        risk_level: rec.risk_level,
+      })
+    }
+  }
+
+  // ── 4. 合并结果 ───────────────────────────────────────────────────────────
+  const metrics: AnalysisMetricResult[] = []
+  for (const cfg of configs) {
+    const latest = latestByMetric.get(cfg.metric_id)
+    if (!latest) continue  // 该指标尚无计算结果，跳过
+
+    const params = JSON.parse(cfg.params_json) as Record<string, unknown>
+    metrics.push({
+      metricId:      cfg.metric_id,
+      latestValue:   latest.value_num,
+      riskLevel:     latest.risk_level,
+      calcTime:      latest.calc_time,
+      thresholds:    params,
+      riskLevelDesc: JSON.parse(cfg.risk_level_json) as Record<string, unknown>,
+      factorCode:    typeof params.factor_code === "string" ? params.factor_code : "SCORE",
+      unit:          typeof params.unit === "string" ? params.unit : "",
+    })
+  }
+
+  return { ok: true, buildingId, metrics }
+}
