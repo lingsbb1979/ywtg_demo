@@ -4,6 +4,8 @@ import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
 import AdminLayout from "@/layouts/AdminLayout.vue"
+import H5Layout from "@/layouts/H5Layout.vue"
+import H5MineView from "@/views/h5/H5MineView.vue"
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -52,17 +54,28 @@ export const routes: RouteRecordRaw[] = [
       }
     ]
   },
+  // H5 移动端：使用 H5Layout 嵌套子路由
   {
     path: "/h5",
-    name: "h5-root",
-    redirect: "/h5/work-orders"
-  },
-  {
-    path: "/h5/work-orders",
-    name: "h5-work-orders",
-    component: H5WorkOrdersView,
-    meta: {
-      title: "H5 待办工单"
-    }
+    component: H5Layout,
+    children: [
+      {
+        path: "",
+        name: "h5-root",
+        redirect: "/h5/work-orders"
+      },
+      {
+        path: "work-orders",
+        name: "h5-work-orders",
+        component: H5WorkOrdersView,
+        meta: { title: "H5 待办工单" }
+      },
+      {
+        path: "mine",
+        name: "h5-mine",
+        component: H5MineView,
+        meta: { title: "我的" }
+      }
+    ]
   }
 ]
