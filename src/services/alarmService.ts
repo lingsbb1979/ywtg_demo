@@ -10,7 +10,7 @@
  *   listAlarms(query?)  — 告警列表查询（T15.43）
  */
 
-import { getTable } from "./sqliteMirrorRepository"
+import { getTable, setTable } from "./sqliteMirrorRepository"
 
 // ── 类型定义 ──────────────────────────────────────────────────────────────────
 
@@ -290,4 +290,55 @@ export function getAlarm(id: number): GetAlarmResult {
   }
 
   return { ok: true, data }
+}
+
+// ── confirmAlarm ──────────────────────────────────────────────────────────────
+
+export interface ConfirmAlarmOptions {
+  /** 确认人，不传时默认为 "system" */
+  operator?:    string
+  /** 确认时间（ISO 字符串），不传时使用当前时间 */
+  confirmedAt?: string
+}
+
+export type ConfirmAlarmResult =
+  | { ok: true;  id: number; status: string; handleUser: string; handleTime: string }
+  | { ok: false; error: string }
+
+/**
+ * 确认告警：将 alarm_record.status 变更为 ACTIVE，记录确认人和确认时间。
+ *
+ * 允许状态：PENDING、ACTIVE（幂等）。
+ * 不允许状态：CLOSED（已关闭告警不可再确认）。
+ *
+ * @param id          alarm_record.id
+ * @param options     确认人 / 确认时间，均可选
+ */
+export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): ConfirmAlarmResult {
+  const rows = getTable<Record<string, unknown>>("alarm_record")
+  const idx  = rows.findIndex((r) => r["id"] === id)
+
+  if (idx === -1) {
+    return { ok: false, error: `alarm_record 中不存在 id=${id} 的告警` }
+  }
+
+  const row = rows[idx]
+  if (row["status"] === "CLOSED") {
+    return { ok: false, error: `告警 id=${id} 已关闭（CLOSED），不允许重新确认` }
+  }
+
+  const operator   = options.operator   ?? "system"
+  const handleTime = options.confirmedAt ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  rows[idx] = {
+    ...row,
+    status:      "ACTIVE",
+    handle_user: operator,
+    handle_time: handleTime,
+    update_time: handleTime,
+  }
+
+  setTable("alarm_record", rows)
+
+  return { ok: true, id, status: "ACTIVE", handleUser: operator, handleTime }
 }
