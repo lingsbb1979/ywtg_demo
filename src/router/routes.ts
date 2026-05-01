@@ -6,12 +6,20 @@ import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
 import AdminLayout from "@/layouts/AdminLayout.vue"
 import H5Layout from "@/layouts/H5Layout.vue"
 import H5MineView from "@/views/h5/H5MineView.vue"
+import LoginView from "@/views/auth/LoginView.vue"
 
 export const routes: RouteRecordRaw[] = [
   {
     path: "/",
     name: "root",
     redirect: "/screen/home"
+  },
+  // 登录页：无需认证
+  {
+    path: "/login",
+    name: "login",
+    component: LoginView,
+    meta: { title: "登录", requiresAuth: false }
   },
   {
     path: "/screen",
@@ -24,10 +32,11 @@ export const routes: RouteRecordRaw[] = [
     component: ScreenHomeView,
     meta: { title: "大屏首页" }
   },
-  // 管理端：使用 AdminLayout 嵌套子路由
+  // 管理端：使用 AdminLayout 嵌套子路由（需要登录）
   {
     path: "/admin",
     component: AdminLayout,
+    meta: { requiresAuth: true },
     children: [
       {
         path: "",
@@ -54,10 +63,11 @@ export const routes: RouteRecordRaw[] = [
       }
     ]
   },
-  // H5 移动端：使用 H5Layout 嵌套子路由
+  // H5 移动端：使用 H5Layout 嵌套子路由（需要登录）
   {
     path: "/h5",
     component: H5Layout,
+    meta: { requiresAuth: true },
     children: [
       {
         path: "",
