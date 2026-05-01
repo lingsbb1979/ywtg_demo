@@ -60,6 +60,36 @@ export function setTable<T extends Row = Row>(tableName: TableName, rows: T[]): 
   }
 }
 
+// ── T15.15 resetTables() ─────────────────────────────────────────────────────
+
+/**
+ * 清除所有 ywtg.sqlite.* 业务表数据。
+ *
+ * - 只删除 ywtg.sqlite.* 前缀的 key
+ * - ywtg.ui.*（演示角色等 UI 状态）和 ywtg.session.*（登录态）不受影响
+ * - 实际种子数据填充由 T15.24~T15.32 的 seed 函数完成
+ */
+export function resetTables(): void {
+  const PREFIX = "ywtg.sqlite."
+
+  if (typeof localStorage !== "undefined") {
+    // 先收集要删除的 key，再删除（避免边遍历边删除的索引问题）
+    const toRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(PREFIX)) toRemove.push(k)
+    }
+    toRemove.forEach((k) => localStorage.removeItem(k))
+    return
+  }
+
+  // Node / 内存降级存储
+  const mem: Record<string, string> = ((globalThis as any)[MEM_KEY] ??= {})
+  Object.keys(mem)
+    .filter((k) => k.startsWith(PREFIX))
+    .forEach((k) => { delete mem[k] })
+}
+
 // ── 保留旧接口（向后兼容 T15.4 已有引用）────────────────────────────────────
 
 /** @deprecated 请使用 getTable() */
@@ -83,6 +113,7 @@ export async function writeTableAsync<T extends Row = Row>(tableName: string, ro
 export default {
   getTable,
   setTable,
+  resetTables,
   readTable,
   writeTable,
   readTableAsync,
