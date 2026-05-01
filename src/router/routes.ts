@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from "vue-router"
 import AdminDashboardView from "@/views/admin/AdminDashboardView.vue"
+import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
 
@@ -33,6 +34,23 @@ export const routes: RouteRecordRaw[] = [
     component: AdminDashboardView,
     meta: {
       title: "管理端工作台"
+    }
+  },
+  {
+    path: "/admin/work-orders",
+    name: "admin-work-orders",
+    // 管理端工单列表占位（可重定向或改为专门页面）
+    component: AdminDashboardView,
+    meta: {
+      title: "管理端工单"
+    }
+  },
+  {
+    path: "/admin/work-orders/:id",
+    name: "admin-work-order-detail",
+    component: WorkOrderDetailView,
+    meta: {
+      title: "工单详情"
     }
   },
   {
