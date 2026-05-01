@@ -90,6 +90,43 @@ export function resetTables(): void {
     .forEach((k) => { delete mem[k] })
 }
 
+// ── T15.16 list() ─────────────────────────────────────────────────────────────
+
+type FilterObject<T> = Partial<T>
+type FilterFn<T> = (row: T) => boolean
+type Filter<T> = FilterObject<T> | FilterFn<T>
+
+/**
+ * 从任意真实表查询列表。
+ *
+ * @param tableName  TableName 类型约束的真实表名
+ * @param filter     可选。
+ *   - 不传：返回全部行
+ *   - 对象：返回所有与对象每个 key-value 均匹配的行（AND 条件）
+ *   - 函数：返回 predicate 为 true 的行
+ * @returns 浅拷贝新数组，不修改原始存储
+ */
+export function list<T extends Row = Row>(
+  tableName: TableName,
+  filter?: Filter<T>,
+): T[] {
+  const rows = getTable<T>(tableName)
+
+  if (!filter) return rows.map((r) => ({ ...r }))
+
+  if (typeof filter === "function") {
+    return rows.filter(filter).map((r) => ({ ...r }))
+  }
+
+  // 对象 filter：AND 条件
+  const entries = Object.entries(filter as Record<string, unknown>)
+  if (entries.length === 0) return rows.map((r) => ({ ...r }))
+
+  return rows
+    .filter((row) => entries.every(([k, v]) => (row as any)[k] === v))
+    .map((r) => ({ ...r }))
+}
+
 // ── 保留旧接口（向后兼容 T15.4 已有引用）────────────────────────────────────
 
 /** @deprecated 请使用 getTable() */
@@ -114,6 +151,7 @@ export default {
   getTable,
   setTable,
   resetTables,
+  list,
   readTable,
   writeTable,
   readTableAsync,
