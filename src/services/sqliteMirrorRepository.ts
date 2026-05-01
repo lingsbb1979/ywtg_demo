@@ -146,6 +146,35 @@ export function getById<T extends Row = Row>(
   return row ? { ...row } : null
 }
 
+// ── T15.23 validateFields() ──────────────────────────────────────────────────
+
+/**
+ * 字段白名单校验。
+ *
+ * 校验 fields 中所有 key 是否存在于 TableRegistry[tableName] 声明的字段列表内。
+ * - 出现 SQL 表不存在的字段时抛出 Error，消息包含表名和非法字段名列表
+ * - TableRegistry 未登记该表时跳过校验（不抛出）
+ *
+ * @param tableName  真实表名
+ * @param fields     要校验的字段对象（insert 的 row 或 update 的 patch）
+ * @param operation  操作类型（用于错误消息区分）
+ */
+export function validateFields(
+  tableName: TableName,
+  fields: Record<string, unknown>,
+  operation: "insert" | "update" = "insert",
+): void {
+  const allowedFields = TableRegistry[tableName as string]
+  if (!allowedFields) return // 表未在注册表中 → 跳过校验
+
+  const illegal = Object.keys(fields).filter((k) => !allowedFields.includes(k))
+  if (illegal.length > 0) {
+    throw new Error(
+      `[SQLiteMirror] ${operation === "insert" ? "insert" : "update"} 表 "${tableName}" 时发现非法字段：${illegal.join(", ")}（不在 完整SQL.md 字段定义中）`,
+    )
+  }
+}
+
 // ── T15.18 insert() ──────────────────────────────────────────────────────────
 
 /**
@@ -160,6 +189,9 @@ export function insert<T extends Row = Row>(
   tableName: TableName,
   row: Partial<T>,
 ): T {
+  // T15.23 字段白名单校验：在写入前拦截非法字段
+  validateFields(tableName, row as Record<string, unknown>, "insert")
+
   const rows = getTable<T>(tableName)
 
   // 自动生成 id
@@ -204,6 +236,9 @@ export function update<T extends Row = Row>(
   id: number | string,
   patch: Partial<T>,
 ): boolean {
+  // T15.23 字段白名单校验：在写入前拦截非法字段
+  validateFields(tableName, patch as Record<string, unknown>, "update")
+
   const rows = getTable<T>(tableName)
   const idx = rows.findIndex((r) => (r as any).id === id)
   if (idx === -1) return false
