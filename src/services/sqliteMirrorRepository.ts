@@ -8,6 +8,7 @@
  * 浏览器环境：直接读写 window.localStorage。
  */
 import type { TableName } from "../models/tableNames"
+import { TableRegistry } from "../models/tableRegistry"
 
 type Row = Record<string, unknown>
 
@@ -145,6 +146,49 @@ export function getById<T extends Row = Row>(
   return row ? { ...row } : null
 }
 
+// ── T15.18 insert() ──────────────────────────────────────────────────────────
+
+/**
+ * 向指定表追加一行新记录。
+ *
+ * - id 未提供时自动生成（max existing id + 1，表为空时从 1 开始）
+ * - 如果表字段含 create_time 且 row 未提供，自动补充当前 ISO 时间
+ * - 如果表字段含 update_time 且 row 未提供，自动补充当前 ISO 时间
+ * - 返回最终写入的完整行
+ */
+export function insert<T extends Row = Row>(
+  tableName: TableName,
+  row: Partial<T>,
+): T {
+  const rows = getTable<T>(tableName)
+
+  // 自动生成 id
+  const now = new Date().toISOString()
+  let newId = (row as any).id
+  if (newId === undefined || newId === null) {
+    const maxId = rows.reduce((m, r) => {
+      const v = Number((r as any).id)
+      return isNaN(v) ? m : Math.max(m, v)
+    }, 0)
+    newId = maxId + 1
+  }
+
+  // 自动补充时间字段
+  const fields: readonly string[] = TableRegistry[tableName as string] ?? []
+  const autoTime: Record<string, string> = {}
+  if (fields.includes("create_time") && (row as any).create_time === undefined) {
+    autoTime.create_time = now
+  }
+  if (fields.includes("update_time") && (row as any).update_time === undefined) {
+    autoTime.update_time = now
+  }
+
+  const newRow = { ...row, id: newId, ...autoTime } as T
+  rows.push(newRow)
+  setTable(tableName, rows)
+  return newRow
+}
+
 // ── T15.19 update() ──────────────────────────────────────────────────────────
 
 /**
@@ -218,6 +262,7 @@ export default {
   resetTables,
   list,
   getById,
+  insert,
   update,
   remove,
   readTable,
