@@ -342,3 +342,97 @@ export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): Con
 
   return { ok: true, id, status: "ACTIVE", handleUser: operator, handleTime }
 }
+
+// ── dispatchAlarm ─────────────────────────────────────────────────────────────
+
+/** 不允许派单的告警状态 */
+const NON_DISPATCHABLE_STATUSES = new Set(["CLOSED", "DISPATCHED"])
+
+export interface DispatchAlarmOptions {
+  /** 派单机构 id */
+  dispatchOrgId?:  number
+  /** 派单人 id */
+  dispatchUserId?: number
+  /** 接单机构 id */
+  receiveOrgId?:   number
+  /** 接单角色 key */
+  receiveRoleKey?: string
+  /** 派单时间，不传时使用当前时间 */
+  dispatchTime?:   string
+}
+
+export type DispatchAlarmResult =
+  | { ok: true;  orderId: number; alarmId: string; orderNo: string }
+  | { ok: false; error: string }
+
+/**
+ * 告警派单：根据告警信息创建工单，并将告警状态更新为 DISPATCHED。
+ *
+ * @param alarmRecordId  alarm_record.id
+ * @param options        派单参数（机构 / 人员 / 时间），均可选
+ */
+export function dispatchAlarm(
+  alarmRecordId: number,
+  options: DispatchAlarmOptions = {},
+): DispatchAlarmResult {
+  // ── 1. 校验告警 ──────────────────────────────────────────────────────────
+  const alarmRows = getTable<Record<string, unknown>>("alarm_record")
+  const alarmIdx  = alarmRows.findIndex((r) => r["id"] === alarmRecordId)
+
+  if (alarmIdx === -1) {
+    return { ok: false, error: `alarm_record 中不存在 id=${alarmRecordId} 的告警` }
+  }
+
+  const alarm = alarmRows[alarmIdx]
+  if (NON_DISPATCHABLE_STATUSES.has(alarm["status"] as string)) {
+    return {
+      ok:    false,
+      error: `告警 id=${alarmRecordId} 当前状态为 ${alarm["status"]}，不可派单`,
+    }
+  }
+
+  // ── 2. 生成工单 ──────────────────────────────────────────────────────────
+  const now          = options.dispatchTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+  const orderRows    = getTable<Record<string, unknown>>("work_order")
+  const newId        = orderRows.length > 0
+    ? Math.max(...orderRows.map((r) => Number(r["id"]) || 0)) + 1
+    : 1
+  const orderNo      = `WO-${now.replace(/[-: ]/g, "").slice(0, 14)}-${String(newId).padStart(4, "0")}`
+
+  const newOrder: Record<string, unknown> = {
+    id:               newId,
+    order_no:         orderNo,
+    order_code:       orderNo,
+    alarm_id:         alarm["alarm_id"]   ?? null,
+    building_id:      alarm["building_id"] ?? null,
+    alarm_level:      alarm["alarm_level"] ?? null,
+    order_type:       alarm["alarm_type"]  ?? null,
+    order_level:      alarm["alarm_level"] ?? null,
+    dispatch_type:    "AUTO",
+    dispatch_org_id:  options.dispatchOrgId  ?? null,
+    dispatch_user_id: options.dispatchUserId ?? null,
+    receive_org_id:   options.receiveOrgId   ?? null,
+    receive_role_key: options.receiveRoleKey ?? null,
+    status:           "PENDING",
+    current_node:     "DISPATCH",
+    source_id:        alarmRecordId,
+    source_type:      "ALARM",
+    dispatch_time:    now,
+    create_time:      now,
+    update_time:      now,
+  }
+
+  setTable("work_order", [...orderRows, newOrder])
+
+  // ── 3. 更新告警状态 ──────────────────────────────────────────────────────
+  alarmRows[alarmIdx] = { ...alarm, status: "DISPATCHED", update_time: now }
+  setTable("alarm_record", alarmRows)
+
+  return {
+    ok:      true,
+    orderId: newId,
+    alarmId: String(alarm["alarm_id"] ?? ""),
+    orderNo,
+  }
+}
