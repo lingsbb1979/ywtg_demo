@@ -1,13 +1,7 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
-import PlaceholderView from "@/views/PlaceholderView.vue"
+import { createRouter, createWebHistory } from "vue-router"
+import { routes } from "./routes"
 
-export const routes: RouteRecordRaw[] = [
-  {
-    path: "/",
-    name: "root",
-    component: PlaceholderView
-  }
-]
+export { routes } from "./routes"
 
 const router = createRouter({
   history: createWebHistory(),

@@ -11,3 +11,34 @@ body {
 * {
   box-sizing: border-box;
 }
+
+.route-page {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.route-page h1,
+.route-page p {
+  margin: 0;
+}
+
+.route-page__eyebrow {
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.route-page--screen {
+  color: #e5e7eb;
+  background: #0f172a;
+}
+
+.route-page--admin {
+  color: #1f2937;
+  background: #f5f7fb;
+}
