@@ -1,0 +1,1 @@
+export const mockRuntimeMode = "localStorage-sqlite-mirror"
