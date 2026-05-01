@@ -24,7 +24,14 @@ describe("T15.3 配置三端顶层路由", () => {
   })
 
   it("保留三端默认页面路由", () => {
-    const routePaths = routes.map((route) => route.path)
+    // 支持嵌套路由：递归展开 children 后检查
+    function allPaths(list: typeof routes, parent = ""): string[] {
+      return list.flatMap((r) => {
+        const full = r.path.startsWith("/") ? r.path : `${parent}/${r.path}`.replace(/\/+/g, "/")
+        return [full, ...(r.children ? allPaths(r.children, full) : [])]
+      })
+    }
+    const routePaths = allPaths(routes)
 
     expect(routePaths).toContain("/screen/home")
     expect(routePaths).toContain("/admin/dashboard")

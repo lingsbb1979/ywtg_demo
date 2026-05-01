@@ -3,6 +3,7 @@ import AdminDashboardView from "@/views/admin/AdminDashboardView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
+import AdminLayout from "@/layouts/AdminLayout.vue"
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -19,39 +20,37 @@ export const routes: RouteRecordRaw[] = [
     path: "/screen/home",
     name: "screen-home",
     component: ScreenHomeView,
-    meta: {
-      title: "大屏首页"
-    }
+    meta: { title: "大屏首页" }
   },
+  // 管理端：使用 AdminLayout 嵌套子路由
   {
     path: "/admin",
-    name: "admin-root",
-    redirect: "/admin/dashboard"
-  },
-  {
-    path: "/admin/dashboard",
-    name: "admin-dashboard",
-    component: AdminDashboardView,
-    meta: {
-      title: "管理端工作台"
-    }
-  },
-  {
-    path: "/admin/work-orders",
-    name: "admin-work-orders",
-    // 管理端工单列表占位（可重定向或改为专门页面）
-    component: AdminDashboardView,
-    meta: {
-      title: "管理端工单"
-    }
-  },
-  {
-    path: "/admin/work-orders/:id",
-    name: "admin-work-order-detail",
-    component: WorkOrderDetailView,
-    meta: {
-      title: "工单详情"
-    }
+    component: AdminLayout,
+    children: [
+      {
+        path: "",
+        name: "admin-root",
+        redirect: "/admin/dashboard"
+      },
+      {
+        path: "dashboard",
+        name: "admin-dashboard",
+        component: AdminDashboardView,
+        meta: { title: "管理端工作台" }
+      },
+      {
+        path: "work-orders",
+        name: "admin-work-orders",
+        component: AdminDashboardView,
+        meta: { title: "管理端工单" }
+      },
+      {
+        path: "work-orders/:id",
+        name: "admin-work-order-detail",
+        component: WorkOrderDetailView,
+        meta: { title: "工单详情" }
+      }
+    ]
   },
   {
     path: "/h5",
