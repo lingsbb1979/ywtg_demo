@@ -171,6 +171,27 @@ export function update<T extends Row = Row>(
   return true
 }
 
+// ── T15.20 remove() ──────────────────────────────────────────────────────────
+
+/**
+ * 按 id 删除单行。
+ *
+ * @param tableName  真实表名
+ * @param id         目标行的 id（number | string）
+ * @returns 找到并删除返回 true；未找到或表不存在返回 false
+ */
+export function remove(
+  tableName: TableName,
+  id: number | string,
+): boolean {
+  const rows = getTable(tableName)
+  const idx = rows.findIndex((r) => (r as any).id === id)
+  if (idx === -1) return false
+  rows.splice(idx, 1)
+  setTable(tableName, rows)
+  return true
+}
+
 // ── 保留旧接口（向后兼容 T15.4 已有引用）────────────────────────────────────
 
 /** @deprecated 请使用 getTable() */
@@ -198,6 +219,7 @@ export default {
   list,
   getById,
   update,
+  remove,
   readTable,
   writeTable,
   readTableAsync,
