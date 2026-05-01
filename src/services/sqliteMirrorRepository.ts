@@ -236,6 +236,28 @@ export function remove(
   return true
 }
 
+// ── T15.21 batchWrite() ──────────────────────────────────────────────────────
+
+/** 单次批量写入的描述项 */
+export interface BatchWriteItem {
+  tableName: TableName
+  rows: Row[]
+}
+
+/**
+ * 批量覆盖写入多张表。
+ *
+ * - 每张表使用 setTable 语义（整表覆盖）
+ * - 按数组顺序串行写入
+ * - 未在 writes 中列出的表不受影响
+ * - 空数组入参安全（noop）
+ */
+export function batchWrite(writes: BatchWriteItem[]): void {
+  for (const { tableName, rows } of writes) {
+    setTable(tableName, rows)
+  }
+}
+
 // ── 保留旧接口（向后兼容 T15.4 已有引用）────────────────────────────────────
 
 /** @deprecated 请使用 getTable() */
@@ -265,6 +287,7 @@ export default {
   insert,
   update,
   remove,
+  batchWrite,
   readTable,
   writeTable,
   readTableAsync,
