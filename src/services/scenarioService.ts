@@ -2,7 +2,7 @@
  * scenarioService.ts — 场景引擎
  * T15.64 resetDemo()：清空并写入固定演示种子数据
  */
-import { resetTables, setTable } from "./sqliteMirrorRepository"
+import { getTable, resetTables, setTable } from "./sqliteMirrorRepository"
 
 // ── 种子数据 ──────────────────────────────────────────────────────────────────
 
@@ -70,4 +70,46 @@ export function resetDemo(): void {
   setTable("iot_space",    SEED_SPACES)
   setTable("alarm_record", SEED_ALARMS)
   setTable("work_order",   SEED_WORK_ORDERS)
+}
+
+// ── T15.65 triggerOrangeCrack ─────────────────────────────────────────────────
+
+export interface CrackOptions {
+  nowStr?: string
+}
+
+let _crackSeq = 0
+
+/**
+ * 追加一条 B003 橙色裂缝告警到 alarm_record（不清空已有数据）。
+ */
+export function triggerOrangeCrack(options: CrackOptions = {}): void {
+  const { nowStr = "2024-03-08 10:00:00" } = options
+  _crackSeq++
+  const rows = getTable<object>("alarm_record")
+  const nextId = rows.length > 0
+    ? Math.max(...(rows as { id?: number }[]).map((r) => r.id ?? 0)) + 1
+    : 1
+  const newAlarm = {
+    id:           nextId,
+    alarm_id:     "ALM-CRACK-003",
+    alarm_code:   `CRK-003-${String(_crackSeq).padStart(3, "0")}`,
+    device_id:    103,
+    building_id:  1003,
+    sensor_id:    203,
+    alarm_title:  "C栋裂缝超限",
+    alarm_type:   "CRACK",
+    alarm_level:  "ORANGE",
+    alarm_content: "裂缝宽度超出橙色阈值",
+    root_cause:   null,
+    aggregate_flag: 0,
+    raw_data:     null,
+    status:       "ACTIVE",
+    trigger_time: nowStr,
+    handle_time:  null,
+    handle_user:  null,
+    create_time:  nowStr,
+    update_time:  nowStr,
+  }
+  setTable("alarm_record", [...rows, newAlarm])
 }
