@@ -123,10 +123,10 @@ import {
 } from "@/services/screenKpiService"
 
 const router   = useRouter()
-const todoList = ref<H5TodoItem[]>([])
+const todoList = ref([] as H5TodoItem[])
 
-/** 状态筛选: 'ALL' | 'PENDING' | 'PROCESSING' */
-const activeFilter = ref<string>('ALL')
+/** 状态筛选 'ALL' | 'PENDING' | 'PROCESSING' */
+const activeFilter = ref('ALL')
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING:    "待处理",

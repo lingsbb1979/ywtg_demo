@@ -238,11 +238,11 @@ import { getTable, update } from "@/services/sqliteMirrorRepository"
 
 // ── 响应式数据 ─────────────────────────────────────────────────────────────────
 
-const alarms        = ref<AlarmListItem[]>([])
-const selectedAlarm = ref<AlarmListItem | null>(null)
-const activeFilter  = ref<string>("ALL")
-const actionMsg     = ref<string>("")
-const currentTime   = ref<string>("")
+const alarms        = ref([] as AlarmListItem[])
+const selectedAlarm = ref(null as AlarmListItem | null)
+const activeFilter  = ref("ALL")
+const actionMsg     = ref("")
+const currentTime   = ref("")
 
 // ── 筛选选项 ──────────────────────────────────────────────────────────────────
 

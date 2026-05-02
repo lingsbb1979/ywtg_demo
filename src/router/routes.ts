@@ -11,8 +11,13 @@ import AdminSupervisionView from "@/views/admin/AdminSupervisionView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
+import H5DisposeView from "@/views/h5/H5DisposeView.vue"
+import H5BuildingMetricsView from "@/views/h5/H5BuildingMetricsView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
 import ScreenAlarmDispatchView from "@/views/screen/ScreenAlarmDispatchView.vue"
+import ScreenWorkOrdersView from "@/views/screen/ScreenWorkOrdersView.vue"
+import ScreenEmergencyView from "@/views/screen/ScreenEmergencyView.vue"
+import ScreenPerformanceView from "@/views/screen/ScreenPerformanceView.vue"
 import AdminLayout from "@/layouts/AdminLayout.vue"
 import H5Layout from "@/layouts/H5Layout.vue"
 import H5MineView from "@/views/h5/H5MineView.vue"
@@ -47,6 +52,24 @@ export const routes: RouteRecordRaw[] = [
     name: "screen-alarm-dispatch",
     component: ScreenAlarmDispatchView,
     meta: { title: "告警派遣中心" }
+  },
+  {
+    path: "/screen/work-orders",
+    name: "screen-work-orders",
+    component: ScreenWorkOrdersView,
+    meta: { title: "工单看板" }
+  },
+  {
+    path: "/screen/emergency",
+    name: "screen-emergency",
+    component: ScreenEmergencyView,
+    meta: { title: "应急管理" }
+  },
+  {
+    path: "/screen/performance",
+    name: "screen-performance",
+    component: ScreenPerformanceView,
+    meta: { title: "绩效看板" }
   },
   // 管理端：使用 AdminLayout 嵌套子路由（需要登录）
   {
@@ -143,6 +166,18 @@ export const routes: RouteRecordRaw[] = [
         name: "h5-work-order-detail",
         component: H5WorkOrderDetailView,
         meta: { title: "工单详情" }
+      },
+      {
+        path: "dispose/:id",
+        name: "h5-dispose",
+        component: H5DisposeView,
+        meta: { title: "提交处置" }
+      },
+      {
+        path: "building/:id/metrics",
+        name: "h5-building-metrics",
+        component: H5BuildingMetricsView,
+        meta: { title: "建筑指标" }
       },
       {
         path: "mine",
