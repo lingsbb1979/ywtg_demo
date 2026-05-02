@@ -97,8 +97,9 @@
               v-for="pt in mapPoints"
               :key="pt.id"
               class="screen-map__point"
-              :class="`screen-map__point--${pt.color}`"
+              :class="[`screen-map__point--${pt.color}`, selectedPoint?.id === pt.id ? 'screen-map__point--selected' : '']"
               :title="`${pt.name}：${pt.summary}`"
+              @click="selectedPoint = pt"
             >
               <span class="screen-map__point-dot risk-dot" :class="`risk-dot--${pt.color}`" />
               <span class="screen-map__point-name">{{ pt.name }}</span>
@@ -108,6 +109,30 @@
           <div v-if="mapPoints.length === 0" class="screen-map__empty">
             暂无建筑点位数据，请先初始化演示数据
           </div>
+
+          <!-- T15.72 建筑详情弹窗（高保真：风险色 + 弹窗样式） -->
+          <Transition name="screen-popup">
+            <div
+              v-if="selectedPoint"
+              class="screen-building-popup screen-glass-card"
+              data-testid="screen-building-popup"
+            >
+              <div class="screen-popup-header">
+                <span class="screen-popup-building-name">{{ selectedPoint.name }}</span>
+                <button class="screen-popup-close" @click="selectedPoint = null">×</button>
+              </div>
+              <div
+                class="screen-popup-risk-badge badge-screen"
+                :class="`badge-screen--${selectedPoint.color}`"
+              >
+                风险等级：{{ selectedPoint.riskLevel ?? selectedPoint.color }}
+              </div>
+              <div class="screen-popup-summary">
+                {{ selectedPoint.summary ?? `开放隐患 ${selectedPoint.openCount ?? 0} 处` }}
+              </div>
+              <router-link class="screen-popup-link" to="/screen/alarm-dispatch">查看详情 →</router-link>
+            </div>
+          </Transition>
         </div>
       </section>
 
@@ -209,8 +234,9 @@ import {
 } from "@/services/screenKpiService"
 
 // ── 响应式状态 ────────────────────────────────────────────────────────────────
-const kpi         = ref<ScreenKpi>({ totalBuildings: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 })
-const mapPoints   = ref<MapPoint[]>([])
+const kpi           = ref<ScreenKpi>({ totalBuildings: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 })
+const mapPoints     = ref<MapPoint[]>([])
+const selectedPoint = ref<MapPoint | null>(null)
 const hazardList  = ref<HazardListItem[]>([])
 const board       = ref<WorkOrderBoard>({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 })
 const currentTime = ref("")
@@ -704,6 +730,84 @@ onUnmounted(() => clearInterval(timer))
 .screen-panel__title-bar--warn {
   background: linear-gradient(180deg, var(--risk-orange, #FF8A3D) 0%, transparent 100%);
 }
+
+/* ===== 建筑详情弹窗 (T15.72 高保真) ===== */
+.screen-building-popup {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  width: 220px;
+  padding: 16px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.screen-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.screen-popup-building-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--screen-text-h2, rgba(255,255,255,0.90));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.screen-popup-close {
+  background: none;
+  border: none;
+  color: var(--screen-text-muted, rgba(255,255,255,0.45));
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.screen-popup-close:hover { color: rgba(255,255,255,0.90); }
+.screen-popup-risk-badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  text-align: center;
+}
+.screen-popup-summary {
+  font-size: 12px;
+  color: var(--screen-text-body, rgba(255,255,255,0.75));
+  line-height: 1.5;
+}
+.screen-popup-link {
+  display: block;
+  padding: 7px 12px;
+  background: rgba(27,111,232,0.20);
+  border: 1px solid rgba(27,111,232,0.40);
+  border-radius: 6px;
+  color: var(--screen-cyan, #00D4FF);
+  font-size: 12px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 150ms;
+}
+.screen-popup-link:hover { background: rgba(27,111,232,0.35); }
+
+/* 选中点位高亮 */
+.screen-map__point--selected {
+  background: rgba(0,212,255,0.15) !important;
+  border-color: var(--screen-cyan, #00D4FF) !important;
+  box-shadow: 0 0 8px rgba(0,212,255,0.30);
+}
+
+/* 弹窗 Transition 动画 */
+.screen-popup-enter-active { transition: opacity 200ms ease, transform 200ms ease; }
+.screen-popup-leave-active { transition: opacity 150ms ease, transform 150ms ease; }
+.screen-popup-enter-from   { opacity: 0; transform: translateY(-45%) scale(0.95); }
+.screen-popup-leave-to     { opacity: 0; transform: translateY(-55%) scale(0.95); }
 
 /* ===== 底部状态栏 ===== */
 .screen-footer {
