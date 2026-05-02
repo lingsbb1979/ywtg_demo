@@ -1,5 +1,5 @@
 /**
- * T15.47 / T15.48 / T15.49 — 工单服务 workOrderService
+ * T15.47 / T15.48 / T15.49 / T15.50 / T15.51 — 工单服务 workOrderService
  *
  * 从 localStorage（SQLiteMirror）的 work_order 表中查询工单，
  * 支持按状态、等级、责任单位、建筑、关键字筛选，
@@ -510,6 +510,102 @@ export function acceptWorkOrder(
       operator_name: options.operator   ?? null,
       operator:      options.operator   ?? null,
       action_desc:   "外勤人员接单",
+      action_time:   now,
+      detail_json:   null,
+      remark:        null,
+      create_time:   now,
+    },
+  ])
+
+  return { ok: true }
+}
+
+// ── T15.51 submitDisposal ─────────────────────────────────────────────────────
+
+export interface SubmitDisposalPayload {
+  disposalDesc?: string | null
+  imageUrls?:    string | null
+  gpsLocation?:  string | null
+  addressDesc?:  string | null
+  videoUrl?:     string | null
+  userId?:       number | null
+  disposalTime?: string
+  operator?:     string | null
+  operatorId?:   number | null
+}
+
+export interface SubmitDisposalResult {
+  ok:     boolean
+  error?: string
+}
+
+/**
+ * H5 提交处置：写入 work_order_disposal，
+ * 工单状态 PROCESSING → CHECKING，追加处置日志。
+ */
+export function submitDisposal(
+  id:      number,
+  payload: SubmitDisposalPayload,
+): SubmitDisposalResult {
+  const rows = getTable<{
+    id: number; status: string; current_node: string
+    finish_time: string | null; update_time: string | null
+  }>("work_order")
+
+  const idx = rows.findIndex((r) => r.id === id)
+  if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
+
+  const row = rows[idx]
+  if (row.status !== "PROCESSING") {
+    return { ok: false, error: `工单 id=${id} 当前状态为 ${row.status}，不可提交处置` }
+  }
+
+  const now = payload.disposalTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  // 更新工单状态
+  rows[idx] = { ...row, status: "CHECKING", current_node: "CHECK", finish_time: now, update_time: now }
+  setTable("work_order", rows)
+
+  // 写入处置记录
+  const disposalRows = getTable<{ id: number }>("work_order_disposal")
+  const disposalId   = disposalRows.length > 0
+    ? Math.max(...disposalRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  setTable("work_order_disposal", [
+    ...disposalRows,
+    {
+      id:            disposalId,
+      order_id:      id,
+      user_id:       payload.userId       ?? null,
+      gps_location:  payload.gpsLocation  ?? null,
+      address_desc:  payload.addressDesc  ?? null,
+      image_urls:    payload.imageUrls    ?? null,
+      video_url:     payload.videoUrl     ?? null,
+      disposal_desc: payload.disposalDesc ?? null,
+      disposal_time: now,
+      create_time:   now,
+    },
+  ])
+
+  // 追加处置日志
+  const logRows = getTable<{ id: number }>("work_order_log")
+  const logId   = logRows.length > 0
+    ? Math.max(...logRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  setTable("work_order_log", [
+    ...logRows,
+    {
+      id:            logId,
+      order_id:      id,
+      node_type:     "FINISH",
+      node_name:     "处置",
+      operator_id:   payload.operatorId ?? null,
+      operator_name: payload.operator   ?? null,
+      operator:      payload.operator   ?? null,
+      action_desc:   "外勤提交处置结果",
       action_time:   now,
       detail_json:   null,
       remark:        null,
