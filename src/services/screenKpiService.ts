@@ -169,3 +169,52 @@ export function selectHazardList(query: HazardListQuery = {}): HazardListItem[] 
     triggerTime:  a.trigger_time  ?? null,
   }))
 }
+
+// ── T15.62 selectWorkOrderBoard ───────────────────────────────────────────────
+
+export interface WorkOrderBoard {
+  pending:      number
+  processing:   number
+  checking:     number
+  finished:     number
+  total:        number
+  overdueCount: number
+}
+
+export interface WorkOrderBoardOptions {
+  nowStr?:        string
+  defaultSlaMins?: number
+}
+
+/** "YYYY-MM-DD HH:mm:ss" → ms */
+function parseTs(s: string): number {
+  return Date.parse(s.replace(" ", "T"))
+}
+
+/**
+ * 工单看板聚合：各状态数量 + 超时工单数。
+ */
+export function selectWorkOrderBoard(options: WorkOrderBoardOptions = {}): WorkOrderBoard {
+  const { nowStr, defaultSlaMins = 120 } = options
+  const nowMs   = nowStr ? parseTs(nowStr) : Date.now()
+  const slaMsec = defaultSlaMins * 60 * 1000
+
+  const orders  = getTable<{ status: string; dispatch_time: string | null }>("work_order")
+
+  let pending = 0, processing = 0, checking = 0, finished = 0, overdueCount = 0
+  const ACTIVE_SET = new Set(["PENDING", "PROCESSING", "CHECKING"])
+
+  for (const o of orders) {
+    switch (o.status) {
+      case "PENDING":    pending++;    break
+      case "PROCESSING": processing++; break
+      case "CHECKING":   checking++;   break
+      case "FINISHED":   finished++;   break
+    }
+    if (ACTIVE_SET.has(o.status) && o.dispatch_time) {
+      if (nowMs - parseTs(o.dispatch_time) > slaMsec) overdueCount++
+    }
+  }
+
+  return { pending, processing, checking, finished, total: orders.length, overdueCount }
+}
