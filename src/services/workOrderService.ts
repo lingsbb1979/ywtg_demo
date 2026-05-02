@@ -761,3 +761,64 @@ export function rejectWorkOrder(
 
   return { ok: true }
 }
+
+// ── T15.54 addEvidence ────────────────────────────────────────────────────────
+
+export interface AddEvidencePayload {
+  imageUrls?:    string | null
+  gpsLocation?:  string | null
+  addressDesc?:  string | null
+  evidenceDesc?: string | null
+  videoUrl?:     string | null
+  userId?:       number | null
+  evidenceTime?: string
+}
+
+export interface AddEvidenceResult {
+  ok:          boolean
+  evidenceId?: number
+  error?:      string
+}
+
+/**
+ * H5 新增处置证据：在 PROCESSING 状态下随时追加照片/定位/说明，
+ * 写入 work_order_disposal，不改变工单状态，不写日志。
+ */
+export function addEvidence(
+  id:      number,
+  payload: AddEvidencePayload,
+): AddEvidenceResult {
+  const rows = getTable<{ id: number; status: string }>("work_order")
+  const row  = rows.find((r) => r.id === id)
+
+  if (!row) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
+  if (row.status !== "PROCESSING") {
+    return { ok: false, error: `工单 id=${id} 当前状态为 ${row.status}，不可新增证据` }
+  }
+
+  const now = payload.evidenceTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  const disposalRows = getTable<{ id: number }>("work_order_disposal")
+  const newId        = disposalRows.length > 0
+    ? Math.max(...disposalRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  setTable("work_order_disposal", [
+    ...disposalRows,
+    {
+      id:            newId,
+      order_id:      id,
+      user_id:       payload.userId       ?? null,
+      gps_location:  payload.gpsLocation  ?? null,
+      address_desc:  payload.addressDesc  ?? null,
+      image_urls:    payload.imageUrls    ?? null,
+      video_url:     payload.videoUrl     ?? null,
+      disposal_desc: payload.evidenceDesc ?? null,
+      disposal_time: now,
+      create_time:   now,
+    },
+  ])
+
+  return { ok: true, evidenceId: newId }
+}
