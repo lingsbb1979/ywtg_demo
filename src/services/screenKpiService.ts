@@ -104,3 +104,68 @@ export function selectMapPoints(): MapPoint[] {
     }
   })
 }
+
+// ── T15.61 selectHazardList ───────────────────────────────────────────────────
+
+export interface HazardListQuery {
+  alarmLevel?: string
+  buildingId?: number
+  keyword?:    string
+  limit?:      number
+}
+
+export interface HazardListItem {
+  id:           number
+  alarmId:      string
+  alarmTitle:   string | null
+  alarmLevel:   string
+  alarmType:    string | null
+  buildingId:   number | null
+  buildingName: string | null
+  status:       string
+  triggerTime:  string | null
+}
+
+const LEVEL_SORT: Record<string, number> = { RED: 3, ORANGE: 2, YELLOW: 1 }
+
+/**
+ * 大屏左侧隐患清单，按风险等级降序 + 同级 triggerTime 倒序。
+ */
+export function selectHazardList(query: HazardListQuery = {}): HazardListItem[] {
+  const { alarmLevel, buildingId, keyword, limit = 20 } = query
+
+  const CLOSED_SET = new Set(["CLOSED", "CANCELLED"])
+  const alarms     = getTable<{
+    id: number; alarm_id: string; alarm_title: string | null
+    alarm_type: string | null; alarm_level: string; building_id: number | null
+    status: string; trigger_time: string | null
+  }>("alarm_record")
+
+  const spaces = getTable<{ id: number; name: string }>("iot_space")
+  const spaceMap = new Map(spaces.map((s) => [s.id, s.name]))
+
+  let rows = alarms.filter((a) => !CLOSED_SET.has(a.status))
+
+  if (alarmLevel) rows = rows.filter((a) => a.alarm_level === alarmLevel)
+  if (buildingId) rows = rows.filter((a) => a.building_id === buildingId)
+  if (keyword)    rows = rows.filter((a) => (a.alarm_title ?? "").includes(keyword))
+
+  rows.sort((a, b) => {
+    const la = LEVEL_SORT[a.alarm_level] ?? 0
+    const lb = LEVEL_SORT[b.alarm_level] ?? 0
+    if (lb !== la) return lb - la
+    return (b.trigger_time ?? "") > (a.trigger_time ?? "") ? 1 : -1
+  })
+
+  return rows.slice(0, limit).map((a) => ({
+    id:           a.id,
+    alarmId:      a.alarm_id,
+    alarmTitle:   a.alarm_title   ?? null,
+    alarmLevel:   a.alarm_level,
+    alarmType:    a.alarm_type    ?? null,
+    buildingId:   a.building_id   ?? null,
+    buildingName: a.building_id != null ? (spaceMap.get(a.building_id) ?? null) : null,
+    status:       a.status,
+    triggerTime:  a.trigger_time  ?? null,
+  }))
+}
