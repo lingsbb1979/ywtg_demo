@@ -1,6 +1,8 @@
 import type { RouteRecordRaw } from "vue-router"
 import AdminDashboardView from "@/views/admin/AdminDashboardView.vue"
 import AdminAlarmsView from "@/views/admin/AdminAlarmsView.vue"
+import AdminDemoConsoleView from "@/views/admin/AdminDemoConsoleView.vue"
+import AdminBuildingsView from "@/views/admin/AdminBuildingsView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
@@ -75,6 +77,18 @@ export const routes: RouteRecordRaw[] = [
         name: "admin-alarms",
         component: AdminAlarmsView,
         meta: { title: "告警中心" }
+      },
+      {
+        path: "demo-console", // /admin/demo-console
+        name: "admin-demo-console",
+        component: AdminDemoConsoleView,
+        meta: { title: "演示控制台" }
+      },
+      {
+        path: "buildings", // /admin/buildings
+        name: "admin-buildings",
+        component: AdminBuildingsView,
+        meta: { title: "建筑档案" }
       }
     ]
   },

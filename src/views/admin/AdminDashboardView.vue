@@ -266,9 +266,9 @@ import {
   type WorkOrderBoard,
 } from "@/services/screenKpiService"
 
-const kpi         = ref<ScreenKpi>({ totalBuildings: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 })
-const board       = ref<WorkOrderBoard>({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 })
-const hazardList  = ref<HazardListItem[]>([])
+const kpi         = ref({ totalBuildings: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 } as ScreenKpi)
+const board       = ref({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 } as WorkOrderBoard)
+const hazardList  = ref([] as HazardListItem[])
 
 function pad2(n: number) { return String(n).padStart(2, "0") }
 const d = new Date()
