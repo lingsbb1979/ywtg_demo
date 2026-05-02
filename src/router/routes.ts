@@ -6,6 +6,8 @@ import AdminBuildingsView from "@/views/admin/AdminBuildingsView.vue"
 import AdminBuildingDetailView from "@/views/admin/AdminBuildingDetailView.vue"
 import AdminTelemetryView from "@/views/admin/AdminTelemetryView.vue"
 import AdminAnalysisView from "@/views/admin/AdminAnalysisView.vue"
+import AdminWorkOrdersView from "@/views/admin/AdminWorkOrdersView.vue"
+import AdminSupervisionView from "@/views/admin/AdminSupervisionView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
@@ -66,8 +68,8 @@ export const routes: RouteRecordRaw[] = [
       {
         path: "work-orders",
         name: "admin-work-orders",
-        component: AdminDashboardView,
-        meta: { title: "管理端工单" }
+        component: AdminWorkOrdersView,
+        meta: { title: "工单管理" }
       },
       {
         path: "work-orders/:id",
@@ -110,6 +112,12 @@ export const routes: RouteRecordRaw[] = [
         name: "admin-analysis",
         component: AdminAnalysisView,
         meta: { title: "数据分析" }
+      },
+      {
+        path: "supervision", // /admin/supervision
+        name: "admin-supervision",
+        component: AdminSupervisionView,
+        meta: { title: "督办管理" }
       }
     ]
   },

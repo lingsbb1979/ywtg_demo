@@ -292,6 +292,12 @@
               </ul>
             </div>
 
+            <!-- 处置建议（disposalSuggestion）-->
+            <div v-if="currentAlarmDetail?.disposalSuggestion" style="margin-top:16px;padding:12px;background:var(--pc-bg-page,#F0F4F9);border-radius:8px;border:1px solid var(--pc-border,#E2E8F0)">
+              <div style="font-size:13px;font-weight:600;color:var(--pc-text-h1,#1C2B4A);margin-bottom:6px">处置建议</div>
+              <div style="font-size:13px;color:var(--pc-text-body,#374151);line-height:1.6">{{ currentAlarmDetail.disposalSuggestion }}</div>
+            </div>
+
             <!-- 操作反馈消息 -->
             <div v-if="actionMsg" class="admin-action-msg">{{ actionMsg }}</div>
           </div>
@@ -321,8 +327,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
-import { listAlarms, type AlarmListItem } from "@/services/alarmService"
-import { update } from "@/services/sqliteMirrorRepository"
+import {
+  listAlarms,
+  getAlarm,
+  confirmAlarm as serviceConfirmAlarm,
+  dispatchAlarm as serviceDispatchAlarm,
+  type AlarmListItem,
+  type AlarmDetail,
+} from "@/services/alarmService"
 
 // ── 常量 ──────────────────────────────────────────────────────────────────────
 
@@ -335,14 +347,15 @@ const STATUS_LABEL: Record<string, string> = {
 
 // ── 响应式状态 ─────────────────────────────────────────────────────────────────
 
-const alarms        = ref([] as AlarmListItem[])
-const selectedAlarm = ref(null as AlarmListItem | null)
-const currentAlarm  = ref(null as AlarmListItem | null)
-const activeStatus  = ref("ALL")
-const levelFilter   = ref("")
-const keyword       = ref("")
-const drawerVisible = ref(false)
-const actionMsg     = ref("")
+const alarms             = ref([] as AlarmListItem[])
+const selectedAlarm      = ref(null as AlarmListItem | null)
+const currentAlarm       = ref(null as AlarmListItem | null)
+const currentAlarmDetail = ref(null as AlarmDetail | null)
+const activeStatus       = ref("ALL")
+const levelFilter        = ref("")
+const keyword            = ref("")
+const drawerVisible      = ref(false)
+const actionMsg          = ref("")
 
 // ── 状态筛选标签 ──────────────────────────────────────────────────────────────
 
@@ -411,6 +424,9 @@ function openDrawer(alarm: AlarmListItem) {
   currentAlarm.value  = alarm
   drawerVisible.value = true
   actionMsg.value = ""
+  // 加载完整详情（含 disposalSuggestion）
+  const result = getAlarm(alarm.id)
+  currentAlarmDetail.value = result.ok ? result.data : null
 }
 
 function closeDrawer() {
@@ -421,18 +437,26 @@ function closeDrawer() {
 function confirmAlarm() {
   if (!currentAlarm.value) return
   const id = currentAlarm.value.id
-  update("alarm_record", id, { status: "PENDING" })
-  loadData()
-  actionMsg.value = `✓ 告警 #${id} 已确认`
+  const result = serviceConfirmAlarm(id)
+  if (result.ok) {
+    loadData()
+    actionMsg.value = `✓ 告警 #${id} 已确认`
+  } else {
+    actionMsg.value = `✗ ${result.error}`
+  }
   setTimeout(() => { actionMsg.value = "" }, 3000)
 }
 
 function dispatchAlarm() {
   if (!currentAlarm.value) return
   const alarm = currentAlarm.value
-  update("alarm_record", alarm.id, { status: "DISPATCHED" })
-  loadData()
-  actionMsg.value = `✓ 告警 #${alarm.id} 已派单`
+  const result = serviceDispatchAlarm(alarm.id)
+  if (result.ok) {
+    loadData()
+    actionMsg.value = `✓ 告警 #${alarm.id} 已派单，工单 ${result.orderNo}`
+  } else {
+    actionMsg.value = `✗ ${result.error}`
+  }
   setTimeout(() => { actionMsg.value = "" }, 3000)
 }
 
@@ -442,7 +466,11 @@ function loadData() {
   alarms.value = listAlarms()
   if (currentAlarm.value) {
     const updated = alarms.value.find(a => a.id === currentAlarm.value!.id)
-    if (updated) currentAlarm.value = updated
+    if (updated) {
+      currentAlarm.value = updated
+      const result = getAlarm(updated.id)
+      currentAlarmDetail.value = result.ok ? result.data : null
+    }
   }
 }
 
