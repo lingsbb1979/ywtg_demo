@@ -693,3 +693,71 @@ export function verifyWorkOrder(
 
   return { ok: true }
 }
+
+// ── T15.53 rejectWorkOrder ────────────────────────────────────────────────────
+
+export interface RejectWorkOrderOptions {
+  rejectReason?: string | null
+  rejectTime?:   string
+  operator?:     string | null
+  operatorId?:   number | null
+}
+
+export interface RejectWorkOrderResult {
+  ok:     boolean
+  error?: string
+}
+
+/**
+ * PC 退回重办：工单 status CHECKING → PROCESSING，清空 finish_time，
+ * 追加 REJECT 日志，remark 写入退回原因。
+ */
+export function rejectWorkOrder(
+  id:      number,
+  options: RejectWorkOrderOptions = {},
+): RejectWorkOrderResult {
+  const rows = getTable<{
+    id: number; status: string; current_node: string
+    finish_time: string | null; update_time: string | null
+  }>("work_order")
+
+  const idx = rows.findIndex((r) => r.id === id)
+  if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
+
+  const row = rows[idx]
+  if (row.status !== "CHECKING") {
+    return { ok: false, error: `工单 id=${id} 当前状态为 ${row.status}，不可退回` }
+  }
+
+  const now = options.rejectTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  rows[idx] = { ...row, status: "PROCESSING", current_node: "HANDLE", finish_time: null, update_time: now }
+  setTable("work_order", rows)
+
+  // 追加退回日志
+  const logRows = getTable<{ id: number }>("work_order_log")
+  const logId   = logRows.length > 0
+    ? Math.max(...logRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  setTable("work_order_log", [
+    ...logRows,
+    {
+      id:            logId,
+      order_id:      id,
+      node_type:     "REJECT",
+      node_name:     "退回重办",
+      operator_id:   options.operatorId  ?? null,
+      operator_name: options.operator    ?? null,
+      operator:      options.operator    ?? null,
+      action_desc:   "PC 端核查不通过，退回重办",
+      action_time:   now,
+      detail_json:   null,
+      remark:        options.rejectReason ?? null,
+      create_time:   now,
+    },
+  ])
+
+  return { ok: true }
+}
