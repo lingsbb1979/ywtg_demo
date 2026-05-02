@@ -1,4 +1,21 @@
 <template>
+  <!--
+    T15.73 管理端工作台第一版低保真布局定型（wireframe）：/admin/dashboard 版面关系
+    ┌── zone:kpi-stats ──────────────────────────────────────────────────┐
+    │  活跃告警 │ 待处理工单 │ 重点隐患 │ 工单闭环率 │ 逢期工单                     │
+    ├── zone:quick-actions ───────────────────────────────────────────────┤
+    │  快捷操作：告警确认/派单 │ 工单核查销号 │ 建筑档案 │ 实时采集       │
+    ├───────────────────────────┬──────────────────────────┤
+    │ zone:alarm-list [左]            │ zone:workorder-board [右上]         │
+    │ 告警与活跃隐患清单                 │ 工单看板：待处理/处理中/待核查/已销 │
+    │                              ├────────────────────────┤
+    │                              │ zone:todo [右中]                  │
+    │                              │ 待办工单（逢期预警和待核查）          │
+    │                              ├────────────────────────┤
+    │                              │ zone:demo-control [右下]          │
+    │                              │ 演示控制入口                      │
+    └───────────────────────────┴────────────────────────┘
+  -->
   <div class="admin-dashboard">
     <!-- 页面标题 -->
     <div class="admin-page-header">
@@ -6,8 +23,8 @@
       <span class="admin-page-subtitle">{{ currentDate }}</span>
     </div>
 
-    <!-- ① KPI 指标卡片区 -->
-    <div class="admin-kpi-row">
+    <!-- ① KPI 指标卡片区（zone:kpi-stats），T15.70 P1：管理端最高优先信息 -->
+    <div class="admin-kpi-row" data-testid="admin-kpi-stats" data-zone="kpi-stats">
       <!-- 今日告警 -->
       <div class="admin-kpi-card admin-kpi-card--alarm" data-testid="admin-kpi-alarms">
         <div class="admin-kpi-card__header">
@@ -61,8 +78,8 @@
       </div>
     </div>
 
-    <!-- ② 快速数据操作区（admin-quick-actions），T15.70 P1：管理端突出待办和数据操作 -->
-    <div class="admin-quick-actions" data-testid="admin-quick-actions">
+    <!-- ② 快速数据操作区（zone:quick-actions），T15.70 P1：管理端突出待办和数据操作 -->
+    <div class="admin-quick-actions" data-testid="admin-quick-actions" data-zone="quick-actions">
       <router-link class="admin-quick-btn" to="/admin/alarms">
         <span class="admin-quick-btn__icon">⚠</span>
         <span class="admin-quick-btn__label">告警确认 / 派单</span>
@@ -81,10 +98,10 @@
       </router-link>
     </div>
 
-    <!-- ③ 主内容区：告警 + 演示控制 -->
+    <!-- ③ 主内容区：告警 + 工单看板 + 待办 + 演示控制 -->
     <div class="admin-dashboard-body">
-      <!-- 近期告警列表 -->
-      <div class="admin-card admin-card--full">
+      <!-- 告警与隐患清单（zone:alarm-list）-->
+      <div class="admin-card admin-card--full" data-zone="alarm-list">
         <div class="admin-card__header">
           <span class="admin-card__title">最新活跃隐患</span>
           <router-link class="admin-card__more" to="/admin/alarms">查看全部 →</router-link>
@@ -109,8 +126,70 @@
         </div>
       </div>
 
-      <!-- ③ 演示控制台入口（admin-demo-control） -->
-      <div class="admin-card" data-testid="admin-demo-control">
+      <!-- 右侧栏：工单看板 + 待办 + 演示控制 -->
+      <div class="admin-right-col">
+        <!-- 工单看板（zone:workorder-board） -->
+        <div class="admin-card" data-zone="workorder-board">
+          <div class="admin-card__header">
+            <span class="admin-card__title">工单看板</span>
+            <router-link class="admin-card__more" to="/admin/work-orders">查看工单 →</router-link>
+          </div>
+          <div class="admin-wo-board">
+            <div class="admin-wo-board-item admin-wo-board-item--pending">
+              <span class="admin-wo-board-item__count tabular-nums">{{ board.pending }}</span>
+              <span class="admin-wo-board-item__label">待处理</span>
+            </div>
+            <div class="admin-wo-board-item admin-wo-board-item--processing">
+              <span class="admin-wo-board-item__count tabular-nums">{{ board.processing }}</span>
+              <span class="admin-wo-board-item__label">处理中</span>
+            </div>
+            <div class="admin-wo-board-item admin-wo-board-item--checking">
+              <span class="admin-wo-board-item__count tabular-nums">{{ board.checking }}</span>
+              <span class="admin-wo-board-item__label">待核查</span>
+            </div>
+            <div class="admin-wo-board-item admin-wo-board-item--finished">
+              <span class="admin-wo-board-item__count tabular-nums">{{ board.finished }}</span>
+              <span class="admin-wo-board-item__label">已销号</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 待办工单（zone:todo）—— 逾期预警和待核查快速入口 -->
+        <div class="admin-card" data-zone="todo">
+          <div class="admin-card__header">
+            <span class="admin-card__title">待办提醒</span>
+            <router-link class="admin-card__more" to="/admin/work-orders">处理 →</router-link>
+          </div>
+          <div class="admin-todo-list">
+            <div v-if="board.overdueCount > 0" class="admin-todo-item admin-todo-item--danger">
+              <span class="admin-todo-item__dot" />
+              <div class="admin-todo-item__info">
+                <span class="admin-todo-item__title">逾期工单待督办</span>
+                <span class="admin-todo-item__count">{{ board.overdueCount }} 条工单已超出 SLA</span>
+              </div>
+            </div>
+            <div v-if="board.checking > 0" class="admin-todo-item admin-todo-item--warn">
+              <span class="admin-todo-item__dot" />
+              <div class="admin-todo-item__info">
+                <span class="admin-todo-item__title">待核查工单</span>
+                <span class="admin-todo-item__count">{{ board.checking }} 条工单等待核查销号</span>
+              </div>
+            </div>
+            <div v-if="board.pending > 0" class="admin-todo-item admin-todo-item--info">
+              <span class="admin-todo-item__dot" />
+              <div class="admin-todo-item__info">
+                <span class="admin-todo-item__title">待处理工单</span>
+                <span class="admin-todo-item__count">{{ board.pending }} 条工单等待派单</span>
+              </div>
+            </div>
+            <div v-if="board.overdueCount === 0 && board.checking === 0 && board.pending === 0" class="admin-todo-empty">
+              暂无紧急待办事项
+            </div>
+          </div>
+        </div>
+
+        <!-- 演示控制台入口（zone:demo-control） -->
+        <div class="admin-card" data-testid="admin-demo-control" data-zone="demo-control">
         <div class="admin-card__header">
           <span class="admin-card__title">演示控制台</span>
         </div>
@@ -152,8 +231,9 @@
           </router-link>
         </div>
       </div>
-    </div>
-  </div>
+      </div><!-- /.admin-right-col -->
+    </div><!-- /.admin-dashboard-body -->
+  </div><!-- /.admin-dashboard -->
 </template>
 
 <script setup lang="ts">
@@ -386,4 +466,78 @@ onMounted(loadData)
 
 /* 工具 */
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* 右侧栏 */
+.admin-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 工单看板 */
+.admin-wo-board {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px 16px 16px;
+}
+.admin-wo-board-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  border-radius: 8px;
+  background: var(--pc-bg-hover, #F5F9FF);
+  gap: 2px;
+}
+.admin-wo-board-item--pending    { border-left: 3px solid var(--wo-pending,    #F59E0B); }
+.admin-wo-board-item--processing { border-left: 3px solid var(--wo-processing, #3B82F6); }
+.admin-wo-board-item--checking   { border-left: 3px solid var(--wo-checking,   #8B5CF6); }
+.admin-wo-board-item--finished   { border-left: 3px solid var(--color-success, #10B981); }
+.admin-wo-board-item__count {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--pc-text-title, #0F172A);
+}
+.admin-wo-board-item__label {
+  font-size: 11px;
+  color: var(--pc-text-muted, #94A3B8);
+}
+
+/* 待办提醒 */
+.admin-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 16px 12px;
+}
+.admin-todo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+.admin-todo-item--danger { background: #FEE2E2; }
+.admin-todo-item--warn   { background: #FEF3C7; }
+.admin-todo-item--info   { background: #EFF6FF; }
+.admin-todo-item__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.admin-todo-item--danger .admin-todo-item__dot { background: #EF4444; }
+.admin-todo-item--warn   .admin-todo-item__dot { background: #F59E0B; }
+.admin-todo-item--info   .admin-todo-item__dot { background: #3B82F6; }
+.admin-todo-item__info { display: flex; flex-direction: column; gap: 1px; }
+.admin-todo-item__title { font-size: 12px; font-weight: 600; color: var(--pc-text-title, #0F172A); }
+.admin-todo-item__count { font-size: 11px; color: var(--pc-text-muted, #94A3B8); }
+.admin-todo-empty {
+  text-align: center;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--pc-text-muted, #94A3B8);
+}
 </style>
