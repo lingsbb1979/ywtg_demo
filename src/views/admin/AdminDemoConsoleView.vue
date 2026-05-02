@@ -252,6 +252,20 @@
             <div class="admin-shortcut-btn__desc">查看整体数据看板</div>
           </div>
         </router-link>
+        <!-- T15.117 — 当前工单详情（动态跳转到最新待处理工单） -->
+        <button
+          class="admin-shortcut-btn admin-shortcut-btn--dynamic"
+          @click="goToOrder"
+          :title="currentOrderId ? `跳转到工单 #${currentOrderId}` : '暂无待处理工单'"
+        >
+          <span class="admin-shortcut-btn__icon">🗂</span>
+          <div>
+            <div class="admin-shortcut-btn__label">当前工单详情</div>
+            <div class="admin-shortcut-btn__desc tabular-nums">
+              {{ currentOrderId ? `工单 #${currentOrderId}` : '暂无待处理工单' }}
+            </div>
+          </div>
+        </button>
       </div>
     </div>
 
@@ -280,7 +294,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, computed, onMounted } from "vue"
+import { useRouter } from "vue-router"
 import {
   resetDemo,
   triggerOrangeCrack,
@@ -404,7 +419,28 @@ function doDataRecovery() {
   }
 }
 
-// ── 初始化 ────────────────────────────────────────────────────────────────────
+// ── T15.117 当前工单详情快捷跳转 ─────────────────────────────────────────────
+
+const router = useRouter()
+
+/** 当前最新待处理工单的 id：优先取 PENDING > PROCESSING > CHECKING */
+const currentOrderId = computed(() => {
+  const orders = getTable<{ id: number; status: string }>("work_order")
+  const active = orders.find(
+    (o) => o.status === "PENDING" || o.status === "PROCESSING" || o.status === "CHECKING",
+  )
+  return active?.id ?? null
+})
+
+function goToOrder() {
+  if (currentOrderId.value != null) {
+    router.push(`/admin/work-orders/${currentOrderId.value}`)
+  } else {
+    router.push("/admin/work-orders")
+  }
+}
+
+// ── 初始化 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 onMounted(() => {
   loadStats()
