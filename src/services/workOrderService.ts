@@ -945,3 +945,64 @@ export function archiveWorkOrder(id: number): ArchiveWorkOrderResult {
 
   return { ok: true, archiveId }
 }
+
+// ── T15.57 listOverdueWorkOrders ──────────────────────────────────────────────
+
+export interface OverdueWorkOrder {
+  id:             number
+  orderNo:        string
+  status:         string
+  dispatchTime:   string
+  overdueMinutes: number
+}
+
+export interface ListOverdueOptions {
+  nowStr?:        string   // 测试注入"当前时间"
+  defaultSlaMins?: number  // SLA 分钟数，默认 120
+}
+
+/** 解析 "YYYY-MM-DD HH:mm:ss" → 毫秒时间戳 */
+function parseLocalTs(s: string): number {
+  // 将空格替换为 T 以便 Date.parse
+  return Date.parse(s.replace(" ", "T"))
+}
+
+/**
+ * 识别超过 SLA 的活跃工单（PENDING / PROCESSING / CHECKING）。
+ * 超时定义：当前时间 - dispatch_time > defaultSlaMins（默认 120 分钟）。
+ * 返回结果按 overdueMinutes 降序排列。
+ */
+export function listOverdueWorkOrders(options: ListOverdueOptions = {}): OverdueWorkOrder[] {
+  const { nowStr, defaultSlaMins = 120 } = options
+  const nowMs   = nowStr ? parseLocalTs(nowStr) : Date.now()
+  const slaMsec = defaultSlaMins * 60 * 1000
+
+  const ACTIVE = new Set(["PENDING", "PROCESSING", "CHECKING"])
+
+  const rows = getTable<{
+    id: number; order_no: string; status: string
+    dispatch_time: string | null
+  }>("work_order")
+
+  const result: OverdueWorkOrder[] = []
+
+  for (const r of rows) {
+    if (!ACTIVE.has(r.status)) continue
+    if (!r.dispatch_time)      continue
+
+    const dispatchMs = parseLocalTs(r.dispatch_time)
+    const elapsedMs  = nowMs - dispatchMs
+
+    if (elapsedMs <= slaMsec) continue
+
+    result.push({
+      id:             r.id,
+      orderNo:        r.order_no,
+      status:         r.status,
+      dispatchTime:   r.dispatch_time,
+      overdueMinutes: Math.round((elapsedMs - slaMsec) / 60000),
+    })
+  }
+
+  return result.sort((a, b) => b.overdueMinutes - a.overdueMinutes)
+}
