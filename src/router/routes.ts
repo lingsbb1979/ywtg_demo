@@ -3,6 +3,9 @@ import AdminDashboardView from "@/views/admin/AdminDashboardView.vue"
 import AdminAlarmsView from "@/views/admin/AdminAlarmsView.vue"
 import AdminDemoConsoleView from "@/views/admin/AdminDemoConsoleView.vue"
 import AdminBuildingsView from "@/views/admin/AdminBuildingsView.vue"
+import AdminBuildingDetailView from "@/views/admin/AdminBuildingDetailView.vue"
+import AdminTelemetryView from "@/views/admin/AdminTelemetryView.vue"
+import AdminAnalysisView from "@/views/admin/AdminAnalysisView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
@@ -89,6 +92,24 @@ export const routes: RouteRecordRaw[] = [
         name: "admin-buildings",
         component: AdminBuildingsView,
         meta: { title: "建筑档案" }
+      },
+      {
+        path: "buildings/:id", // /admin/buildings/:id
+        name: "admin-building-detail",
+        component: AdminBuildingDetailView,
+        meta: { title: "建筑详情" }
+      },
+      {
+        path: "telemetry", // /admin/telemetry
+        name: "admin-telemetry",
+        component: AdminTelemetryView,
+        meta: { title: "采集数据" }
+      },
+      {
+        path: "analysis", // /admin/analysis
+        name: "admin-analysis",
+        component: AdminAnalysisView,
+        meta: { title: "数据分析" }
       }
     ]
   },
