@@ -192,3 +192,91 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
     update_time:     nowStr,
   }])
 }
+
+// ── T15.67 triggerTimeoutSupervision ─────────────────────────────────────────
+
+export interface SupervisionOptions {
+  nowStr?: string
+}
+
+/** "YYYY-MM-DD HH:mm:ss" → ms */
+function _parseTs(s: string): number {
+  return Date.parse(s.replace(" ", "T"))
+}
+
+/** ms → "YYYY-MM-DD HH:mm:ss" */
+function _fmtTs(ms: number): string {
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+let _supSeq = 0
+
+/**
+ * 追加一条超时工单（dispatch_time 提前 200 min）+ 配套督办单。
+ */
+export function triggerTimeoutSupervision(options: SupervisionOptions = {}): void {
+  const { nowStr = "2024-03-08 11:00:00" } = options
+  _supSeq++
+
+  const dispatchMs = _parseTs(nowStr) - 200 * 60 * 1000
+  const dispatchTs = _fmtTs(dispatchMs)
+
+  // ─ work_order ─
+  const orders = getTable<{ id?: number }>("work_order")
+  const orderId = orders.length > 0
+    ? Math.max(...orders.map((r) => r.id ?? 0)) + 1
+    : 1
+  setTable("work_order", [...orders, {
+    id:              orderId,
+    order_no:        `WO-TIMEOUT-${String(orderId).padStart(4, "0")}`,
+    order_code:      `WO-TIMEOUT-${String(orderId).padStart(4, "0")}`,
+    alarm_id:        null,
+    building_id:     1001,
+    order_type:      "REPAIR",
+    order_level:     "HIGH",
+    alarm_level:     "ORANGE",
+    dispatch_type:   "ASSIGN",
+    dispatch_org_id: 10,
+    dispatch_user_id: 100,
+    dispatch_org:    "安全监测部",
+    receive_org_id:  20,
+    receive_user_id: null,
+    receive_org:     "现场维修组",
+    receive_role_key: "FIELD_WORKER",
+    assignee_id:     null,
+    priority:        2,
+    status:          "PENDING",
+    current_node:    "DISPATCH",
+    source_id:       null,
+    source_type:     null,
+    dispatch_time:   dispatchTs,
+    accept_time:     null,
+    finish_time:     null,
+    check_time:      null,
+    create_time:     dispatchTs,
+    update_time:     nowStr,
+  }])
+
+  // ─ supervision_order ─
+  const sups = getTable<{ id?: number }>("supervision_order")
+  const supId = sups.length > 0
+    ? Math.max(...sups.map((r) => r.id ?? 0)) + 1
+    : 1
+  setTable("supervision_order", [...sups, {
+    id:               supId,
+    supervision_no:   `SUP-TIMEOUT-${String(supId).padStart(4, "0")}`,
+    from_org_id:      10,
+    to_org_id:        20,
+    source_type:      "WORK_ORDER",
+    related_event_id: orderId,
+    title:            `工单处理超时督办（${dispatchTs} 派单，累计超时）`,
+    content:          "该工单已超过规定 SLA 时限（120 分钟），请及时处理。",
+    level_code:       "GENERAL",
+    status:           "ISSUED",
+    issue_time:       nowStr,
+    deadline:         _fmtTs(_parseTs(nowStr) + 24 * 60 * 60 * 1000),
+  }])
+}
