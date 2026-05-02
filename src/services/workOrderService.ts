@@ -615,3 +615,81 @@ export function submitDisposal(
 
   return { ok: true }
 }
+
+// ── T15.52 verifyWorkOrder ────────────────────────────────────────────────────
+
+export interface VerifyWorkOrderOptions {
+  checkTime?:  string
+  operator?:   string | null
+  operatorId?: number | null
+}
+
+export interface VerifyWorkOrderResult {
+  ok:     boolean
+  error?: string
+}
+
+/**
+ * PC 核查通过：工单 status CHECKING → FINISHED，写入核查时间，
+ * 追加核查日志，并同步将对应告警状态设为 CLOSED。
+ */
+export function verifyWorkOrder(
+  id:      number,
+  options: VerifyWorkOrderOptions = {},
+): VerifyWorkOrderResult {
+  const rows = getTable<{
+    id: number; status: string; current_node: string
+    alarm_id: string | null
+    check_time: string | null; update_time: string | null
+  }>("work_order")
+
+  const idx = rows.findIndex((r) => r.id === id)
+  if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
+
+  const row = rows[idx]
+  if (row.status !== "CHECKING") {
+    return { ok: false, error: `工单 id=${id} 当前状态为 ${row.status}，不可核查` }
+  }
+
+  const now = options.checkTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  rows[idx] = { ...row, status: "FINISHED", current_node: "DONE", check_time: now, update_time: now }
+  setTable("work_order", rows)
+
+  // 同步关闭告警
+  if (row.alarm_id) {
+    const alarmRows = getTable<{ alarm_id: string | null; status: string; update_time?: string | null }>("alarm_record")
+    const alarmIdx  = alarmRows.findIndex((a) => a.alarm_id === row.alarm_id)
+    if (alarmIdx !== -1) {
+      alarmRows[alarmIdx] = { ...alarmRows[alarmIdx], status: "CLOSED", update_time: now }
+      setTable("alarm_record", alarmRows)
+    }
+  }
+
+  // 追加核查日志
+  const logRows = getTable<{ id: number }>("work_order_log")
+  const logId   = logRows.length > 0
+    ? Math.max(...logRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  setTable("work_order_log", [
+    ...logRows,
+    {
+      id:            logId,
+      order_id:      id,
+      node_type:     "CHECK",
+      node_name:     "核查",
+      operator_id:   options.operatorId ?? null,
+      operator_name: options.operator   ?? null,
+      operator:      options.operator   ?? null,
+      action_desc:   "PC 端核查通过，工单销号",
+      action_time:   now,
+      detail_json:   null,
+      remark:        null,
+      create_time:   now,
+    },
+  ])
+
+  return { ok: true }
+}
