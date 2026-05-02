@@ -1006,3 +1006,84 @@ export function listOverdueWorkOrders(options: ListOverdueOptions = {}): Overdue
 
   return result.sort((a, b) => b.overdueMinutes - a.overdueMinutes)
 }
+
+// ── T15.58 createSupervisionOrder ─────────────────────────────────────────────
+
+export interface CreateSupervisionPayload {
+  relatedOrderId?: number | null
+  title?:          string | null
+  content?:        string | null
+  levelCode?:      "GENERAL" | "IMPORTANT" | "URGENT" | string
+  fromOrgId?:      number | null
+  toOrgId?:        number | null
+  issueTime?:      string
+  deadline?:       string
+  operator?:       string | null
+  operatorId?:     number | null
+}
+
+export interface CreateSupervisionResult {
+  ok:               boolean
+  supervisionId?:   number
+  supervisionNo?:   string
+  error?:           string
+}
+
+/** "YYYY-MM-DD HH:mm:ss" + n 分钟 → "YYYY-MM-DD HH:mm:ss" */
+function addMinutes(ts: string, mins: number): string {
+  const ms = parseLocalTs(ts) + mins * 60000
+  const d  = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} `
+       + `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+const SLA_MINS: Record<string, number> = {
+  URGENT:    120,
+  IMPORTANT: 1440,
+  GENERAL:   4320,
+}
+
+/**
+ * 超时工单生成督办记录（市内督办），写入 supervision_order。
+ */
+export function createSupervisionOrder(
+  payload: CreateSupervisionPayload,
+): CreateSupervisionResult {
+  const rows = getTable<{ id: number }>("supervision_order")
+  const newId = rows.length > 0
+    ? Math.max(...rows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  const now       = payload.issueTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+  const levelCode = payload.levelCode ?? "GENERAL"
+  const slaMins   = SLA_MINS[levelCode] ?? SLA_MINS.GENERAL
+  const deadline  = payload.deadline ?? addMinutes(now, slaMins)
+
+  const rand4     = String(Math.floor(Math.random() * 10000)).padStart(4, "0")
+  const noTs      = now.replace(/[^0-9]/g, "").slice(0, 14)
+  const supNo     = `SUP-${noTs}-${rand4}`
+
+  const hasOrder  = payload.relatedOrderId != null
+
+  setTable("supervision_order", [
+    ...rows,
+    {
+      id:               newId,
+      supervision_no:   supNo,
+      from_org_id:      payload.fromOrgId       ?? null,
+      to_org_id:        payload.toOrgId          ?? null,
+      source_type:      hasOrder ? 2             : null,
+      related_event_id: payload.relatedOrderId   ?? null,
+      title:            payload.title            ?? null,
+      content:          payload.content          ?? null,
+      level_code:       levelCode,
+      status:           "PENDING",
+      issue_time:       now,
+      deadline,
+    },
+  ])
+
+  return { ok: true, supervisionId: newId, supervisionNo: supNo }
+}
