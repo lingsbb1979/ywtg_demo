@@ -26,50 +26,60 @@
     <!-- ① KPI 指标卡片区（zone:kpi-stats），T15.70 P1：管理端最高优先信息 -->
     <div class="admin-kpi-row" data-testid="admin-kpi-stats" data-zone="kpi-stats">
       <!-- 今日告警 -->
-      <div class="admin-kpi-card admin-kpi-card--alarm" data-testid="admin-kpi-alarms">
+      <div class="admin-kpi-card pc-card admin-kpi-card--alarm" data-testid="admin-kpi-alarms">
         <div class="admin-kpi-card__header">
           <span class="admin-kpi-card__label">活跃告警</span>
-          <span class="admin-kpi-card__icon admin-kpi-card__icon--alarm">⚠</span>
+          <div class="admin-kpi-card__icon-wrap" style="background:#FEE2E2">
+            <span style="color:var(--color-danger,#EF4444);font-size:16px">⚠</span>
+          </div>
         </div>
         <div class="admin-kpi-card__value tabular-nums">{{ kpi.activeAlarms }}</div>
         <div class="admin-kpi-card__sub">开放隐患：{{ kpi.openHazards }} 处</div>
       </div>
 
       <!-- 待办工单（T15.70 P1：管理端最高优先信息） -->
-      <div class="admin-kpi-card admin-kpi-card--workorder" data-testid="admin-kpi-workorders" data-priority="1">
+      <div class="admin-kpi-card pc-card admin-kpi-card--workorder" data-testid="admin-kpi-workorders" data-priority="1">
         <div class="admin-kpi-card__header">
           <span class="admin-kpi-card__label">待处理工单</span>
-          <span class="admin-kpi-card__icon admin-kpi-card__icon--workorder">📋</span>
+          <div class="admin-kpi-card__icon-wrap" style="background:#DBEAFE">
+            <span style="color:var(--wo-processing,#3B82F6);font-size:16px">📋</span>
+          </div>
         </div>
         <div class="admin-kpi-card__value tabular-nums">{{ board.pending }}</div>
         <div class="admin-kpi-card__sub">处理中：{{ board.processing }} · 待核查：{{ board.checking }}</div>
       </div>
 
       <!-- 重点隐患 -->
-      <div class="admin-kpi-card admin-kpi-card--hazard" data-testid="admin-kpi-hazards">
+      <div class="admin-kpi-card pc-card admin-kpi-card--hazard" data-testid="admin-kpi-hazards">
         <div class="admin-kpi-card__header">
           <span class="admin-kpi-card__label">重点隐患</span>
-          <span class="admin-kpi-card__icon admin-kpi-card__icon--hazard">🏚</span>
+          <div class="admin-kpi-card__icon-wrap" style="background:#FFEDD5">
+            <span style="color:var(--risk-orange,#FF8A3D);font-size:16px">🏚</span>
+          </div>
         </div>
         <div class="admin-kpi-card__value tabular-nums">{{ kpi.openHazards }}</div>
         <div class="admin-kpi-card__sub">监测建筑：{{ kpi.totalBuildings }} 栋</div>
       </div>
 
       <!-- 工单闭环率 -->
-      <div class="admin-kpi-card admin-kpi-card--rate">
+      <div class="admin-kpi-card pc-card admin-kpi-card--rate">
         <div class="admin-kpi-card__header">
           <span class="admin-kpi-card__label">工单闭环率</span>
-          <span class="admin-kpi-card__icon admin-kpi-card__icon--rate">✓</span>
+          <div class="admin-kpi-card__icon-wrap" style="background:#D1FAE5">
+            <span style="color:var(--color-success,#10B981);font-size:16px">✓</span>
+          </div>
         </div>
         <div class="admin-kpi-card__value tabular-nums admin-kpi-card__value--success">{{ kpi.closeRate }}%</div>
         <div class="admin-kpi-card__sub">已销号：{{ board.finished }} 条</div>
       </div>
 
       <!-- 逾期工单 -->
-      <div class="admin-kpi-card" :class="board.overdueCount > 0 ? 'admin-kpi-card--overdue' : ''">
+      <div class="admin-kpi-card pc-card" :class="board.overdueCount > 0 ? 'admin-kpi-card--overdue' : ''">
         <div class="admin-kpi-card__header">
           <span class="admin-kpi-card__label">逾期工单</span>
-          <span class="admin-kpi-card__icon">⏰</span>
+          <div class="admin-kpi-card__icon-wrap" :style="{ background: board.overdueCount > 0 ? '#FEE2E2' : '#F1F5F9' }">
+            <span :style="{ color: board.overdueCount > 0 ? 'var(--color-danger,#EF4444)' : '#94A3B8', fontSize: '16px' }">⏰</span>
+          </div>
         </div>
         <div class="admin-kpi-card__value tabular-nums" :class="board.overdueCount > 0 ? 'admin-kpi-card__value--danger' : ''">
           {{ board.overdueCount }}
@@ -101,10 +111,19 @@
     <!-- ③ 主内容区：告警 + 工单看板 + 待办 + 演示控制 -->
     <div class="admin-dashboard-body">
       <!-- 告警与隐患清单（zone:alarm-list）-->
-      <div class="admin-card admin-card--full" data-zone="alarm-list">
+      <div class="admin-card pc-card admin-card--full" data-zone="alarm-list">
         <div class="admin-card__header">
           <span class="admin-card__title">最新活跃隐患</span>
           <router-link class="admin-card__more" to="/admin/alarms">查看全部 →</router-link>
+        </div>
+        <!-- 高保真：状态筛选标签（T15.74 按钮密度 / admin-filter-tab）-->
+        <div class="admin-table-filter-tabs">
+          <button class="admin-filter-tab admin-filter-tab--active">
+            全部
+            <span class="admin-filter-tab__count">{{ hazardList.length }}</span>
+          </button>
+          <button class="admin-filter-tab">红色<span class="admin-filter-tab__count">{{ hazardList.filter(h => h.alarmLevel === 'RED').length }}</span></button>
+          <button class="admin-filter-tab">橙色<span class="admin-filter-tab__count">{{ hazardList.filter(h => h.alarmLevel === 'ORANGE').length }}</span></button>
         </div>
         <div class="admin-hazard-list">
           <div
@@ -274,11 +293,17 @@ onMounted(loadData)
   background: var(--pc-bg-page, #F0F4F9);
 }
 
-/* 页面标题 */
+/* 页面标题 — 高保真：linear-gradient 底边线增强视觉层次（T15.74）*/
 .admin-page-header {
   display: flex;
   align-items: baseline;
   gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid transparent;
+  background-image: linear-gradient(to right, var(--pc-primary, #1B6FE8), transparent 60%);
+  background-position: bottom;
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
 }
 .admin-page-title {
   font-size: 20px;
@@ -297,6 +322,13 @@ onMounted(loadData)
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
 }
+/* pc-card 基础卡片（与 design-tokens 保持一致）*/
+.pc-card {
+  background: var(--pc-bg-card, #fff);
+  border: 1px solid var(--pc-border, #E2E8F0);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--pc-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+}
 .admin-kpi-card {
   background: var(--pc-bg-card, #fff);
   border: 1px solid var(--pc-border, #E2E8F0);
@@ -305,10 +337,10 @@ onMounted(loadData)
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  transition: box-shadow 150ms;
+  box-shadow: var(--pc-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+  transition: box-shadow var(--duration-micro, 150ms) ease;
 }
-.admin-kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.admin-kpi-card:hover { box-shadow: var(--pc-shadow-md, 0 4px 12px rgba(0,0,0,0.08)); }
 .admin-kpi-card__header {
   display: flex;
   align-items: center;
@@ -318,11 +350,21 @@ onMounted(loadData)
   font-size: 13px;
   color: var(--pc-text-muted, #94A3B8);
 }
-.admin-kpi-card__icon { font-size: 18px; }
+/* icon-wrap：彩色图标容器（高保真新增，T15.74）*/
+.admin-kpi-card__icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--pc-bg-stripe, #F8FAFC);
+}
 .admin-kpi-card__value {
   font-size: 32px;
   font-weight: 700;
-  color: var(--pc-text-title, #0F172A);
+  color: var(--pc-text-h1, #1C2B4A);
   line-height: 1;
 }
 .admin-kpi-card__value--success { color: var(--color-success, #10B981); }
@@ -349,8 +391,10 @@ onMounted(loadData)
   border: 1px solid var(--pc-border, #E2E8F0);
   border-radius: var(--radius-lg, 12px);
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: var(--pc-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+  transition: box-shadow var(--duration-micro, 150ms) ease;
 }
+.admin-card:hover { box-shadow: var(--pc-shadow-md, 0 4px 12px rgba(0,0,0,0.08)); }
 .admin-card--full { grid-column: 1; }
 .admin-card__header {
   display: flex;
@@ -432,6 +476,52 @@ onMounted(loadData)
   text-align: center;
   font-size: 13px;
   color: var(--pc-text-muted, #94A3B8);
+}
+
+/* 筛选标签（T15.74 高保真新增，用于隐患清单筛选）*/
+.admin-table-filter-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--pc-border, #E2E8F0);
+  overflow-x: auto;
+}
+.admin-filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--pc-text-muted, #64748B);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-micro, 150ms) ease;
+}
+.admin-filter-tab:hover { color: var(--pc-text-body, #374151); }
+.admin-filter-tab--active {
+  color: var(--pc-primary, #1B6FE8);
+  border-bottom-color: var(--pc-primary, #1B6FE8);
+  font-weight: 500;
+}
+.admin-filter-tab__count {
+  min-width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--pc-bg-stripe, #F8FAFC);
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  color: var(--pc-text-muted, #64748B);
+}
+.admin-filter-tab--active .admin-filter-tab__count {
+  background: var(--pc-primary-soft, #EFF6FF);
+  color: var(--pc-primary, #1B6FE8);
 }
 
 /* ③ 演示控制台 */
