@@ -3,6 +3,7 @@ import AdminDashboardView from "@/views/admin/AdminDashboardView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
+import ScreenAlarmDispatchView from "@/views/screen/ScreenAlarmDispatchView.vue"
 import AdminLayout from "@/layouts/AdminLayout.vue"
 import H5Layout from "@/layouts/H5Layout.vue"
 import H5MineView from "@/views/h5/H5MineView.vue"
@@ -31,6 +32,12 @@ export const routes: RouteRecordRaw[] = [
     name: "screen-home",
     component: ScreenHomeView,
     meta: { title: "大屏首页" }
+  },
+  {
+    path: "/screen/alarm-dispatch",
+    name: "screen-alarm-dispatch",
+    component: ScreenAlarmDispatchView,
+    meta: { title: "告警派遣中心" }
   },
   // 管理端：使用 AdminLayout 嵌套子路由（需要登录）
   {
