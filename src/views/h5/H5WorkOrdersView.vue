@@ -44,22 +44,34 @@
             <span v-if="isOverdue(item.dispatchTime)" class="h5-sla__tag">逾期</span>
           </span>
 
-          <!-- 接单按钮（h5-accept-btn） -->
-          <button
-            v-if="item.status === 'PENDING'"
-            class="h5-accept-btn"
-            data-testid="h5-accept-btn"
-            @click="onAccept(item)"
-          >
-            接单
-          </button>
-          <button
-            v-else-if="item.status === 'PROCESSING'"
-            class="h5-accept-btn h5-accept-btn--processing"
-            @click="onDispose(item)"
-          >
-            去处置
-          </button>
+          <!-- 处置效率区（h5-disposal-flow）T15.70 P1：H5 突出处置效率和现场证据 -->
+          <div class="h5-disposal-flow">
+            <!-- 接单按钮（h5-accept-btn） -->
+            <button
+              v-if="item.status === 'PENDING'"
+              class="h5-accept-btn"
+              data-testid="h5-accept-btn"
+              @click="onAccept(item)"
+            >
+              接单
+            </button>
+            <button
+              v-else-if="item.status === 'PROCESSING'"
+              class="h5-accept-btn h5-accept-btn--processing"
+              @click="onDispose(item)"
+            >
+              去处置
+            </button>
+
+            <!-- 现场证据入口（h5-evidence-entry） -->
+            <router-link
+              v-if="item.status === 'PROCESSING'"
+              class="h5-evidence-entry"
+              :to="`/h5/work-orders/${item.id}`"
+            >
+              上传现场证据
+            </router-link>
+          </div>
         </div>
       </li>
 

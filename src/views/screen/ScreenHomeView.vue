@@ -43,9 +43,10 @@
     </header>
 
     <!-- ② 主内容区：左面板 + 地图 + 右面板 -->
-    <main class="screen-main">
-      <!-- 左侧隐患清单（screen-hazard-list） -->
-      <aside class="screen-panel screen-panel--left screen-glass-card" data-testid="screen-hazard-list">
+    <!-- screen-situation：最高优先级区域（T15.70 三端信息层级：大屏突出房屋隐患和态势） -->
+    <main class="screen-main screen-situation">
+      <!-- 左侧隐患清单（screen-hazard-list）data-priority="1"：P1 最高优先信息 -->
+      <aside class="screen-panel screen-panel--left screen-glass-card" data-testid="screen-hazard-list" data-priority="1">
         <div class="screen-panel__title">
           <span class="screen-panel__title-bar" />
           重点隐患清单

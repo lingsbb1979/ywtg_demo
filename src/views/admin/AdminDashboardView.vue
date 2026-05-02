@@ -18,8 +18,8 @@
         <div class="admin-kpi-card__sub">开放隐患：{{ kpi.openHazards }} 处</div>
       </div>
 
-      <!-- 待办工单 -->
-      <div class="admin-kpi-card admin-kpi-card--workorder" data-testid="admin-kpi-workorders">
+      <!-- 待办工单（T15.70 P1：管理端最高优先信息） -->
+      <div class="admin-kpi-card admin-kpi-card--workorder" data-testid="admin-kpi-workorders" data-priority="1">
         <div class="admin-kpi-card__header">
           <span class="admin-kpi-card__label">待处理工单</span>
           <span class="admin-kpi-card__icon admin-kpi-card__icon--workorder">📋</span>
@@ -61,7 +61,27 @@
       </div>
     </div>
 
-    <!-- ② 主内容区：告警 + 演示控制 -->
+    <!-- ② 快速数据操作区（admin-quick-actions），T15.70 P1：管理端突出待办和数据操作 -->
+    <div class="admin-quick-actions" data-testid="admin-quick-actions">
+      <router-link class="admin-quick-btn" to="/admin/alarms">
+        <span class="admin-quick-btn__icon">⚠</span>
+        <span class="admin-quick-btn__label">告警确认 / 派单</span>
+      </router-link>
+      <router-link class="admin-quick-btn" to="/admin/work-orders">
+        <span class="admin-quick-btn__icon">✓</span>
+        <span class="admin-quick-btn__label">工单核查销号</span>
+      </router-link>
+      <router-link class="admin-quick-btn" to="/admin/buildings">
+        <span class="admin-quick-btn__icon">▦</span>
+        <span class="admin-quick-btn__label">建筑档案</span>
+      </router-link>
+      <router-link class="admin-quick-btn" to="/admin/telemetry">
+        <span class="admin-quick-btn__icon">∿</span>
+        <span class="admin-quick-btn__label">实时采集</span>
+      </router-link>
+    </div>
+
+    <!-- ③ 主内容区：告警 + 演示控制 -->
     <div class="admin-dashboard-body">
       <!-- 近期告警列表 -->
       <div class="admin-card admin-card--full">
