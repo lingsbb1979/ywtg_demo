@@ -865,3 +865,83 @@ export function listEvidences(orderId: number): EvidenceItem[] {
       createTime:   r.create_time,
     }))
 }
+
+// ── T15.56 archiveWorkOrder ───────────────────────────────────────────────────
+
+export interface ArchiveWorkOrderResult {
+  ok:         boolean
+  archiveId?: number
+  error?:     string
+}
+
+/**
+ * 工单销号（FINISHED）后闭环归档：
+ *   - 按 building_id 查找 digital_archive，不存在则新建（status=10）
+ *   - 更新 last_audit_time 为 work_order.check_time
+ *   - 追加 archive_relation（source_type=2 工单，relation_type=2 处置记录）
+ */
+export function archiveWorkOrder(id: number): ArchiveWorkOrderResult {
+  const orders = getTable<{
+    id: number; status: string; building_id: number; check_time: string | null
+  }>("work_order")
+  const order = orders.find((r) => r.id === id)
+
+  if (!order) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
+  if (order.status !== "FINISHED") {
+    return { ok: false, error: `工单 id=${id} 当前状态为 ${order.status}，不可归档` }
+  }
+
+  const now        = order.check_time
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+  const buildingId = order.building_id
+
+  // ── 查找或新建 digital_archive ────────────────────────────────────────────
+  const archives = getTable<{
+    id: number; building_id: number; base_info_version: string | null
+    last_audit_time: string | null; status: number
+  }>("digital_archive")
+
+  let archive = archives.find((a) => a.building_id === buildingId)
+  let archiveId: number
+
+  if (archive) {
+    archiveId = archive.id
+    setTable("digital_archive", archives.map((a) =>
+      a.id === archiveId ? { ...a, last_audit_time: now } : a
+    ))
+  } else {
+    archiveId = archives.length > 0
+      ? Math.max(...archives.map((a) => Number(a.id) || 0)) + 1
+      : 1
+    setTable("digital_archive", [
+      ...archives,
+      {
+        id:                 archiveId,
+        building_id:        buildingId,
+        base_info_version:  new Date().toISOString().slice(0, 10).replace(/-/g, "") + "_" + new Date().toTimeString().slice(0, 8).replace(/:/g, ""),
+        last_audit_time:    now,
+        status:             10,
+      },
+    ])
+  }
+
+  // ── 追加 archive_relation ─────────────────────────────────────────────────
+  const rels    = getTable<{ id: number }>("archive_relation")
+  const relNewId = rels.length > 0
+    ? Math.max(...rels.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  setTable("archive_relation", [
+    ...rels,
+    {
+      id:            relNewId,
+      archive_id:    archiveId,
+      source_type:   2,
+      source_id:     id,
+      relation_type: 2,
+      create_time:   now,
+    },
+  ])
+
+  return { ok: true, archiveId }
+}
