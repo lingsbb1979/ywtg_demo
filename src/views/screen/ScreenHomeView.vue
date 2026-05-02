@@ -396,6 +396,7 @@ onUnmounted(() => clearInterval(timer))
   border: 1px solid var(--screen-border-glow, rgba(0,168,255,0.30));
   border-radius: var(--radius-lg, 12px);
   backdrop-filter: blur(12px);
+  box-shadow: var(--screen-shadow-card, 0 0 0 1px rgba(0,168,255,0.20), 0 4px 24px rgba(0,0,0,0.40));
 }
 .screen-panel__title {
   display: flex;
