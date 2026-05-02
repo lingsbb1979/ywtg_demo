@@ -90,6 +90,12 @@
           <div class="screen-map__title-bar">
             <span class="screen-panel__title-bar" />
             佳木斯市历史建筑分布图
+            <span
+              v-if="mapError"
+              class="screen-map__fallback-badge"
+              data-testid="map-fallback-toggle"
+              title="地图加载失败，已切换到建筑列表模式"
+            >列表模式</span>
           </div>
           <!-- 地图失败降级：建筑列表模式 -->
           <div class="screen-map__fallback-list">
@@ -169,6 +175,7 @@
           <div class="screen-panel__divider" />
           <div class="screen-quick-links">
             <router-link class="screen-quick-link" to="/screen/work-orders">工单中心</router-link>
+            <router-link class="screen-quick-link screen-quick-link--emergency" to="/screen/emergency" data-testid="emergency-link">应急处置</router-link>
             <router-link class="screen-quick-link" to="/admin/demo-console">演示控制台</router-link>
           </div>
         </div>
@@ -240,6 +247,13 @@ const selectedPoint = ref<MapPoint | null>(null)
 const hazardList  = ref<HazardListItem[]>([])
 const board       = ref<WorkOrderBoard>({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 })
 const currentTime = ref("")
+
+/**
+ * T15.118 — 地图失败列表兜底模式。
+ * Demo 中无真实地图组件，始终使用建筑列表展示；
+ * 若未来接入真实地图且加载失败，可将 mapError 置 true 切换兜底。
+ */
+const mapError = ref(false)
 
 // ── 告警入口：取最高风险的前 4 条用于右侧告警入口区域（data-zone="alarm-entry"）──
 const alarmEntryItems = computed<HazardListItem[]>(() => hazardList.value.slice(0, 4))
