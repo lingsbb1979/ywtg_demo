@@ -113,3 +113,82 @@ export function triggerOrangeCrack(options: CrackOptions = {}): void {
   }
   setTable("alarm_record", [...rows, newAlarm])
 }
+
+// ── T15.66 triggerRedAlert ────────────────────────────────────────────────────
+
+export interface RedAlertOptions {
+  nowStr?: string
+}
+
+let _tiltSeq = 0
+
+/**
+ * 追加一条 B012 红色倾斜告警 + 配套 PENDING 工单。
+ */
+export function triggerRedAlert(options: RedAlertOptions = {}): void {
+  const { nowStr = "2024-03-08 11:00:00" } = options
+  _tiltSeq++
+
+  // ─ alarm_record ─
+  const alarms = getTable<{ id?: number }>("alarm_record")
+  const alarmId = alarms.length > 0
+    ? Math.max(...alarms.map((r) => r.id ?? 0)) + 1
+    : 1
+  setTable("alarm_record", [...alarms, {
+    id:            alarmId,
+    alarm_id:      "ALM-TILT-012",
+    alarm_code:    `TILT-012-${String(_tiltSeq).padStart(3, "0")}`,
+    device_id:     112,
+    building_id:   1012,
+    sensor_id:     212,
+    alarm_title:   "L栋倾斜超限",
+    alarm_type:    "TILT",
+    alarm_level:   "RED",
+    alarm_content: "倾斜角超出红色阈值",
+    root_cause:    null,
+    aggregate_flag: 0,
+    raw_data:      null,
+    status:        "ACTIVE",
+    trigger_time:  nowStr,
+    handle_time:   null,
+    handle_user:   null,
+    create_time:   nowStr,
+    update_time:   nowStr,
+  }])
+
+  // ─ work_order ─
+  const orders = getTable<{ id?: number }>("work_order")
+  const orderId = orders.length > 0
+    ? Math.max(...orders.map((r) => r.id ?? 0)) + 1
+    : 1
+  setTable("work_order", [...orders, {
+    id:              orderId,
+    order_no:        `WO-TILT-${String(orderId).padStart(4, "0")}`,
+    order_code:      `WO-TILT-${String(orderId).padStart(4, "0")}`,
+    alarm_id:        "ALM-TILT-012",
+    building_id:     1012,
+    order_type:      "INSPECT",
+    order_level:     "URGENT",
+    alarm_level:     "RED",
+    dispatch_type:   "ASSIGN",
+    dispatch_org_id: 10,
+    dispatch_user_id: 100,
+    dispatch_org:    "安全监测部",
+    receive_org_id:  20,
+    receive_user_id: null,
+    receive_org:     "现场维修组",
+    receive_role_key: "FIELD_WORKER",
+    assignee_id:     null,
+    priority:        1,
+    status:          "PENDING",
+    current_node:    "DISPATCH",
+    source_id:       null,
+    source_type:     null,
+    dispatch_time:   nowStr,
+    accept_time:     null,
+    finish_time:     null,
+    check_time:      null,
+    create_time:     nowStr,
+    update_time:     nowStr,
+  }])
+}
