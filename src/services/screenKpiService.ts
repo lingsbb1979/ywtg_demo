@@ -218,3 +218,76 @@ export function selectWorkOrderBoard(options: WorkOrderBoardOptions = {}): WorkO
 
   return { pending, processing, checking, finished, total: orders.length, overdueCount }
 }
+
+// ── T15.63 selectH5TodoList ───────────────────────────────────────────────────
+
+export interface H5TodoQuery {
+  assigneeId?:   number
+  receiveOrgId?: number
+  limit?:        number
+}
+
+export interface H5TodoItem {
+  id:           number
+  orderNo:      string
+  status:       string
+  orderLevel:   string | null
+  alarmLevel:   string | null
+  buildingId:   number | null
+  buildingName: string | null
+  alarmId:      string | null
+  alarmTitle:   string | null
+  dispatchTime: string | null
+  currentNode:  string | null
+}
+
+const ORDER_LEVEL_SORT: Record<string, number> = { URGENT: 3, HIGH: 2, NORMAL: 1 }
+
+/**
+ * H5 外勤待办：PENDING + PROCESSING 工单，按 orderLevel 降序、同级 dispatchTime 升序。
+ */
+export function selectH5TodoList(query: H5TodoQuery = {}): H5TodoItem[] {
+  const { assigneeId, receiveOrgId, limit = 50 } = query
+
+  const TODO_SET = new Set(["PENDING", "PROCESSING"])
+
+  const orders = getTable<{
+    id: number; order_no: string; status: string
+    order_level: string | null; alarm_level: string | null
+    building_id: number | null; alarm_id: string | null
+    assignee_id: number | null; receive_org_id: number | null
+    dispatch_time: string | null; current_node: string | null
+  }>("work_order")
+
+  const spaces  = getTable<{ id: number; name: string }>("iot_space")
+  const alarms  = getTable<{ alarm_id: string; alarm_title: string | null }>("alarm_record")
+
+  const spaceMap = new Map(spaces.map((s) => [s.id, s.name]))
+  const alarmMap = new Map(alarms.map((a) => [a.alarm_id, a.alarm_title ?? null]))
+
+  let rows = orders.filter((o) => TODO_SET.has(o.status))
+
+  if (assigneeId   != null) rows = rows.filter((o) => o.assignee_id   === assigneeId)
+  if (receiveOrgId != null) rows = rows.filter((o) => o.receive_org_id === receiveOrgId)
+
+  rows.sort((a, b) => {
+    const la = ORDER_LEVEL_SORT[a.order_level ?? ""] ?? 0
+    const lb = ORDER_LEVEL_SORT[b.order_level ?? ""] ?? 0
+    if (lb !== la) return lb - la
+    return (a.dispatch_time ?? "") < (b.dispatch_time ?? "") ? -1 : 1
+  })
+
+  return rows.slice(0, limit).map((o) => ({
+    id:           o.id,
+    orderNo:      o.order_no,
+    status:       o.status,
+    orderLevel:   o.order_level   ?? null,
+    alarmLevel:   o.alarm_level   ?? null,
+    buildingId:   o.building_id   ?? null,
+    buildingName: o.building_id != null ? (spaceMap.get(o.building_id) ?? null) : null,
+    alarmId:      o.alarm_id      ?? null,
+    alarmTitle:   o.alarm_id      ? (alarmMap.get(o.alarm_id) ?? null) : null,
+    dispatchTime: o.dispatch_time ?? null,
+    currentNode:  o.current_node  ?? null,
+  }))
+}
