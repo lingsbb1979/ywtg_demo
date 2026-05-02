@@ -1,7 +1,9 @@
 import type { RouteRecordRaw } from "vue-router"
 import AdminDashboardView from "@/views/admin/AdminDashboardView.vue"
+import AdminAlarmsView from "@/views/admin/AdminAlarmsView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
+import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
 import ScreenAlarmDispatchView from "@/views/screen/ScreenAlarmDispatchView.vue"
 import AdminLayout from "@/layouts/AdminLayout.vue"
@@ -67,6 +69,12 @@ export const routes: RouteRecordRaw[] = [
         name: "admin-work-order-detail",
         component: WorkOrderDetailView,
         meta: { title: "工单详情" }
+      },
+      {
+        path: "alarms", // /admin/alarms
+        name: "admin-alarms",
+        component: AdminAlarmsView,
+        meta: { title: "告警中心" }
       }
     ]
   },
@@ -86,6 +94,12 @@ export const routes: RouteRecordRaw[] = [
         name: "h5-work-orders",
         component: H5WorkOrdersView,
         meta: { title: "H5 待办工单" }
+      },
+      {
+        path: "work-orders/:id",
+        name: "h5-work-order-detail",
+        component: H5WorkOrderDetailView,
+        meta: { title: "工单详情" }
       },
       {
         path: "mine",
