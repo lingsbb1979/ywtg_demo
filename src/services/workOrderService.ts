@@ -822,3 +822,46 @@ export function addEvidence(
 
   return { ok: true, evidenceId: newId }
 }
+
+// ── T15.55 listEvidences ──────────────────────────────────────────────────────
+
+export interface EvidenceItem {
+  id:           number
+  orderId:      number
+  userId:       number | null
+  gpsLocation:  string | null
+  addressDesc:  string | null
+  imageUrls:    string | null
+  videoUrl:     string | null
+  evidenceDesc: string | null
+  evidenceTime: string
+  createTime:   string
+}
+
+/**
+ * PC 工单详情查询 H5 提交的全部证据列表，按 disposal_time 升序。
+ */
+export function listEvidences(orderId: number): EvidenceItem[] {
+  const rows = getTable<{
+    id: number; order_id: number; user_id: number | null
+    gps_location: string | null; address_desc: string | null
+    image_urls: string | null; video_url: string | null
+    disposal_desc: string | null; disposal_time: string; create_time: string
+  }>("work_order_disposal")
+
+  return rows
+    .filter((r) => r.order_id === orderId)
+    .sort((a, b) => (a.disposal_time > b.disposal_time ? 1 : -1))
+    .map((r) => ({
+      id:           r.id,
+      orderId:      r.order_id,
+      userId:       r.user_id       ?? null,
+      gpsLocation:  r.gps_location  ?? null,
+      addressDesc:  r.address_desc  ?? null,
+      imageUrls:    r.image_urls    ?? null,
+      videoUrl:     r.video_url     ?? null,
+      evidenceDesc: r.disposal_desc ?? null,
+      evidenceTime: r.disposal_time,
+      createTime:   r.create_time,
+    }))
+}
