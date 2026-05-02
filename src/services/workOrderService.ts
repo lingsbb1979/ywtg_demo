@@ -1,5 +1,5 @@
 /**
- * T15.47 / T15.48 — 工单服务 workOrderService
+ * T15.47 / T15.48 / T15.49 — 工单服务 workOrderService
  *
  * 从 localStorage（SQLiteMirror）的 work_order 表中查询工单，
  * 支持按状态、等级、责任单位、建筑、关键字筛选，
@@ -8,9 +8,10 @@
  * 导出：
  *   listWorkOrders(query?)  — 工单列表查询（T15.47）
  *   getWorkOrder(id)        — 工单详情查询（T15.48）
+ *   createWorkOrder(payload) — 工单创建（T15.49）
  */
 
-import { getTable } from "./sqliteMirrorRepository"
+import { getTable, setTable } from "./sqliteMirrorRepository"
 
 // ── 类型定义 ──────────────────────────────────────────────────────────────────
 
@@ -364,4 +365,91 @@ export function getWorkOrder(id: number): WorkOrderDetail | null {
     logs,
     disposals,
   }
+}
+
+// ── T15.49 createWorkOrder ────────────────────────────────────────────────────
+
+export interface CreateWorkOrderPayload {
+  alarmId?:        string | null
+  buildingId?:     number | null
+  alarmLevel?:     string | null
+  orderLevel?:     string | null
+  orderType?:      string | null
+  dispatchOrgId?:  number | null
+  dispatchUserId?: number | null
+  receiveOrgId?:   number | null
+  receiveRoleKey?: string | null
+  dispatchTime?:   string
+  operator?:       string | null
+  operatorId?:     number | null
+}
+
+export interface CreateWorkOrderResult {
+  ok:      boolean
+  orderId: number
+  orderNo: string
+}
+
+/**
+ * 创建工单：写入 work_order（status=PENDING）和首条 work_order_log（DISPATCH 节点）。
+ * id 取已有工单 max(id)+1，orderNo 格式 WO-YYYYMMDDHHmmss-XXXX。
+ */
+export function createWorkOrder(payload: CreateWorkOrderPayload): CreateWorkOrderResult {
+  const now = payload.dispatchTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  const orderRows = getTable<{ id: number }>("work_order")
+  const newId     = orderRows.length > 0
+    ? Math.max(...orderRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+  const orderNo   = `WO-${now.replace(/[-: ]/g, "").slice(0, 14)}-${String(newId).padStart(4, "0")}`
+
+  const newOrder: Record<string, unknown> = {
+    id:               newId,
+    order_no:         orderNo,
+    order_code:       orderNo,
+    alarm_id:         payload.alarmId        ?? null,
+    building_id:      payload.buildingId     ?? null,
+    alarm_level:      payload.alarmLevel     ?? null,
+    order_level:      payload.orderLevel     ?? null,
+    order_type:       payload.orderType      ?? null,
+    dispatch_type:    "AUTO",
+    dispatch_org_id:  payload.dispatchOrgId  ?? null,
+    dispatch_user_id: payload.dispatchUserId ?? null,
+    receive_org_id:   payload.receiveOrgId   ?? null,
+    receive_role_key: payload.receiveRoleKey ?? null,
+    status:           "PENDING",
+    current_node:     "DISPATCH",
+    source_type:      payload.alarmId ? "ALARM" : null,
+    dispatch_time:    now,
+    create_time:      now,
+    update_time:      now,
+  }
+
+  setTable("work_order", [...orderRows, newOrder])
+
+  // 首条流程日志（派单节点）
+  const logRows   = getTable<{ id: number }>("work_order_log")
+  const logId     = logRows.length > 0
+    ? Math.max(...logRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  const newLog: Record<string, unknown> = {
+    id:            logId,
+    order_id:      newId,
+    node_type:     "DISPATCH",
+    node_name:     "派单",
+    operator_id:   payload.operatorId ?? null,
+    operator_name: payload.operator   ?? null,
+    operator:      payload.operator   ?? null,
+    action_desc:   "系统派单",
+    action_time:   now,
+    detail_json:   null,
+    remark:        null,
+    create_time:   now,
+  }
+
+  setTable("work_order_log", [...logRows, newLog])
+
+  return { ok: true, orderId: newId, orderNo }
 }
