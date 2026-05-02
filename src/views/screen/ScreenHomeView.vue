@@ -1,4 +1,16 @@
 <template>
+  <!--
+    T15.71 低保真布局定型（wireframe）：/screen/home 版面关系
+    ┌──────────── header: zone:kpi ────────────────────────────────────┐
+    │  监测建筑 │ 活跃告警 │ 开放隐患 │ 工单闭环率                      │
+    ├──────────────────────────────────────────────────────────────────┤
+    │ zone:hazard-list │ zone:map          │ zone:workorder-board [上]  │
+    │ 重点隐患清单      │ 佳木斯历史建筑     │ 工单进度看板               │
+    │ 左侧面板 260px   │ 分布图 (中央弹性)  ├────────────────────────────┤
+    │                  │                   │ zone:alarm-entry [下]      │
+    │                  │                   │ 实时告警入口                │
+    └──────────────────┴───────────────────┴────────────────────────────┘
+  -->
   <div class="screen-root screen-bg">
     <!-- ① 顶部标题栏（screen-header） -->
     <header class="screen-header" data-testid="screen-header">
@@ -6,7 +18,7 @@
         <span class="screen-header__logo-text">国</span>
         <h1 class="screen-header__title">佳木斯历史建筑智慧安全监测平台</h1>
       </div>
-      <div class="screen-header__center screen-kpi" data-testid="screen-kpi">
+      <div class="screen-header__center screen-kpi" data-testid="screen-kpi" data-zone="kpi">
         <!-- KPI 区：总建筑数 / 活跃告警 / 在处工单 / 工单闭环率 -->
         <div class="screen-kpi-item">
           <span class="screen-kpi-item__label">监测建筑</span>
@@ -46,7 +58,7 @@
     <!-- screen-situation：最高优先级区域（T15.70 三端信息层级：大屏突出房屋隐患和态势） -->
     <main class="screen-main screen-situation">
       <!-- 左侧隐患清单（screen-hazard-list）data-priority="1"：P1 最高优先信息 -->
-      <aside class="screen-panel screen-panel--left screen-glass-card" data-testid="screen-hazard-list" data-priority="1">
+      <aside class="screen-panel screen-panel--left screen-glass-card" data-testid="screen-hazard-list" data-priority="1" data-zone="hazard-list">
         <div class="screen-panel__title">
           <span class="screen-panel__title-bar" />
           重点隐患清单
@@ -73,7 +85,7 @@
       </aside>
 
       <!-- 中央地图区（screen-map） -->
-      <section class="screen-map" data-testid="screen-map">
+      <section class="screen-map" data-testid="screen-map" data-zone="map">
         <div class="screen-map__container screen-glass-card">
           <div class="screen-map__title-bar">
             <span class="screen-panel__title-bar" />
@@ -99,43 +111,75 @@
         </div>
       </section>
 
-      <!-- 右侧工单看板（screen-workorder-board） -->
+      <!-- 右侧面板：工单进度 [上] + 告警入口 [下] -->
       <aside class="screen-panel screen-panel--right screen-glass-card" data-testid="screen-workorder-board">
-        <div class="screen-panel__title">
-          <span class="screen-panel__title-bar" />
-          工单进度看板
-        </div>
-        <div class="screen-board">
-          <div class="screen-board-item screen-board-item--pending">
-            <span class="screen-board-item__count tabular-nums">{{ board.pending }}</span>
-            <span class="screen-board-item__label">待处理</span>
+        <!-- 工单进度看板区域 (data-zone="workorder-board") -->
+        <div data-zone="workorder-board">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar" />
+            工单进度看板
           </div>
-          <div class="screen-board-item screen-board-item--processing">
-            <span class="screen-board-item__count tabular-nums">{{ board.processing }}</span>
-            <span class="screen-board-item__label">处理中</span>
+          <div class="screen-board">
+            <div class="screen-board-item screen-board-item--pending">
+              <span class="screen-board-item__count tabular-nums">{{ board.pending }}</span>
+              <span class="screen-board-item__label">待处理</span>
+            </div>
+            <div class="screen-board-item screen-board-item--processing">
+              <span class="screen-board-item__count tabular-nums">{{ board.processing }}</span>
+              <span class="screen-board-item__label">处理中</span>
+            </div>
+            <div class="screen-board-item screen-board-item--checking">
+              <span class="screen-board-item__count tabular-nums">{{ board.checking }}</span>
+              <span class="screen-board-item__label">待核查</span>
+            </div>
+            <div class="screen-board-item screen-board-item--finished">
+              <span class="screen-board-item__count tabular-nums">{{ board.finished }}</span>
+              <span class="screen-board-item__label">已销号</span>
+            </div>
           </div>
-          <div class="screen-board-item screen-board-item--checking">
-            <span class="screen-board-item__count tabular-nums">{{ board.checking }}</span>
-            <span class="screen-board-item__label">待核查</span>
+          <div v-if="board.overdueCount > 0" class="screen-board-overdue">
+            <span class="screen-board-overdue__dot" />
+            逾期工单：<strong>{{ board.overdueCount }}</strong> 条，请及时督办
           </div>
-          <div class="screen-board-item screen-board-item--finished">
-            <span class="screen-board-item__count tabular-nums">{{ board.finished }}</span>
-            <span class="screen-board-item__label">已销号</span>
+          <div class="screen-panel__divider" />
+          <div class="screen-quick-links">
+            <router-link class="screen-quick-link" to="/screen/work-orders">工单中心</router-link>
+            <router-link class="screen-quick-link" to="/admin/demo-console">演示控制台</router-link>
           </div>
         </div>
-        <div v-if="board.overdueCount > 0" class="screen-board-overdue">
-          <span class="screen-board-overdue__dot" />
-          逾期工单：<strong>{{ board.overdueCount }}</strong> 条，请及时督办
-        </div>
-        <div class="screen-panel__divider" />
-        <div class="screen-panel__title">
-          <span class="screen-panel__title-bar" />
-          快捷操作
-        </div>
-        <div class="screen-quick-links">
-          <router-link class="screen-quick-link" to="/screen/alarm-dispatch">告警派遣</router-link>
-          <router-link class="screen-quick-link" to="/screen/work-orders">工单中心</router-link>
-          <router-link class="screen-quick-link" to="/admin/demo-console">演示控制台</router-link>
+
+        <!-- 告警入口区域 (data-zone="alarm-entry") -->
+        <div class="screen-alarm-entry" data-zone="alarm-entry" data-testid="screen-alarm-entry">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar screen-panel__title-bar--warn" />
+            实时告警入口
+            <span
+              class="screen-panel__badge screen-panel__badge--warn"
+              :class="kpi.activeAlarms > 0 ? 'screen-panel__badge--active' : ''"
+            >{{ kpi.activeAlarms }}</span>
+          </div>
+          <ul class="screen-alarm-entry__list">
+            <li
+              v-for="h in alarmEntryItems"
+              :key="h.id"
+              class="screen-alarm-entry__item"
+            >
+              <span class="screen-alarm-entry__dot risk-dot" :class="`risk-dot--${h.alarmLevel.toLowerCase()}`" />
+              <span class="screen-alarm-entry__title">{{ h.alarmTitle ?? h.alarmId }}</span>
+              <span
+                class="screen-alarm-entry__level badge-screen"
+                :class="`badge-screen--${h.alarmLevel.toLowerCase()}`"
+              >{{ h.alarmLevel }}</span>
+            </li>
+            <li v-if="alarmEntryItems.length === 0" class="screen-alarm-entry__empty">暂无活跃告警</li>
+          </ul>
+          <router-link
+            class="screen-alarm-entry__link"
+            to="/screen/alarm-dispatch"
+            data-testid="screen-alarm-entry-link"
+          >
+            查看全部告警 →
+          </router-link>
         </div>
       </aside>
     </main>
@@ -152,7 +196,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue"
+import { ref, computed, onMounted, onUnmounted } from "vue"
 import {
   selectScreenKpi,
   selectMapPoints,
@@ -170,6 +214,9 @@ const mapPoints   = ref<MapPoint[]>([])
 const hazardList  = ref<HazardListItem[]>([])
 const board       = ref<WorkOrderBoard>({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 })
 const currentTime = ref("")
+
+// ── 告警入口：取最高风险的前 4 条用于右侧告警入口区域（data-zone="alarm-entry"）──
+const alarmEntryItems = computed<HazardListItem[]>(() => hazardList.value.slice(0, 4))
 
 function formatTime(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0")
@@ -571,6 +618,91 @@ onUnmounted(() => clearInterval(timer))
 }
 .screen-quick-link:hover {
   background: rgba(27,111,232,0.30);
+}
+
+/* ===== 告警入口区域 (data-zone="alarm-entry") ===== */
+.screen-alarm-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--screen-border-line, rgba(255,255,255,0.08));
+  padding-top: 10px;
+  flex: 1;
+  min-height: 0;
+}
+.screen-alarm-entry__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow: hidden;
+}
+.screen-alarm-entry__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: background 150ms;
+}
+.screen-alarm-entry__item:hover { background: rgba(255,255,255,0.06); }
+.screen-alarm-entry__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.screen-alarm-entry__title {
+  flex: 1;
+  font-size: 11px;
+  color: var(--screen-text-body, rgba(255,255,255,0.75));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.screen-alarm-entry__level {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.screen-alarm-entry__empty {
+  font-size: 12px;
+  color: var(--screen-text-muted, rgba(255,255,255,0.45));
+  text-align: center;
+  padding: 12px 0;
+}
+.screen-alarm-entry__link {
+  display: block;
+  padding: 7px 12px;
+  background: rgba(255,138,61,0.12);
+  border: 1px solid rgba(255,138,61,0.30);
+  border-radius: 6px;
+  color: var(--risk-orange, #FF8A3D);
+  font-size: 12px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 150ms;
+}
+.screen-alarm-entry__link:hover {
+  background: rgba(255,138,61,0.22);
+}
+.screen-panel__badge--warn {
+  background: rgba(255,138,61,0.15);
+  color: var(--risk-orange, #FF8A3D);
+  border: 1px solid rgba(255,138,61,0.30);
+}
+.screen-panel__badge--active {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.screen-panel__title-bar--warn {
+  background: linear-gradient(180deg, var(--risk-orange, #FF8A3D) 0%, transparent 100%);
 }
 
 /* ===== 底部状态栏 ===== */
