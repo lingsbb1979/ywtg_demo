@@ -280,3 +280,35 @@ export function triggerTimeoutSupervision(options: SupervisionOptions = {}): voi
     deadline:         _fmtTs(_parseTs(nowStr) + 24 * 60 * 60 * 1000),
   }])
 }
+
+// ── T15.68 simulateDataRecovery ───────────────────────────────────────────────
+
+export interface RecoveryOptions {
+  nowStr?: string
+}
+
+/**
+ * 将 B003 裂缝活跃告警状态改为 CLOSED（模拟数据恢复）。
+ * 只修改 building_id=1003 && alarm_type=CRACK && status=ACTIVE 的告警。
+ */
+export function simulateDataRecovery(options: RecoveryOptions = {}): void {
+  const { nowStr = "2024-03-08 12:00:00" } = options
+
+  const alarms = getTable<{
+    id: number; building_id: number | null; alarm_type: string | null
+    status: string; handle_time: string | null
+  }>("alarm_record")
+
+  const updated = alarms.map((a) => {
+    if (
+      a.building_id === 1003 &&
+      a.alarm_type  === "CRACK" &&
+      a.status      === "ACTIVE"
+    ) {
+      return { ...a, status: "CLOSED", handle_time: nowStr }
+    }
+    return a
+  })
+
+  setTable("alarm_record", updated)
+}
