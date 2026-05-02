@@ -453,3 +453,69 @@ export function createWorkOrder(payload: CreateWorkOrderPayload): CreateWorkOrde
 
   return { ok: true, orderId: newId, orderNo }
 }
+
+// ── T15.50 acceptWorkOrder ────────────────────────────────────────────────────
+
+export interface AcceptWorkOrderOptions {
+  acceptTime?:  string
+  operator?:    string | null
+  operatorId?:  number | null
+}
+
+export interface AcceptWorkOrderResult {
+  ok:     boolean
+  error?: string
+}
+
+/**
+ * H5 接单：工单 status PENDING → PROCESSING，写入 accept_time 和接单日志。
+ */
+export function acceptWorkOrder(
+  id:      number,
+  options: AcceptWorkOrderOptions = {},
+): AcceptWorkOrderResult {
+  const rows = getTable<{
+    id: number; status: string; current_node: string
+    accept_time: string | null; update_time: string | null
+  }>("work_order")
+
+  const idx = rows.findIndex((r) => r.id === id)
+  if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
+
+  const row = rows[idx]
+  if (row.status !== "PENDING") {
+    return { ok: false, error: `工单 id=${id} 当前状态为 ${row.status}，不可接单` }
+  }
+
+  const now = options.acceptTime
+    ?? new Date().toISOString().replace("T", " ").slice(0, 19)
+
+  rows[idx] = { ...row, status: "PROCESSING", current_node: "HANDLE", accept_time: now, update_time: now }
+  setTable("work_order", rows)
+
+  // 追加接单日志
+  const logRows = getTable<{ id: number }>("work_order_log")
+  const logId   = logRows.length > 0
+    ? Math.max(...logRows.map((r) => Number(r.id) || 0)) + 1
+    : 1
+
+  setTable("work_order_log", [
+    ...logRows,
+    {
+      id:            logId,
+      order_id:      id,
+      node_type:     "ACCEPT",
+      node_name:     "接单",
+      operator_id:   options.operatorId ?? null,
+      operator_name: options.operator   ?? null,
+      operator:      options.operator   ?? null,
+      action_desc:   "外勤人员接单",
+      action_time:   now,
+      detail_json:   null,
+      remark:        null,
+      create_time:   now,
+    },
+  ])
+
+  return { ok: true }
+}
