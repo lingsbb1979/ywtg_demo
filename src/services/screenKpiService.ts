@@ -35,3 +35,72 @@ export function selectScreenKpi(): ScreenKpi {
 
   return { totalBuildings, openHazards, activeAlarms, closeRate }
 }
+
+// ── T15.60 selectMapPoints ────────────────────────────────────────────────────
+
+export type RiskLevel = "RED" | "ORANGE" | "YELLOW" | "GREEN"
+export type RiskColor = "red" | "orange" | "yellow" | "green"
+
+export interface MapPoint {
+  id:         number
+  spaceCode:  string
+  name:       string
+  latitude:   number | null
+  longitude:  number | null
+  riskLevel:  RiskLevel
+  color:      RiskColor
+  openCount:  number
+  summary:    string
+}
+
+const LEVEL_ORDER: Record<string, number> = { RED: 4, ORANGE: 3, YELLOW: 2, GREEN: 1 }
+const COLOR_MAP:   Record<RiskLevel, RiskColor> = {
+  RED: "red", ORANGE: "orange", YELLOW: "yellow", GREEN: "green",
+}
+
+/**
+ * 大屏中央地图建筑点位选择器：
+ * 返回每栋建筑的坐标、最高风险等级和弹窗摘要。
+ */
+export function selectMapPoints(): MapPoint[] {
+  const spaces = getTable<{
+    id: number; space_code: string; name: string; type: string
+    latitude: number | null; longitude: number | null
+  }>("iot_space")
+
+  const buildings = spaces.filter((s) => s.type === "2")
+  if (buildings.length === 0) return []
+
+  const CLOSED_SET = new Set(["CLOSED", "CANCELLED"])
+  const alarms     = getTable<{
+    building_id: number; alarm_level: string; status: string
+  }>("alarm_record")
+
+  return buildings.map((b) => {
+    const open = alarms.filter(
+      (a) => a.building_id === b.id && !CLOSED_SET.has(a.status)
+    )
+
+    let riskLevel: RiskLevel = "GREEN"
+    for (const a of open) {
+      if ((LEVEL_ORDER[a.alarm_level] ?? 0) > (LEVEL_ORDER[riskLevel] ?? 0)) {
+        riskLevel = a.alarm_level as RiskLevel
+      }
+    }
+
+    const openCount = open.length
+    const summary   = openCount > 0 ? `${openCount} 条未销号告警` : "安全"
+
+    return {
+      id:        b.id,
+      spaceCode: b.space_code,
+      name:      b.name,
+      latitude:  b.latitude  ?? null,
+      longitude: b.longitude ?? null,
+      riskLevel,
+      color:     COLOR_MAP[riskLevel],
+      openCount,
+      summary,
+    }
+  })
+}
