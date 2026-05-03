@@ -198,7 +198,7 @@ export function getAlarm(id: number): GetAlarmResult {
     update_time:   string | null
   }>("alarm_record")
 
-  const row = rows.find((r) => r.id === id)
+  const row = rows.find((r) => Number(r.id) === Number(id))
   if (!row) {
     return { ok: false, error: `alarm_record 中不存在 id=${id} 的告警` }
   }
@@ -316,7 +316,7 @@ export type ConfirmAlarmResult =
  */
 export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): ConfirmAlarmResult {
   const rows = getTable<Record<string, unknown>>("alarm_record")
-  const idx  = rows.findIndex((r) => r["id"] === id)
+  const idx  = rows.findIndex((r) => Number(r["id"]) === Number(id))
 
   if (idx === -1) {
     return { ok: false, error: `alarm_record 中不存在 id=${id} 的告警` }
@@ -377,7 +377,7 @@ export function dispatchAlarm(
 ): DispatchAlarmResult {
   // ── 1. 校验告警 ──────────────────────────────────────────────────────────
   const alarmRows = getTable<Record<string, unknown>>("alarm_record")
-  const alarmIdx  = alarmRows.findIndex((r) => r["id"] === alarmRecordId)
+  const alarmIdx  = alarmRows.findIndex((r) => Number(r["id"]) === Number(alarmRecordId))
 
   if (alarmIdx === -1) {
     return { ok: false, error: `alarm_record 中不存在 id=${alarmRecordId} 的告警` }
