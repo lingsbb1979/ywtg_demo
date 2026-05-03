@@ -4,6 +4,21 @@
  */
 import { getTable, resetTables, setTable } from "./sqliteMirrorRepository"
 
+// ── 时间辅助函数（置顶避免前向引用问题）─────────────────────────────────────────
+
+/** "YYYY-MM-DD HH:mm:ss" → ms */
+function _parseTs(s: string): number {
+  return Date.parse(s.replace(" ", "T"))
+}
+
+/** ms → "YYYY-MM-DD HH:mm:ss" */
+function _fmtTs(ms: number): string {
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 // ── 种子数据 ──────────────────────────────────────────────────────────────────
 
 const SEED_SPACES = [
@@ -15,6 +30,9 @@ const SEED_SPACES = [
     is_outdoor: 0, create_time: "2024-01-01 00:00:00" },
   { id: 1003, parent_id: null, space_code: "B003", name: "历史建筑C", short_name: "C栋",
     type: "2", latitude: 46.82, longitude: 130.32, address_desc: "佳木斯市向阳区C路3号",
+    is_outdoor: 0, create_time: "2024-01-01 00:00:00" },
+  { id: 1012, parent_id: null, space_code: "B012", name: "前进路俄式民居", short_name: "L栋",
+    type: "2", latitude: 46.83, longitude: 130.33, address_desc: "佳木斯市前进区前进路12号",
     is_outdoor: 0, create_time: "2024-01-01 00:00:00" },
 ]
 
@@ -198,19 +216,6 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
 
 export interface SupervisionOptions {
   nowStr?: string
-}
-
-/** "YYYY-MM-DD HH:mm:ss" → ms */
-function _parseTs(s: string): number {
-  return Date.parse(s.replace(" ", "T"))
-}
-
-/** ms → "YYYY-MM-DD HH:mm:ss" */
-function _fmtTs(ms: number): string {
-  const d = new Date(ms)
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
-    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 let _supSeq = 0
