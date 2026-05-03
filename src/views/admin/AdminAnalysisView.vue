@@ -74,22 +74,35 @@
         </span>
       </div>
 
-      <!-- 空状态：尚未选择或无结果 -->
+      <!-- 空状态：尚未选择 -->
       <div v-if="!selectedBuildingId" class="admin-empty admin-empty--center">
         请先选择建筑，点击"查看分析结果"或"重新计算风险"
       </div>
-      <div v-else-if="metrics.length === 0" class="admin-empty admin-empty--center">
-        尚未计算分析结果，请点击"重新计算风险"触发计算
-      </div>
+      <template v-else>
+        <!-- 五类分析项目说明条 -->
+        <div class="admin-analysis-legend">
+          <div v-for="item in ANALYSIS_TYPES" :key="item.id" class="admin-legend-item" :class="item.enabled ? '' : 'admin-legend-item--dim'">
+            <span class="admin-legend-num">{{ item.id }}</span>
+            <span class="admin-legend-name">{{ item.name }}</span>
+            <span class="admin-legend-formula">{{ item.formula }}</span>
+            <span v-if="!item.enabled" class="admin-legend-tag">本期未启用</span>
+            <span v-else class="admin-legend-tag admin-legend-tag--active">已启用</span>
+          </div>
+        </div>
 
-      <!-- 指标卡网格 -->
-      <div v-else class="admin-metrics-grid">
-        <div
-          v-for="metric in metrics"
-          :key="metric.metricId"
-          class="admin-metric-card"
-          :class="`admin-metric-card--${metric.riskLevel.toLowerCase()}`"
-        >
+        <!-- 空状态：无计算结果 -->
+        <div v-if="metrics.length === 0" class="admin-empty admin-empty--center">
+          尚未计算分析结果，请点击"重新计算风险"触发计算
+        </div>
+
+        <!-- 指标卡网格（按需求顺序：结构变形→裂缝扩展→综合风险） -->
+        <div v-else class="admin-metrics-grid">
+          <div
+            v-for="metric in sortedMetrics"
+            :key="metric.metricId"
+            class="admin-metric-card"
+            :class="`admin-metric-card--${metric.riskLevel.toLowerCase()}`"
+          >
           <!-- 卡片头部 -->
           <div class="admin-metric-card__header">
             <span class="risk-dot" :class="`risk-dot--${metric.riskLevel.toLowerCase()}`" />
@@ -98,6 +111,9 @@
               {{ metric.riskLevel }}
             </span>
           </div>
+
+          <!-- 公式说明 -->
+          <div class="admin-metric-card__formula">{{ metricFormula(metric.metricId) }}</div>
 
           <!-- 数值 -->
           <div class="admin-metric-card__value tabular-nums">
@@ -117,7 +133,8 @@
             </span>
           </div>
         </div>
-      </div>
+        </div><!-- /admin-metrics-grid -->
+      </template><!-- /v-else:已选建筑 -->
     </div>
 
     <!-- ③ 遥测数据区（zone:telemetry）— 最新值 + 最近10条 -->
@@ -188,10 +205,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, computed, onMounted } from "vue"
 import { getAnalysisResult, calculateBuildingRisk, type AnalysisMetricResult } from "@/services/analysisService"
 import { listBuildings, type BuildingListItem } from "@/services/buildingService"
 import { getBuildingIotSummary, type BuildingIotSummary } from "@/services/iotDemoService"
+
+// ── 五类分析项目清单（需求 §8.2） ─────────────────────────────────────────────
+
+const ANALYSIS_TYPES = [
+  { id: "①", name: "结构变形分析",   formula: "v = Σ(tᵢ-t̄)(yᵢ-ȳ) / Σ(tᵢ-t̄)²",            enabled: true  },
+  { id: "②", name: "裂缝扩展分析",   formula: "v_crack = (Wₙ - W₀) / T",                  enabled: true  },
+  { id: "③", name: "综合风险评估",   formula: "S = W₁·S₁ + W₂·S₂ + W₃·S₃ + W₄·S₄",      enabled: true  },
+  { id: "④", name: "环境相关性分析", formula: "r = Σ(xᵢ-x̄)(yᵢ-ȳ) / √[Σ(xᵢ-x̄)²·Σ(yᵢ-ȳ)²]", enabled: false },
+  { id: "⑤", name: "灾后损伤评估",  formula: "DI = (D_after - D_before) / D_allow",        enabled: false },
+]
 
 // ── 建筑列表 ──────────────────────────────────────────────────────────────────
 
@@ -236,13 +263,31 @@ const msgClass    = ref("admin-msg--success")
 
 // ── 辅助函数 ──────────────────────────────────────────────────────────────────
 
+/** 按需求顺序排列：结构变形(2)→裂缝扩展(1)→综合风险(3) */
+const METRIC_DISPLAY_ORDER: Record<number, number> = { 2: 1, 1: 2, 3: 3 }
+const sortedMetrics = computed(() =>
+  [...metrics.value].sort(
+    (a, b) => (METRIC_DISPLAY_ORDER[a.metricId] ?? 99) - (METRIC_DISPLAY_ORDER[b.metricId] ?? 99)
+  )
+)
+
 function metricName(metricId: number): string {
   const names: Record<number, string> = {
-    1: "裂缝指标",
-    2: "倾角指标",
-    3: "综合评分",
+    1: "裂缝扩展分析",  // metric_id=1 → CRACK 数据点 → v_crack = ΔW/T
+    2: "结构变形分析",  // metric_id=2 → TILT 数据点  → 变形速率 v
+    3: "综合风险评估",  // metric_id=3 → 加权综合评分 S
   }
   return names[metricId] ?? `指标 ${metricId}`
+}
+
+/** 每个分析项目对应的工程公式说明 */
+function metricFormula(metricId: number): string {
+  const formulas: Record<number, string> = {
+    1: "裂缝宽度变化率 · v_crack = (Wₙ - W₀) / T",
+    2: "倾斜变形速率 · 最小二乘线性拟合 v",
+    3: "S = W₁·S₁ + W₂·S₂ + W₃·S₃ + W₄·S₄",
+  }
+  return formulas[metricId] ?? ""
 }
 
 function riskDotClass(level: string | null): string {
@@ -527,6 +572,14 @@ onMounted(() => {
   font-variant-numeric: tabular-nums;
 }
 .admin-metric-card__unit { font-size: 14px; color: var(--pc-text-muted, #94A3B8); font-weight: 400; }
+.admin-metric-card__formula {
+  font-size: 11px;
+  color: var(--pc-text-muted, #94A3B8);
+  font-family: monospace;
+  padding: 2px 0 4px;
+  border-bottom: 1px dashed var(--pc-border, #E2E8F0);
+  margin-bottom: 6px;
+}
 .admin-metric-card__time { font-size: 11px; color: var(--pc-text-muted, #94A3B8); }
 .admin-metric-card__thresholds {
   display: flex;
@@ -543,6 +596,46 @@ onMounted(() => {
   background: var(--pc-bg-page, #F0F4F9);
   color: var(--pc-text-muted, #64748B);
   border: 1px solid var(--pc-border, #E2E8F0);
+}
+
+/* ===== 五类分析说明条 ===== */
+.admin-analysis-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 10px 20px 14px;
+  background: var(--pc-bg-page, #F8FAFC);
+  border-bottom: 1px solid var(--pc-border, #E2E8F0);
+}
+.admin-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.admin-legend-item--dim { opacity: 0.4; }
+.admin-legend-num {
+  font-weight: 700;
+  color: var(--pc-primary, #1B6FE8);
+  min-width: 14px;
+}
+.admin-legend-name { font-weight: 600; color: var(--pc-text-h1, #1C2B4A); }
+.admin-legend-formula {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--pc-text-muted, #94A3B8);
+}
+.admin-legend-tag {
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 10px;
+  border: 1px solid var(--pc-border, #E2E8F0);
+  color: var(--pc-text-muted, #94A3B8);
+}
+.admin-legend-tag--active {
+  background: #DCFCE7;
+  color: #15803D;
+  border-color: #86EFAC;
 }
 
 /* ===== 空状态 ===== */

@@ -13,6 +13,8 @@ import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
 import H5DisposeView from "@/views/h5/H5DisposeView.vue"
 import H5BuildingMetricsView from "@/views/h5/H5BuildingMetricsView.vue"
+import H5BuildingsView from "@/views/h5/H5BuildingsView.vue"
+import H5HomeView from "@/views/h5/H5HomeView.vue"
 import H5EmergencyView from "@/views/h5/H5EmergencyView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
 import ScreenAlarmDispatchView from "@/views/screen/ScreenAlarmDispatchView.vue"
@@ -154,7 +156,19 @@ export const routes: RouteRecordRaw[] = [
       {
         path: "",
         name: "h5-root",
-        redirect: "/h5/work-orders"
+        redirect: "/h5/home"
+      },
+      {
+        path: "home",
+        name: "h5-home",
+        component: H5HomeView,
+        meta: { title: "首页" }
+      },
+      {
+        path: "alerts",
+        name: "h5-alerts",
+        component: H5WorkOrdersView,
+        meta: { title: "预警中心" }
       },
       {
         path: "work-orders",
@@ -173,6 +187,12 @@ export const routes: RouteRecordRaw[] = [
         name: "h5-dispose",
         component: H5DisposeView,
         meta: { title: "提交处置" }
+      },
+      {
+        path: "buildings",
+        name: "h5-buildings",
+        component: H5BuildingsView,
+        meta: { title: "建筑列表" }
       },
       {
         path: "building/:id/metrics",

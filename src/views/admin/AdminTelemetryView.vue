@@ -45,10 +45,10 @@
       <!-- 数据点选择 -->
       <div class="admin-form-group">
         <label class="admin-form-label">数据点</label>
-        <select v-model="selectedPointId" class="select-pc">
+        <select v-model="selectedPointId" class="select-pc select-pc--wide">
           <option :value="null">-- 请选择数据点 --</option>
           <option v-for="p in filteredPoints" :key="p.id" :value="p.id">
-            {{ p.factor_name ?? p.factor_code ?? `数据点` }} (id={{ p.id }})
+            {{ pointPathLabel(p.id) }}
           </option>
         </select>
       </div>
@@ -105,10 +105,10 @@
         <!-- 数据点 -->
         <div class="admin-form-group">
           <label class="admin-form-label">数据点 ID</label>
-          <select v-model="newPointId" class="select-pc">
+          <select v-model="newPointId" class="select-pc select-pc--wide">
             <option :value="null">-- 选择数据点 --</option>
             <option v-for="p in dataPoints" :key="p.id" :value="p.id">
-              {{ p.factor_name ?? p.factor_code ?? `数据点` }} (id={{ p.id }})
+              {{ pointPathLabel(p.id) }}
             </option>
           </select>
         </div>
@@ -147,9 +147,27 @@ import { ref, computed, onMounted, watch } from "vue"
 import { listTelemetry, addTelemetry, type TelemetryRow } from "@/services/telemetryService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 
+// ── 层级查找表（网关→驱动→链路→设备→测点）────────────────────────────────────
+
+type GatewayRow   = { id: number; name: string }
+type DriverRow    = { id: number; gateway_id: number; name: string }
+type LinkRow      = { id: number; driver_id: number; name: string }
+type DeviceRow    = { id: number; link_id: number; name: string }
+type MeasurePoint = { id: number; device_id: number; name: string }
+
+const gateways     = ref([] as GatewayRow[])
+const drivers      = ref([] as DriverRow[])
+const links        = ref([] as LinkRow[])
+const devices      = ref([] as DeviceRow[])
+const measurePoints = ref([] as MeasurePoint[])
+
 // ── 数据点与建筑 ──────────────────────────────────────────────────────────────
 
-const dataPoints = ref([] as Array<{ id: number; space_id: number; factor_id: number; factor_code: string | null; factor_name: string | null; limit_h: number | null; limit_hh: number | null }>)
+const dataPoints = ref([] as Array<{
+  id: number; space_id: number; factor_id: number; measure_point_id: number | null
+  factor_code: string | null; factor_name: string | null
+  limit_h: number | null; limit_hh: number | null
+}>)
 const buildingOptions = ref([] as Array<{ id: number; name: string; spaceCode: string }>)
 
 // ── 筛选状态 ──────────────────────────────────────────────────────────────────
@@ -175,6 +193,33 @@ const filteredPoints = computed(() => {
   if (!selectedBuildingId.value) return dataPoints.value
   return dataPoints.value.filter((p) => p.space_id === selectedBuildingId.value)
 })
+
+/**
+ * 根据 data_point id 构建层级路径标签：
+ *   网关 / 驱动 / 链路 / 设备 / 测点  (因子名)
+ * 若层级数据未加载则退回到因子名格式。
+ */
+function pointPathLabel(pointId: number): string {
+  const dp = dataPoints.value.find((p) => p.id === pointId)
+  if (!dp) return `点${pointId}`
+
+  const factorLabel = dp.factor_name ?? dp.factor_code ?? `因子${dp.factor_id}`
+
+  const mp = dp.measure_point_id != null
+    ? measurePoints.value.find((m) => m.id === dp.measure_point_id)
+    : null
+  if (!mp) return `${factorLabel} (id=${pointId})`
+
+  const dev = devices.value.find((d) => d.id === mp.device_id)
+  if (!dev) return `${mp.name} · ${factorLabel}`
+
+  const lnk = links.value.find((l) => l.id === dev.link_id)
+  const drv = lnk ? drivers.value.find((d) => d.id === lnk.driver_id) : null
+  const gw  = drv ? gateways.value.find((g) => g.id === drv.gateway_id) : null
+
+  const parts = [gw?.name, drv?.name, lnk?.name, dev.name, mp.name].filter(Boolean)
+  return parts.join(" / ") + `  [${factorLabel}]`
+}
 
 /** 根据 pointId 返回所属建筑编号（如 B003） */
 function pointBuildingLabel(pointId: number): string {
@@ -225,22 +270,23 @@ function doAdd() {
 // ── 数据加载 ──────────────────────────────────────────────────────────────────
 
 function reloadMeta() {
+  // 加载 IoT 六级层级（网关→驱动→链路→设备→测点）
+  gateways.value     = getTable("iot_gateway")      as GatewayRow[]
+  drivers.value      = getTable("iot_driver")       as DriverRow[]
+  links.value        = getTable("iot_link")         as LinkRow[]
+  devices.value      = getTable("iot_device")       as DeviceRow[]
+  measurePoints.value = getTable("iot_measure_point") as MeasurePoint[]
+
   // 加载因子类型字典（用于显示名称）
   const factorTypes = getTable("iot_factor_type") as Array<{
-    id: number
-    factor_code: string
-    factor_name: string
-    unit: string
+    id: number; factor_code: string; factor_name: string; unit: string
   }>
   const ftMap = new Map(factorTypes.map((f) => [f.id, f]))
 
   // 加载数据点，关联因子名称
   const rawPoints = getTable("iot_data_point") as Array<{
-    id: number
-    space_id: number
-    factor_id: number
-    limit_h: number | null
-    limit_hh: number | null
+    id: number; space_id: number; factor_id: number
+    measure_point_id: number | null; limit_h: number | null; limit_hh: number | null
   }>
   dataPoints.value = rawPoints.map((p) => ({
     ...p,
@@ -250,10 +296,7 @@ function reloadMeta() {
 
   // 加载建筑列表（type="2"）
   const spaces = getTable("iot_space") as Array<{
-    id: number
-    type: string
-    name: string
-    space_code: string
+    id: number; type: string; name: string; space_code: string
   }>
   buildingOptions.value = spaces
     .filter((s) => s.type === "2")
@@ -408,6 +451,7 @@ watch(selectedBuildingId, (buildingId) => {
   transition: border-color 150ms ease;
 }
 .select-pc { padding-right: 28px; cursor: pointer; min-width: 200px; }
+.select-pc--wide { min-width: 600px; }
 .select-pc:focus,
 .input-pc:focus {
   border-color: var(--pc-primary, #1B6FE8);

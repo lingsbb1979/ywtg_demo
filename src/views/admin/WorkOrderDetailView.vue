@@ -33,7 +33,7 @@
           </div>
           <div class="admin-detail-item">
             <div class="admin-detail-item__label">建筑名称</div>
-            <div class="admin-detail-item__value">{{ order.buildingName ?? `#${order.buildingId}` }}</div>
+            <div class="admin-detail-item__value">{{ order.buildingName ?? (order.buildingId != null ? `#${order.buildingId}` : '—') }}</div>
           </div>
           <div class="admin-detail-item">
             <div class="admin-detail-item__label">告警等级</div>

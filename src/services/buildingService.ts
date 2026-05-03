@@ -51,7 +51,15 @@ export interface BuildingListItem {
 
 // ── 内部辅助 ──────────────────────────────────────────────────────────────────
 
-/** 按 space_id 聚合最新 risk_level（取 calc_time 最大的记录） */
+/** 风险等级排序（数字越大风险越高） */
+const RISK_ORDER: Readonly<Record<string, number>> = { GREEN: 0, YELLOW: 1, ORANGE: 2, RED: 3 }
+
+/**
+ * 按 space_id 聚合最新批次中最高 risk_level。
+ *
+ * 同一次 calculateBuildingRisk() 调用会写入多条同 calc_time 的记录（每个 metric_id 一条），
+ * 这里先找每栋建筑最新的 calc_time，再从该批次中取最高风险级别，避免漏掉同批的 RED/ORANGE。
+ */
 function buildRiskMap(): Map<number, string> {
   const archives = getTable("space_analysis_archive") as Array<{
     space_id: number
@@ -59,18 +67,25 @@ function buildRiskMap(): Map<number, string> {
     risk_level: string
   }>
 
-  // 按 space_id 分组，每组取 calc_time 最大的 risk_level
-  const map = new Map<number, { calc_time: string; risk_level: string }>()
+  // Step 1: 每栋建筑找最新 calc_time
+  const latestTimeMap = new Map<number, string>()
   for (const row of archives) {
     const ct = String(row.calc_time ?? "")
-    const existing = map.get(row.space_id)
-    if (!existing || ct > existing.calc_time) {
-      map.set(row.space_id, { calc_time: ct, risk_level: row.risk_level })
+    const existing = latestTimeMap.get(row.space_id)
+    if (!existing || ct > existing) latestTimeMap.set(row.space_id, ct)
+  }
+
+  // Step 2: 从最新批次中取最高风险级别
+  const result = new Map<number, string>()
+  for (const row of archives) {
+    const ct = String(row.calc_time ?? "")
+    if (ct !== latestTimeMap.get(row.space_id)) continue
+    const current = result.get(row.space_id)
+    if (current === undefined || (RISK_ORDER[row.risk_level] ?? 0) > (RISK_ORDER[current] ?? 0)) {
+      result.set(row.space_id, row.risk_level)
     }
   }
 
-  const result = new Map<number, string>()
-  map.forEach((v, k) => result.set(k, v.risk_level))
   return result
 }
 

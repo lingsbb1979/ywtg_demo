@@ -38,6 +38,6 @@ describe("T15.4 SQLiteMirror + UI (TDD 骨架)", () => {
       content.includes("work-orders"),
       "routes.ts 未包含 work-orders 相关路由"
     ).toBe(true)
-    expect(content.includes("/h5/work-orders"), "routes.ts 未包含 /h5/work-orders").toBe(true)
+    expect(content.includes("/h5/home"), "routes.ts 未包含 H5 首页路由 /h5/home").toBe(true)
   })
 })

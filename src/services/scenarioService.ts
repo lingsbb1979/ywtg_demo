@@ -5,6 +5,7 @@
 import { getTable, resetTables, setTable } from "./sqliteMirrorRepository"
 import { ANALYSIS_LINK_ROWS } from "../mock/seeds/seedAnalysisLink"
 import { DATA_POINT_ROWS, FACTOR_TYPE_ROWS } from "../mock/seeds/seedDataPoints"
+import { GATEWAY_ROWS, DRIVER_ROWS, LINK_ROWS, DEVICE_ROWS, MEASURE_POINT_ROWS } from "../mock/seeds/seedIotHierarchy"
 
 // ── 时间辅助函数（置顶避免前向引用问题）─────────────────────────────────────────
 
@@ -130,6 +131,12 @@ export function resetDemo(): void {
   setTable("emergency_order",    [])
   // IoT 分析配置：带 point_ids 的完整关联版本（用于 IoT 驱动触发和分析页展示）
   setTable("space_analysis_config", ANALYSIS_LINK_ROWS)
+  // IoT 六级层级配置（网关→驱动→链路→设备→测点）
+  setTable("iot_gateway",       GATEWAY_ROWS)
+  setTable("iot_driver",        DRIVER_ROWS)
+  setTable("iot_link",          LINK_ROWS)
+  setTable("iot_device",        DEVICE_ROWS)
+  setTable("iot_measure_point", MEASURE_POINT_ROWS)
   // 数据点定义（用于遥测页展示因子名称/单位/阈值）
   setTable("iot_data_point",  DATA_POINT_ROWS)
   setTable("iot_factor_type", FACTOR_TYPE_ROWS)

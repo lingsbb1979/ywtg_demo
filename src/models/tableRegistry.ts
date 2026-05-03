@@ -86,7 +86,8 @@ export const TableRegistry: Readonly<Record<string, readonly string[]>> = {
   ],
   iot_measure_point: [
     "id", "device_id", "point_type", "slave_address", "start_address",
-    "name", "code", "data_type", "function_code", "create_time",
+    "name", "code", "data_type", "function_code",
+    "install_location_id", "install_location_desc", "create_time",
   ],
   iot_data_point: [
     "id", "measure_point_id", "name", "tag_key", "offset_address",
@@ -137,7 +138,8 @@ export const TableRegistry: Readonly<Record<string, readonly string[]>> = {
   // ── 建筑空间与采集 ───────────────────────────────────────────────────────
   iot_space: [
     "id", "parent_id", "space_code", "name", "short_name",
-    "type", "latitude", "longitude", "address_desc", "is_outdoor", "create_time",
+    "type", "latitude", "longitude", "address_desc", "is_outdoor",
+    "latlng_type", "create_time",
   ],
   iot_telemetry: ["ts", "point_id", "value_num", "value_str"],
 

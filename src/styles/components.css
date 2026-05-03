@@ -1124,3 +1124,178 @@
   vertical-align: middle;
 }
 .table-pc tr:last-child td { border-bottom: none; }
+
+/* ============================================================
+   §13 PC 管理端 — 参考图浅蓝白底视觉覆盖
+   ============================================================ */
+
+.admin-page-header {
+  padding: 2px 2px 10px;
+  margin-bottom: 14px;
+  border-bottom: 0;
+}
+
+.admin-page-title {
+  color: #082B84;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.admin-page-subtitle {
+  color: #7D93B6;
+  font-size: 12px;
+}
+
+.pc-card,
+.admin-card,
+.admin-kpi-card,
+.admin-table-wrap {
+  border: 1px solid rgba(221, 233, 251, 0.95);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 12px 28px rgba(44, 92, 166, 0.08);
+}
+
+.admin-kpi-row { gap: 12px; }
+
+.admin-kpi-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 86px;
+}
+
+.admin-kpi-card::after {
+  content: '';
+  position: absolute;
+  right: -18px;
+  bottom: -22px;
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  transform: rotate(45deg);
+  background: linear-gradient(145deg, rgba(42,114,255,0.16), rgba(42,114,255,0.02));
+}
+
+.admin-kpi-card__label { color: #557099; font-weight: 700; }
+.admin-kpi-card__value { color: #2376FF; font-weight: 900; }
+.admin-kpi-card__sub { color: #7D93B6; }
+
+.admin-kpi-card__icon-wrap {
+  border-radius: 10px;
+  box-shadow: inset 0 -8px 16px rgba(42,114,255,0.10), 0 8px 18px rgba(42,114,255,0.12);
+}
+
+.admin-table-wrap { padding: 0; overflow: hidden; }
+
+.admin-table-toolbar {
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid #E7EEF9;
+  background: linear-gradient(180deg, #FFFFFF, #F9FCFF);
+}
+
+.admin-table-toolbar__title {
+  color: #082B84;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.admin-table-toolbar__total { color: #7D93B6; }
+
+.admin-table-filter-tabs {
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #E7EEF9;
+  background: #FFFFFF;
+}
+
+.admin-filter-tab {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #DDE9FB;
+  border-radius: 16px;
+  background: #F8FBFF;
+  color: #48658F;
+  font-weight: 700;
+}
+
+.admin-filter-tab:hover {
+  color: #1B6FE8;
+  background: #F0F7FF;
+  border-color: #BFD7FF;
+}
+
+.admin-filter-tab--active {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #1B6FE8, #4B96FF);
+  border-color: transparent;
+  box-shadow: 0 8px 16px rgba(27,111,232,0.22);
+}
+
+.admin-filter-tab__count,
+.admin-filter-tab--active .admin-filter-tab__count {
+  background: rgba(255,255,255,0.24);
+  color: inherit;
+}
+
+.admin-search-input,
+.input-pc,
+.select-pc {
+  height: 34px;
+  border-radius: 6px;
+  border-color: #DDE9FB;
+  background: #FFFFFF;
+  color: #25436D;
+  box-shadow: 0 6px 14px rgba(42,114,255,0.05);
+}
+
+.admin-search-input:focus,
+.input-pc:focus,
+.select-pc:focus {
+  border-color: #2A72FF;
+  box-shadow: 0 0 0 3px rgba(42,114,255,0.12);
+}
+
+.table-pc {
+  color: #25436D;
+}
+
+.table-pc th {
+  height: 40px;
+  padding: 10px 14px;
+  color: #5E789E;
+  background: #F4F8FF;
+  border-bottom-color: #DDE9FB;
+  font-weight: 800;
+}
+
+.table-pc td {
+  height: 42px;
+  padding: 10px 14px;
+  border-bottom-color: #EDF3FC;
+  color: #29486F;
+}
+
+.admin-table-row:hover { background: #F5F9FF; }
+.admin-table-row--selected { background: #EFF6FF; }
+
+.btn-pc-primary,
+.btn-icon-sm:hover {
+  background: linear-gradient(135deg, #1B6FE8, #4B96FF);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 16px rgba(27,111,232,0.20);
+}
+
+.btn-pc-secondary,
+.btn-icon-sm {
+  border-color: #DDE9FB;
+  border-radius: 6px;
+  color: #416089;
+  background: #FFFFFF;
+}
+
+.admin-badge {
+  border-radius: 4px;
+  font-weight: 800;
+}

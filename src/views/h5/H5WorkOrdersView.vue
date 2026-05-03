@@ -569,4 +569,63 @@ function onCardClick(item: H5TodoItem) {
 
 /* 工具 */
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ===== 参考图风格覆盖：白蓝移动列表 ===== */
+.h5-workorders {
+  background:
+    radial-gradient(circle at 50% -40px, rgba(42,114,255,0.18), transparent 220px),
+    linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%);
+}
+.h5-filter-tabs {
+  margin: 10px 12px 0;
+  padding: 8px;
+  border: 1px solid #DDE9FB;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 10px 24px rgba(44,93,154,0.08);
+  position: sticky;
+  top: 8px;
+}
+.h5-filter-tab {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 13px;
+  border-radius: 16px;
+  border-bottom: 0;
+  color: #5C7094;
+  font-size: 13px;
+  font-weight: 800;
+}
+.h5-filter-tab--active {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #1B6FE8, #4B96FF);
+  border-bottom-color: transparent;
+  box-shadow: 0 8px 16px rgba(27,111,232,0.20);
+}
+.h5-workorder-list { padding: 12px; gap: 12px; }
+.h5-wo-card {
+  border: 1px solid #DDE9FB;
+  border-left-width: 5px;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(44,93,154,0.10);
+}
+.h5-wo-card__building { color: #092D81; font-weight: 900; }
+.h5-wo-card__alarm { color: #52698E; }
+.h5-risk-level--badge,
+.h5-wo-card__status { border-radius: 5px; font-weight: 800; }
+.h5-accept-btn {
+  min-height: 36px;
+  min-width: 72px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1B6FE8, #4B96FF);
+  box-shadow: 0 8px 16px rgba(27,111,232,0.20);
+}
+.h5-accept-btn--processing,
+.h5-accept-btn--checking,
+.h5-accept-btn--finished { box-shadow: none; }
+.h5-emergency-banner {
+  margin: 12px 12px 0;
+  border-radius: 14px;
+  box-shadow: 0 12px 26px rgba(239,68,68,0.20);
+}
 </style>

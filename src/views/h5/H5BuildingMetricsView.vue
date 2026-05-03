@@ -58,38 +58,6 @@
         </div>
       </div>
 
-      <!-- 监测指标列表 -->
-      <div class="h5-card h5-building-metrics__section" data-zone="metrics">
-        <div class="h5-building-metrics__section-title">监测指标</div>
-        <div v-if="metrics.length === 0" class="h5-building-metrics__empty-hint">
-          暂无监测指标数据
-        </div>
-        <div v-else class="h5-building-metrics__metrics-list">
-          <div
-            v-for="item in metrics"
-            :key="item.id"
-            class="h5-building-metrics__metric-item h5-list-item"
-          >
-            <div class="h5-building-metrics__metric-info">
-              <span class="h5-building-metrics__metric-name">{{ item.name ?? item.pointCode }}</span>
-              <span class="h5-building-metrics__metric-type">{{ item.measureType ?? item.dataType ?? '—' }}</span>
-            </div>
-            <div class="h5-building-metrics__metric-right">
-              <span class="h5-building-metrics__metric-value tabular-nums">
-                {{ item.latestValue ?? '—' }} {{ item.unit ?? '' }}
-              </span>
-              <span
-                v-if="item.alarmLevel"
-                class="h5-tag"
-                :class="`h5-tag--${(item.alarmLevel).toLowerCase()}`"
-              >
-                {{ item.alarmLevel }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- IoT 实时遥测数据 -->
       <div class="h5-card h5-building-metrics__section" data-zone="iot-telemetry">
         <div class="h5-building-metrics__section-title">📡 IoT 实时采集数据</div>
@@ -133,28 +101,30 @@
         </div>
       </div>
 
-      <!-- 分析结果 -->
+      <!-- 分析结果 —— 每指标一张卡片，仅展示最新一批计算结果 -->
       <div v-if="analysisResults.length > 0" class="h5-card h5-building-metrics__section" data-zone="analysis">
-        <div class="h5-building-metrics__section-title">分析结果</div>
-        <div class="h5-building-metrics__analysis-list">
+        <div class="h5-analysis-header">
+          <span class="h5-building-metrics__section-title" style="margin-bottom:0">风险分析结果</span>
+          <span class="h5-analysis-header__time tabular-nums">{{ analysisResults[0].calc_time?.slice(11,19) ?? '' }}</span>
+        </div>
+        <div class="h5-analysis-cards">
           <div
             v-for="ar in analysisResults"
-            :key="ar.id"
-            class="h5-building-metrics__analysis-item"
+            :key="ar.metric_id"
+            class="h5-analysis-card"
+            :class="`h5-analysis-card--${(ar.risk_level ?? 'green').toLowerCase()}`"
           >
-            <span class="risk-dot" :class="`risk-dot--${(ar.risk_level ?? 'green').toLowerCase()}`" />
-            <div class="h5-building-metrics__analysis-body">
-              <span class="h5-building-metrics__analysis-factor">{{ ar.factor_name ?? ar.factor_code ?? '—' }}</span>
-              <span class="h5-building-metrics__analysis-value tabular-nums">
-                风险值：{{ ar.risk_score ?? ar.factor_value ?? '—' }}
+            <div class="h5-analysis-card__top">
+              <span class="h5-analysis-card__name">{{ ar.metricName }}</span>
+              <span class="h5-tag h5-analysis-card__badge"
+                :class="`h5-tag--${(ar.risk_level ?? 'green').toLowerCase()}`">
+                {{ ar.risk_level ?? 'GREEN' }}
               </span>
             </div>
-            <span
-              class="h5-tag"
-              :class="`h5-tag--${(ar.risk_level ?? 'green').toLowerCase()}`"
-            >
-              {{ ar.risk_level ?? 'GREEN' }}
-            </span>
+            <div class="h5-analysis-card__value tabular-nums">
+              {{ ar.value_num !== null ? ar.value_num.toFixed(1) : '—' }}
+              <span class="h5-analysis-card__unit">{{ ar.unit }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -207,23 +177,41 @@ interface MetricDisplay {
   alarmLevel:   string | null
 }
 
-interface AnalysisRow {
-  id:           number
-  space_id:     number | null
-  factor_code:  string | null
-  factor_name:  string | null
-  factor_value: number | null
-  risk_score:   number | null
-  risk_level:   string | null
+/** 实际 space_analysis_archive 字段 */
+interface AnalysisArchiveRow {
+  id:         number
+  space_id:   number
+  metric_id:  number
+  calc_time:  string | null
+  value_num:  number | null
+  risk_level: string | null
+}
+
+/** 展示用对象（metric_id 映射为可读名称） */
+interface AnalysisDisplayItem {
+  metric_id:  number
+  metricName: string
+  unit:       string
+  value_num:  number | null
+  risk_level: string | null
+  calc_time:  string | null
+}
+
+const METRIC_INFO: Record<number, { name: string; unit: string }> = {
+  1: { name: "裂缝扩展分析", unit: "mm" },
+  2: { name: "结构变形分析", unit: "°" },
+  3: { name: "综合风险评估", unit: "分" },
 }
 
 // ── 响应式状态 ─────────────────────────────────────────────────────────────────
-const loading         = ref(true)
-const building        = ref(null as SpaceRow | null)
-const metrics         = ref<MetricDisplay[]>([])
-const analysisResults = ref<AnalysisRow[]>([])
+const loading          = ref(true)
+const building         = ref(null as SpaceRow | null)
+const analysisResults  = ref<AnalysisDisplayItem[]>([])
 const activeAlarmCount = ref(0)
-const iotSummary      = ref(null as BuildingIotSummary | null)
+const activeAlarmLevel = ref("GREEN")  // 当前最高活跃告警级别
+const iotSummary       = ref(null as BuildingIotSummary | null)
+
+const RISK_ORDER: Record<string, number> = { GREEN: 0, YELLOW: 1, ORANGE: 2, RED: 3 }
 
 type IotPoint = BuildingIotSummary["points"][number]
 
@@ -243,16 +231,17 @@ function h5SparkClass(pt: IotPoint, v: number | null): string {
 }
 
 // ── 计算属性 ──────────────────────────────────────────────────────────────────
+// riskColor 以活跃告警级别为准（ACTIVE / PENDING），无告警则降为 GREEN
 const riskColor = computed<string>(() => {
-  const level = building.value?.risk_level ?? ""
+  const level = activeAlarmLevel.value.toUpperCase()
   const map: Record<string, string> = {
     RED: "red", ORANGE: "orange", YELLOW: "yellow", GREEN: "green",
   }
-  return map[level.toUpperCase()] ?? "green"
+  return map[level] ?? "green"
 })
 
 const riskLabel = computed<string>(() => {
-  const level = (building.value?.risk_level ?? "GREEN").toUpperCase()
+  const level = activeAlarmLevel.value.toUpperCase()
   const map: Record<string, string> = {
     RED: "高危", ORANGE: "中高危", YELLOW: "中危", GREEN: "低危",
   }
@@ -260,7 +249,7 @@ const riskLabel = computed<string>(() => {
 })
 
 const riskDesc = computed<string>(() => {
-  const level = (building.value?.risk_level ?? "GREEN").toUpperCase()
+  const level = activeAlarmLevel.value.toUpperCase()
   const map: Record<string, string> = {
     RED:    "当前建筑存在高风险隐患，需立即处置",
     ORANGE: "当前建筑存在中高风险隐患，请尽快跟进",
@@ -283,32 +272,39 @@ onMounted(() => {
   const spaces = getTable<SpaceRow>("iot_space")
   building.value = spaces.find(s => s.id === id) ?? null
 
-  // 监测指标
-  const points = getTable<MeasurePointRow>("iot_measure_point")
-  metrics.value = points
-    .filter(p => p.space_id === id)
-    .map(p => ({
-      id:          p.id,
-      pointCode:   p.point_code,
-      name:        p.name         ?? null,
-      measureType: p.measure_type ?? null,
-      dataType:    p.data_type    ?? null,
-      unit:        p.unit         ?? null,
-      latestValue: p.latest_value ?? null,
-      alarmLevel:  p.alarm_level  ?? null,
+  // 分析结果：只取最新批次（最大 calc_time），每指标去重，按 metric_id 排序
+  const archiveRows = getTable<AnalysisArchiveRow>("space_analysis_archive")
+    .filter(a => a.space_id === id)
+  const latestCalcTime = archiveRows.reduce((max, r) => {
+    const ct = r.calc_time ?? ""
+    return ct > max ? ct : max
+  }, "")
+  const seen = new Set<number>()
+  analysisResults.value = archiveRows
+    .filter(r => r.calc_time === latestCalcTime)
+    .filter(r => { if (seen.has(r.metric_id)) return false; seen.add(r.metric_id); return true })
+    .sort((a, b) => a.metric_id - b.metric_id)
+    .map(r => ({
+      metric_id:  r.metric_id,
+      metricName: METRIC_INFO[r.metric_id]?.name ?? `指标${r.metric_id}`,
+      unit:       METRIC_INFO[r.metric_id]?.unit ?? "",
+      value_num:  r.value_num,
+      risk_level: r.risk_level,
+      calc_time:  r.calc_time,
     }))
 
-  // 分析结果
-  const analysisRows = getTable<AnalysisRow>("space_analysis_archive")
-  analysisResults.value = analysisRows
-    .filter(a => a.space_id === id)
-    .slice(0, 10)
-
-  // 活跃告警数
-  const alarmRows = getTable<{ building_id: number; status: string }>("alarm_record")
-  activeAlarmCount.value = alarmRows.filter(
+  // 活跃告警数 + 最高告警级别
+  const alarmRows = getTable<{ building_id: number; status: string; alarm_level: string }>("alarm_record")
+  const activeAlarms = alarmRows.filter(
     a => a.building_id === id && (a.status === "ACTIVE" || a.status === "PENDING")
-  ).length
+  )
+  activeAlarmCount.value = activeAlarms.length
+  let worstLevel = "GREEN"
+  for (const a of activeAlarms) {
+    const lvl = (a.alarm_level ?? "GREEN").toUpperCase()
+    if ((RISK_ORDER[lvl] ?? 0) > (RISK_ORDER[worstLevel] ?? 0)) worstLevel = lvl
+  }
+  activeAlarmLevel.value = worstLevel
 
   // IoT 遥测汇总
   iotSummary.value = getBuildingIotSummary(id)
@@ -496,37 +492,62 @@ function goBack() {
 }
 
 /* ===== 分析结果 ===== */
-.h5-building-metrics__analysis-list {
+.h5-analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.h5-analysis-header__time {
+  font-size: 11px;
+  color: var(--h5-text-muted, #94A3B8);
+}
+.h5-analysis-cards {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
-.h5-building-metrics__analysis-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
+.h5-analysis-card {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border-left: 3px solid var(--h5-border, #E2E8F0);
   background: var(--h5-bg-page, #F7F9FC);
 }
-
-.h5-building-metrics__analysis-body {
-  flex: 1;
+.h5-analysis-card--red    { border-left-color: #EF4444; background: rgba(239,68,68,0.04); }
+.h5-analysis-card--orange { border-left-color: #F97316; background: rgba(249,115,22,0.04); }
+.h5-analysis-card--yellow { border-left-color: #EAB308; background: rgba(234,179,8,0.04); }
+.h5-analysis-card--green  { border-left-color: #22C55E; background: rgba(34,197,94,0.04); }
+.h5-analysis-card__top {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
-
-.h5-building-metrics__analysis-factor {
+.h5-analysis-card__name {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--h5-text-h1, #1C2B4A);
 }
-
-.h5-building-metrics__analysis-value {
+.h5-analysis-card__badge {
   font-size: 11px;
-  color: var(--h5-text-muted, #94A3B8);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.h5-analysis-card__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--h5-text-h1, #1C2B4A);
+  line-height: 1.2;
+}
+.h5-analysis-card--red    .h5-analysis-card__value { color: #DC2626; }
+.h5-analysis-card--orange .h5-analysis-card__value { color: #EA580C; }
+.h5-analysis-card--yellow .h5-analysis-card__value { color: #CA8A04; }
+.h5-analysis-card--green  .h5-analysis-card__value { color: #16A34A; }
+.h5-analysis-card__unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--h5-text-muted, #64748B);
+  margin-left: 4px;
 }
 
 /* ===== IoT 遥测 ===== */

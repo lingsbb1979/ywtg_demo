@@ -87,16 +87,15 @@ function ensureAlarm(params: {
 }): boolean {
   const records = getTable<{
     id: number
-    space_id: number
-    alarm_type: string
-    alarm_level: string
-    status: string
+    building_id: number | null
+    alarm_type: string | null
+    status: string | null
   }>("alarm_record")
 
   // 去重：该建筑该类型已有 ACTIVE 告警则不重复写入
   const exists = records.some(
     (r) =>
-      r.space_id === params.buildingId &&
+      r.building_id === params.buildingId &&
       r.alarm_type === params.alarmType &&
       r.status === "ACTIVE"
   )
@@ -104,22 +103,30 @@ function ensureAlarm(params: {
 
   const nextId = records.reduce((m, r) => Math.max(m, r.id), 0) + 1
   const ts = nowStr()
+  const alarmCode = `IOT-${params.alarmType}-${String(params.buildingId).padStart(4, "0")}-${String(nextId).padStart(3, "0")}`
 
   setTable("alarm_record", [
     ...records,
     {
       id:            nextId,
-      space_id:      params.buildingId,
+      alarm_id:      alarmCode,
+      alarm_code:    alarmCode,
+      device_id:     null,
+      building_id:   params.buildingId,
+      sensor_id:     null,
+      alarm_title:   params.alarmTitle,
       alarm_type:    params.alarmType,
       alarm_level:   params.alarmLevel,
-      alarm_title:   params.alarmTitle,
       alarm_content: `IoT 遥测数据持续超过${params.alarmLevel === "ORANGE" ? "橙" : "红"}色阈值，自动触发`,
+      root_cause:    null,
+      aggregate_flag: 0,
+      raw_data:      null,
       status:        "ACTIVE",
       trigger_time:  ts,
       handle_time:   null,
-      is_false_alarm: 0,
-      aggregate_flag: 0,
-      raw_data:      null,
+      handle_user:   null,
+      create_time:   ts,
+      update_time:   ts,
     },
   ])
   return true
@@ -149,8 +156,8 @@ export function startOrangeCrackIot(callbacks: IotDemoCallbacks): void {
   if (orangeTimer !== null) return   // 防止重复启动
 
   let tick = 0
-  // 从略低于阈值开始，每 tick 递增约 0.25mm，约 2 tick 后超橙色
-  let value = 1.5
+  // 从 0 开始逐步被增至 2.0mm：每 tick +0.25mm，第 8 次足跟橙色阈值，屏幕下方时序条能展示完整 8 步上升过程
+  let value = 0.0
 
   orangeTimer = setInterval(() => {
     tick++
@@ -195,12 +202,13 @@ export function startRedTiltIot(callbacks: IotDemoCallbacks): void {
   if (redTimer !== null) return  // 防止重复启动
 
   let tick = 0
-  // 从约 2.5° 开始，每 tick 递增 0.2°，约 3 tick 后超红色
-  let value = 2.5
+  // 从 0.2° 开始，每 tick +0.3°，第 10 次赐3.2° 足跟红色阈值
+  // 屏幕时序条：2格绿 → 7格橙 → 1格红，视觉上展示完整风险升级过程
+  let value = 0.2
 
   redTimer = setInterval(() => {
     tick++
-    value = Math.round((value + 0.2) * 1000) / 1000
+    value = Math.round((value + 0.3) * 1000) / 1000
 
     appendTelemetry(TILT_POINT_ID, value)
     callbacks.onTick(tick, value)
@@ -295,7 +303,11 @@ export function getBuildingIotSummary(spaceId: number): BuildingIotSummary | nul
       .sort((a, b) => (a.ts > b.ts ? -1 : a.ts < b.ts ? 1 : 0))   // 降序
 
     const latest = rows[0] ?? null
-    const recent10 = rows.slice(0, 10).map((r) => ({ ts: r.ts, value: r.value_num }))
+    const SPARKLINE_COUNT = 10
+    const rawRecent = rows.slice(0, SPARKLINE_COUNT).map((r) => ({ ts: r.ts, value: r.value_num }))
+    // 补齐到恰好 10 个槽：旧数据在左（历史早的在左），旰数据在右（最新在右）
+    const padded = Array.from({ length: SPARKLINE_COUNT - rawRecent.length }, () => ({ ts: '', value: null }))
+    const recent10 = [...padded, ...rawRecent.reverse()]
 
     return {
       pointId:     dp.id,

@@ -75,7 +75,7 @@
 
         <!-- 建筑名称 -->
         <div class="h5-detail-banner__building">
-          {{ order.buildingName ?? `建筑 #${order.buildingId}` }}
+          {{ order.buildingName ?? (order.buildingId != null ? `建筑 #${order.buildingId}` : '—') }}
         </div>
 
         <!-- 告警描述 -->

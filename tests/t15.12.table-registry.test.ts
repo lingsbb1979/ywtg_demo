@@ -62,7 +62,8 @@ describe("T15.12 iot_space — 字段顺序与 SQL 一致", () => {
     const { TableRegistry } = await import("../src/models/tableRegistry")
     expect(TableRegistry["iot_space"]).toEqual([
       "id", "parent_id", "space_code", "name", "short_name",
-      "type", "latitude", "longitude", "address_desc", "is_outdoor", "create_time",
+      "type", "latitude", "longitude", "address_desc", "is_outdoor",
+      "latlng_type", "create_time",
     ])
   })
 })

@@ -1,34 +1,55 @@
 <template>
   <div class="h5-layout">
-    <!-- 顶部 header -->
-    <header class="h5-layout__header">
-      <button v-if="showBack" class="h5-layout__back" @click="goBack">←</button>
+    <!-- 顶部 header：首页隐藏（Banner自带），其他页面显示渐变头部 -->
+    <header v-if="!isHomePage" class="h5-layout__header">
+      <button v-if="showBack" class="h5-layout__back" @click="goBack">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <div v-else class="h5-layout__header-side" />
       <span class="h5-layout__title">{{ pageTitle }}</span>
       <div class="h5-layout__header-side" />
     </header>
 
     <!-- 内容区 -->
-    <main class="h5-layout__content">
+    <main class="h5-layout__content" :class="{ 'h5-layout__content--no-header': isHomePage }">
       <router-view />
     </main>
 
     <!-- 底部 tabbar 导航 -->
     <nav class="h5-layout__tabbar">
-      <router-link
-        class="h5-layout__tabbar-item"
-        :class="{ 'is-active': isActive('/h5/work-orders') }"
-        to="/h5/work-orders"
-      >
-        <span class="h5-layout__tabbar-icon">📋</span>
+      <!-- 首页 -->
+      <router-link class="h5-layout__tabbar-item" :class="{ 'is-active': isActive('/h5/home') }" to="/h5/home">
+        <span class="h5-layout__tabbar-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+        </span>
+        <span class="h5-layout__tabbar-label">首页</span>
+      </router-link>
+      <!-- 监测 -->
+      <router-link class="h5-layout__tabbar-item" :class="{ 'is-active': isActive('/h5/buildings') || isActive('/h5/building/') }" to="/h5/buildings">
+        <span class="h5-layout__tabbar-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M5 7h14"/><path d="M6 7l6-5 6 5"/><rect x="7" y="11" width="10" height="9" rx="1"/></svg>
+        </span>
+        <span class="h5-layout__tabbar-label">监测</span>
+      </router-link>
+      <!-- 预警 -->
+      <router-link class="h5-layout__tabbar-item" :class="{ 'is-active': isActive('/h5/alerts') }" to="/h5/alerts">
+        <span class="h5-layout__tabbar-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </span>
+        <span class="h5-layout__tabbar-label">预警</span>
+      </router-link>
+      <!-- 工单 -->
+      <router-link class="h5-layout__tabbar-item" :class="{ 'is-active': isActive('/h5/work-orders') || isActive('/h5/dispose') }" to="/h5/work-orders">
+        <span class="h5-layout__tabbar-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </span>
         <span class="h5-layout__tabbar-label">工单</span>
       </router-link>
-      <router-link
-        class="h5-layout__tabbar-item"
-        :class="{ 'is-active': isActive('/h5/mine') }"
-        to="/h5/mine"
-      >
-        <span class="h5-layout__tabbar-icon">👤</span>
+      <!-- 我的 -->
+      <router-link class="h5-layout__tabbar-item" :class="{ 'is-active': isActive('/h5/mine') }" to="/h5/mine">
+        <span class="h5-layout__tabbar-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </span>
         <span class="h5-layout__tabbar-label">我的</span>
       </router-link>
     </nav>
@@ -42,7 +63,8 @@ import { useRoute, useRouter } from "vue-router"
 const route = useRoute()
 const router = useRouter()
 
-const ROOT_PATHS = ['/h5/work-orders', '/h5/mine']
+const ROOT_PATHS = ['/h5/home', '/h5/alerts', '/h5/work-orders', '/h5/buildings', '/h5/mine']
+const isHomePage = computed(() => route.path === '/h5/home' || route.path === '/h5')
 const showBack = computed(() => !ROOT_PATHS.includes(route.path))
 const pageTitle = computed(() => (route.meta?.title as string) ?? "历史建筑安全监测")
 
@@ -63,24 +85,26 @@ function goBack(): void {
   max-width: 414px;
   min-height: 100vh;
   margin: 0 auto;
-  background: #f5f7fa;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%);
   position: relative;
 }
 
+/* ── Header ── */
 .h5-layout__header {
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 44px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 4px;
-  background: #1677ff;
+  background: linear-gradient(135deg, #1044A8 0%, #1B6FE8 100%);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  box-shadow: 0 2px 12px rgba(27,111,232,0.25);
 }
 
 .h5-layout__header-side {
@@ -90,25 +114,28 @@ function goBack(): void {
 
 .h5-layout__back {
   width: 44px;
-  height: 44px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
   color: #fff;
-  font-size: 20px;
   cursor: pointer;
   flex-shrink: 0;
 }
 
+/* ── Content ── */
 .h5-layout__content {
   flex: 1;
   overflow-y: auto;
-  /* 留出底部 tabbar 空间 */
   padding-bottom: 60px;
 }
+.h5-layout__content--no-header {
+  padding-top: 0;
+}
 
+/* ── Tabbar ── */
 .h5-layout__tabbar {
   position: fixed;
   bottom: 0;
@@ -116,12 +143,14 @@ function goBack(): void {
   transform: translateX(-50%);
   width: 100%;
   max-width: 414px;
-  height: 56px;
+  height: 62px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   background: #fff;
-  border-top: 1px solid #e8e8e8;
+  border-top: 1px solid #E8EDF5;
+  box-shadow: 0 -8px 24px rgba(31,93,172,0.08);
   z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .h5-layout__tabbar-item {
@@ -130,36 +159,48 @@ function goBack(): void {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   text-decoration: none;
-  color: #8c8c8c;
-  font-size: 12px;
+  color: #9CA3AF;
   height: 100%;
   transition: color 0.2s;
 }
 
-.h5-layout__tabbar-item.is-active {
-  color: #1677ff;
-}
+.h5-layout__tabbar-item.is-active { color: #1B6FE8; }
 
 .h5-layout__tabbar-icon {
-  font-size: 20px;
-  line-height: 1;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.h5-layout__tabbar-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.h5-layout__tabbar-item.is-active .h5-layout__tabbar-icon svg {
+  stroke: #1B6FE8;
+}
+.h5-layout__tabbar-item.is-active .h5-layout__tabbar-icon {
+  background: linear-gradient(180deg, #2A72FF, #1263F1);
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(42,114,255,0.25);
+}
+.h5-layout__tabbar-item.is-active .h5-layout__tabbar-icon svg { stroke: #fff; }
+.h5-layout__tabbar-icon {
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
 .h5-layout__tabbar-label {
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
-/* 375px / 390px 宽度设备：缩减 max-width 到 375px */
 @media (max-width: 375px) {
-  .h5-layout {
-    max-width: 375px;
-  }
-  .h5-layout__tabbar {
-    max-width: 375px;
-  }
+  .h5-layout,
+  .h5-layout__tabbar { max-width: 375px; }
 }
-
-/* 390px 设备兼容，max-width: 414px 已覆盖 */
 </style>

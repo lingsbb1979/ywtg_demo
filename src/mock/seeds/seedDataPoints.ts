@@ -97,7 +97,7 @@ export const DATA_POINT_ROWS = BUILDING_SPACE_IDS.flatMap((spaceId, bIdx) =>
     const buildingNo = String(spaceId - 1000).padStart(3, "0") // "001"-"023"
     return {
       id,
-      measure_point_id: null,
+      measure_point_id: bIdx * 3 + fIdx + 1,  // 关联 iot_measure_point.id（与 seedIotHierarchy 对应）
       name: `B${buildingNo}-${fc.nameSuffix}传感器`,
       tag_key: `${fc.tag_key_prefix}_B${buildingNo}`,
       offset_address: null,
