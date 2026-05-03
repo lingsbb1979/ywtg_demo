@@ -103,27 +103,59 @@
             :key="inc.id"
             class="screen-em-archive__item screen-glass-card"
           >
-            <div class="screen-em-archive__item-left">
-              <span
-                class="badge-screen"
-                :class="Number(inc.status) === 40 ? 'badge-screen--green' : 'badge-screen--red'"
-              >{{ Number(inc.status) === 40 ? '已结案' : '处理中' }}</span>
-              <span class="screen-em-archive__no">{{ inc.incident_no }}</span>
+            <!-- 顶部摘要行 -->
+            <div class="screen-em-archive__item-row" @click="toggleExpand(inc.id)">
+              <div class="screen-em-archive__item-left">
+                <span
+                  class="badge-screen"
+                  :class="Number(inc.status) === 40 ? 'badge-screen--green' : 'badge-screen--red'"
+                >{{ Number(inc.status) === 40 ? '已结案' : '处理中' }}</span>
+                <span class="screen-em-archive__no">{{ inc.incident_no }}</span>
+              </div>
+              <div class="screen-em-archive__item-mid">
+                <span class="screen-em-archive__building">{{ getBuilding(inc.building_id) }}</span>
+                <span class="screen-em-archive__time">触发：{{ inc.trigger_time }}</span>
+              </div>
+              <div class="screen-em-archive__item-right">
+                <span v-if="inc.close_type === 'REPAIR_ORDER'" class="badge-screen badge-screen--orange">
+                  🔧 转修缮工单
+                </span>
+                <span v-else-if="inc.close_type === 'REPORT_GOV'" class="badge-screen badge-screen--red">
+                  🏛️ 上报市政府·已归档
+                </span>
+                <span v-else class="badge-screen" style="border:1px solid rgba(255,255,255,0.2)">
+                  进行中（步骤 {{ inc.current_step }}/{{ planNodesCount }}）
+                </span>
+                <span class="screen-em-archive__expand-btn">{{ expandedIds.has(inc.id) ? '▲' : '▼' }}</span>
+              </div>
             </div>
-            <div class="screen-em-archive__item-mid">
-              <span class="screen-em-archive__building">{{ getBuilding(inc.building_id) }}</span>
-              <span class="screen-em-archive__time">触发：{{ inc.trigger_time }}</span>
-            </div>
-            <div class="screen-em-archive__item-right">
-              <span v-if="inc.close_type === 'REPAIR_ORDER'" class="badge-screen badge-screen--orange">
-                🔧 转修缮工单
-              </span>
-              <span v-else-if="inc.close_type === 'REPORT_GOV'" class="badge-screen badge-screen--red">
-                🏛️ 上报市政府·已归档
-              </span>
-              <span v-else class="badge-screen" style="border:1px solid rgba(255,255,255,0.2)">
-                进行中（步骤 {{ inc.current_step }}/{{ planNodesCount }}）
-              </span>
+
+            <!-- 展开时间轴 -->
+            <div v-if="expandedIds.has(inc.id)" class="screen-em-archive__timeline">
+              <div
+                v-for="(step, idx) in getIncidentTimeline(inc)"
+                :key="step.node_code"
+                class="screen-em-tl-item"
+                :class="step.confirmed ? 'screen-em-tl-item--done' : 'screen-em-tl-item--pending'"
+              >
+                <div class="screen-em-tl-item__dot" />
+                <div class="screen-em-tl-item__body">
+                  <span class="screen-em-tl-item__name">步骤 {{ idx + 1 }}：{{ step.node_name }}</span>
+                  <span v-if="step.confirmed" class="screen-em-tl-item__time">{{ step.confirm_time }}</span>
+                  <span v-else class="screen-em-tl-item__time screen-em-tl-item__time--none">未执行</span>
+                </div>
+              </div>
+              <!-- 结案节点 -->
+              <div v-if="Number(inc.status) === 40" class="screen-em-tl-item screen-em-tl-item--close">
+                <div class="screen-em-tl-item__dot screen-em-tl-item__dot--close" />
+                <div class="screen-em-tl-item__body">
+                  <span class="screen-em-tl-item__name">
+                    <template v-if="inc.close_type === 'REPAIR_ORDER'">🔧 结案：转修缮工单处置</template>
+                    <template v-else-if="inc.close_type === 'REPORT_GOV'">🏛️ 结案：上报市政府，申请整体拆除</template>
+                    <template v-else>结案</template>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -148,9 +180,11 @@ import {
   getActiveIncident,
   getAllIncidents,
   getPlanNodes,
+  getIncidentOrders,
   confirmStep,
   type EmergencyIncident,
   type EmergencyFlowNode,
+  type EmergencyOrder,
 } from "@/services/emergencyService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 
@@ -159,6 +193,27 @@ const activeIncident = ref<EmergencyIncident | null>(null)
 const planNodes      = ref<EmergencyFlowNode[]>([])
 const allIncidents   = ref<EmergencyIncident[]>([])
 const spaces         = ref<{ id: number; name: string }[]>([])
+
+// 展开状态：归档事件 id 集合
+const expandedIds = ref(new Set<number>())
+function toggleExpand(id: number): void {
+  const s = new Set(expandedIds.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  expandedIds.value = s
+}
+
+/** 将事件步骤与确认记录合并，生成时间轴 */
+function getIncidentTimeline(inc: EmergencyIncident): Array<{
+  node_code: string; node_name: string; confirmed: boolean; confirm_time: string | null
+}> {
+  const nodes = getPlanNodes(inc.plan_id)
+  const orders: EmergencyOrder[] = getIncidentOrders(inc.id)
+  const orderMap = new Map(orders.map((o) => [o.order_type, o]))
+  return nodes.map((node) => {
+    const order = orderMap.get(node.node_code)
+    return { node_code: node.node_code, node_name: node.node_name, confirmed: !!order, confirm_time: order?.confirm_time ?? null }
+  })
+}
 
 function getBuilding(id: number | null): string {
   if (id == null) return "未知建筑"
@@ -282,11 +337,35 @@ onUnmounted(() => clearInterval(timer))
 .screen-em-archive__header { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.85); margin-bottom: 14px; display: flex; align-items: center; }
 .screen-em-archive__empty  { color: rgba(255,255,255,0.4); font-size: 14px; padding: 20px 0; text-align: center; }
 .screen-em-archive__list   { display: flex; flex-direction: column; gap: 10px; }
-.screen-em-archive__item   { display: flex; align-items: center; gap: 16px; padding: 14px 16px; }
+.screen-em-archive__item   { display: flex; flex-direction: column; padding: 14px 16px; cursor: pointer; }
+.screen-em-archive__item-row   { display: flex; align-items: center; gap: 16px; }
 .screen-em-archive__item-left  { display: flex; align-items: center; gap: 10px; flex-shrink: 0; width: 200px; }
 .screen-em-archive__item-mid   { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.screen-em-archive__item-right { flex-shrink: 0; }
+.screen-em-archive__item-right { flex-shrink: 0; display: flex; align-items: center; gap: 10px; }
 .screen-em-archive__no       { font-size: 13px; color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums; }
 .screen-em-archive__building { font-size: 15px; font-weight: 600; color: #fff; }
 .screen-em-archive__time     { font-size: 12px; color: rgba(255,255,255,0.45); }
+.screen-em-archive__expand-btn { font-size: 11px; color: rgba(255,255,255,0.35); cursor: pointer; padding: 0 4px; }
+
+/* 归档时间轴 */
+.screen-em-archive__timeline { margin-top: 14px; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 0; }
+.screen-em-tl-item { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 12px; position: relative; }
+.screen-em-tl-item::before {
+  content: ''; position: absolute; left: 6px; top: 18px; bottom: 0;
+  width: 1px; background: rgba(255,255,255,0.12);
+}
+.screen-em-tl-item:last-child::before { display: none; }
+.screen-em-tl-item__dot {
+  width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; z-index: 1;
+  background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.25);
+}
+.screen-em-tl-item--done .screen-em-tl-item__dot   { background: #10B981; border-color: #10B981; }
+.screen-em-tl-item--close .screen-em-tl-item__dot,
+.screen-em-tl-item__dot--close                      { background: #1677FF; border-color: #1677FF; }
+.screen-em-tl-item__body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.screen-em-tl-item__name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.8); }
+.screen-em-tl-item--pending .screen-em-tl-item__name { color: rgba(255,255,255,0.35); }
+.screen-em-tl-item--close  .screen-em-tl-item__name  { color: #60AEFF; }
+.screen-em-tl-item__time { font-size: 12px; color: rgba(255,255,255,0.45); font-variant-numeric: tabular-nums; }
+.screen-em-tl-item__time--none { color: rgba(255,255,255,0.2); }
 </style>

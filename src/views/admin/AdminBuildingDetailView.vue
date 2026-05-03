@@ -164,8 +164,8 @@
               <td>
                 <span class="badge" :class="alarmStatusClass(alarm.status)">{{ alarmStatusLabel(alarm.status) }}</span>
               </td>
-              <td class="tabular-nums">{{ alarm.alarm_time ?? '—' }}</td>
-              <td>{{ alarm.description ?? alarm.alarm_type ?? '—' }}</td>
+              <td class="tabular-nums">{{ alarm.trigger_time ?? alarm.alarm_time ?? '—' }}</td>
+              <td>{{ alarm.alarm_title ?? alarm.alarm_content ?? alarm.alarm_type ?? '—' }}</td>
             </tr>
           </tbody>
         </table>
@@ -213,6 +213,63 @@
           </tbody>
         </table>
       </div>
+
+      <!-- ⑤ 应急处置记录区（zone:emergency）-->
+      <div v-if="buildingIncidents.length > 0" class="pc-card admin-card" data-zone="emergency">
+        <div class="admin-card__header">
+          <span class="admin-card__title">🚨 应急处置记录</span>
+          <span class="admin-card__count">{{ buildingIncidents.length }} 条</span>
+        </div>
+
+        <div v-for="inc in buildingIncidents" :key="inc.id" class="em-incident-block">
+          <!-- 事件头 -->
+          <div class="em-incident-block__header">
+            <span class="badge" :class="Number(inc.status) === 40 ? 'badge--success' : 'badge--danger'">
+              {{ Number(inc.status) === 40 ? '已结案' : '处理中' }}
+            </span>
+            <span class="em-incident-block__no tabular-nums">{{ inc.incident_no }}</span>
+            <span class="em-incident-block__time tabular-nums">触发：{{ inc.trigger_time }}</span>
+            <span v-if="inc.close_type === 'REPAIR_ORDER'" class="badge badge--warning">🔧 转修缮工单</span>
+            <span v-else-if="inc.close_type === 'REPORT_GOV'" class="badge badge--danger">🏛️ 上报市政府·申请拆除</span>
+          </div>
+
+          <!-- 步骤时间轴 -->
+          <div class="em-timeline">
+            <div
+              v-for="(node, idx) in getIncidentTimeline(inc)"
+              :key="node.node_code"
+              class="em-timeline__item"
+              :class="{
+                'em-timeline__item--done':    node.confirmed,
+                'em-timeline__item--pending': !node.confirmed,
+              }"
+            >
+              <div class="em-timeline__dot" />
+              <div class="em-timeline__content">
+                <div class="em-timeline__step">步骤 {{ idx + 1 }}：{{ node.node_name }}</div>
+                <div v-if="node.confirmed" class="em-timeline__time tabular-nums">
+                  确认时间：{{ node.confirm_time }}
+                </div>
+                <div v-else class="em-timeline__time" style="color:var(--pc-text-placeholder,#9CA3AF)">
+                  未执行
+                </div>
+              </div>
+            </div>
+
+            <!-- 结案节点 -->
+            <div v-if="Number(inc.status) === 40" class="em-timeline__item em-timeline__item--close">
+              <div class="em-timeline__dot em-timeline__dot--close" />
+              <div class="em-timeline__content">
+                <div class="em-timeline__step">
+                  <template v-if="inc.close_type === 'REPAIR_ORDER'">🔧 结案：转修缮工单处置</template>
+                  <template v-else-if="inc.close_type === 'REPORT_GOV'">🏛️ 结案：上报市政府，申请整体拆除</template>
+                  <template v-else>结案</template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -223,6 +280,14 @@ import { useRoute } from "vue-router"
 import { getBuilding, type BuildingDetail } from "@/services/buildingService"
 import { getAnalysisResult, type AnalysisMetricResult } from "@/services/analysisService"
 import { getTable } from "@/services/sqliteMirrorRepository"
+import {
+  getAllIncidents,
+  getIncidentOrders,
+  getPlanNodes,
+  type EmergencyIncident,
+  type EmergencyFlowNode,
+  type EmergencyOrder,
+} from "@/services/emergencyService"
 
 // ── 路由参数 ──────────────────────────────────────────────────────────────────
 
@@ -234,6 +299,7 @@ const loading         = ref(true)
 const building        = ref(null as BuildingDetail | null)
 const analysisMetrics = ref([] as AnalysisMetricResult[])
 const buildingAlarms  = ref([] as Array<Record<string, unknown>>)
+const buildingIncidents = ref<EmergencyIncident[]>([])
 
 // ── 辅助函数 ──────────────────────────────────────────────────────────────────
 
@@ -289,6 +355,24 @@ function metricName(metricId: number): string {
   return names[metricId] ?? `指标 ${metricId}`
 }
 
+/** 将应急事件步骤与确认记录合并，生成带时间戳的时间轴数据 */
+function getIncidentTimeline(inc: EmergencyIncident): Array<{
+  node_code: string; node_name: string; confirmed: boolean; confirm_time: string | null
+}> {
+  const nodes: EmergencyFlowNode[] = getPlanNodes(inc.plan_id)
+  const orders: EmergencyOrder[]   = getIncidentOrders(inc.id)
+  const orderMap = new Map(orders.map((o) => [o.order_type, o]))
+  return nodes.map((node) => {
+    const order = orderMap.get(node.node_code)
+    return {
+      node_code:    node.node_code,
+      node_name:    node.node_name,
+      confirmed:    !!order,
+      confirm_time: order?.confirm_time ?? null,
+    }
+  })
+}
+
 // ── 数据加载 ──────────────────────────────────────────────────────────────────
 
 onMounted(() => {
@@ -314,6 +398,11 @@ onMounted(() => {
   const allAlarms = getTable("alarm_record") as Array<Record<string, unknown>>
   buildingAlarms.value = allAlarms.filter(
     (a) => a.space_id === id || a.building_id === id
+  )
+
+  // 加载关联应急事件
+  buildingIncidents.value = getAllIncidents().filter(
+    (inc) => Number(inc.building_id) === id
   )
 })
 </script>
@@ -565,4 +654,59 @@ onMounted(() => {
 /* ===== 颜色辅助 ===== */
 .text-success { color: var(--color-success, #10B981); }
 .text-muted   { color: var(--pc-text-muted, #94A3B8); }
+
+/* ===== 应急时间轴 ===== */
+.em-incident-block {
+  border: 1px solid var(--pc-border, #E5E7EB);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.em-incident-block:last-child { margin-bottom: 0; }
+.em-incident-block__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.em-incident-block__no { font-size: 13px; color: var(--pc-text-body, #374151); font-variant-numeric: tabular-nums; }
+.em-incident-block__time { font-size: 12px; color: var(--pc-text-muted, #9CA3AF); font-variant-numeric: tabular-nums; margin-left: auto; }
+
+.em-timeline { display: flex; flex-direction: column; gap: 0; padding-left: 8px; }
+.em-timeline__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 14px;
+  position: relative;
+}
+.em-timeline__item::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 20px;
+  bottom: 0;
+  width: 2px;
+  background: var(--pc-border, #E5E7EB);
+}
+.em-timeline__item:last-child::before { display: none; }
+.em-timeline__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: var(--pc-border, #D1D5DB);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--pc-border, #D1D5DB);
+  z-index: 1;
+}
+.em-timeline__item--done .em-timeline__dot   { background: #10B981; box-shadow: 0 0 0 2px #10B981; }
+.em-timeline__item--close .em-timeline__dot  { background: #1B6FE8; box-shadow: 0 0 0 2px #1B6FE8; }
+.em-timeline__dot--close { background: #1B6FE8 !important; }
+.em-timeline__content { flex: 1; }
+.em-timeline__step  { font-size: 13px; font-weight: 500; color: var(--pc-text-body, #374151); }
+.em-timeline__item--pending .em-timeline__step { color: var(--pc-text-muted, #9CA3AF); }
+.em-timeline__time  { font-size: 12px; color: var(--pc-text-muted, #9CA3AF); margin-top: 2px; font-variant-numeric: tabular-nums; }
 </style>
