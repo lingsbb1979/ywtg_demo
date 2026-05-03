@@ -210,42 +210,42 @@
         <span class="admin-console-section__desc">触发场景后快速切换到对应页面验证效果</span>
       </div>
       <div class="admin-console-section__body admin-shortcut-grid">
-        <router-link class="admin-shortcut-btn" to="/screen/home">
+        <router-link class="admin-shortcut-btn" to="/screen/home" target="_blank">
           <span class="admin-shortcut-btn__icon">📺</span>
           <div>
             <div class="admin-shortcut-btn__label">打开大屏</div>
             <div class="admin-shortcut-btn__desc">查看建筑点位和隐患态势</div>
           </div>
         </router-link>
-        <router-link class="admin-shortcut-btn" to="/h5/work-orders">
+        <router-link class="admin-shortcut-btn" to="/h5/work-orders" target="_blank">
           <span class="admin-shortcut-btn__icon">📱</span>
           <div>
             <div class="admin-shortcut-btn__label">打开 H5 移动端</div>
             <div class="admin-shortcut-btn__desc">外勤接单处置演示</div>
           </div>
         </router-link>
-        <router-link class="admin-shortcut-btn" to="/admin/alarms">
+        <router-link class="admin-shortcut-btn" to="/admin/alarms" target="_blank">
           <span class="admin-shortcut-btn__icon">🚨</span>
           <div>
             <div class="admin-shortcut-btn__label">告警中心</div>
             <div class="admin-shortcut-btn__desc">确认告警 · 自动派单</div>
           </div>
         </router-link>
-        <router-link class="admin-shortcut-btn" to="/admin/work-orders">
+        <router-link class="admin-shortcut-btn" to="/admin/work-orders" target="_blank">
           <span class="admin-shortcut-btn__icon">📝</span>
           <div>
             <div class="admin-shortcut-btn__label">工单中心</div>
             <div class="admin-shortcut-btn__desc">核查工单 · 销号闭环</div>
           </div>
         </router-link>
-        <router-link class="admin-shortcut-btn" to="/admin/buildings">
+        <router-link class="admin-shortcut-btn" to="/admin/buildings" target="_blank">
           <span class="admin-shortcut-btn__icon">🏚</span>
           <div>
             <div class="admin-shortcut-btn__label">建筑档案</div>
             <div class="admin-shortcut-btn__desc">23 栋历史建筑列表</div>
           </div>
         </router-link>
-        <router-link class="admin-shortcut-btn" to="/admin/dashboard">
+        <router-link class="admin-shortcut-btn" to="/admin/dashboard" target="_blank">
           <span class="admin-shortcut-btn__icon">📊</span>
           <div>
             <div class="admin-shortcut-btn__label">工作台</div>
@@ -436,9 +436,9 @@ const currentOrderId = computed(() => {
 
 function goToOrder() {
   if (currentOrderId.value != null) {
-    router.push(`/admin/work-orders/${currentOrderId.value}`)
+    window.open(`/admin/work-orders/${currentOrderId.value}`, "_blank")
   } else {
-    router.push("/admin/work-orders")
+    window.open("/admin/work-orders", "_blank")
   }
 }
 
