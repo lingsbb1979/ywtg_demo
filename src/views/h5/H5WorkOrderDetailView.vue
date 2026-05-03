@@ -547,6 +547,8 @@ onMounted(() => {
 /* ===== 顶部 Banner ===== */
 .h5-detail-banner {
   padding: 20px 16px 16px;
+  margin: 0 16px;
+  border-radius: 0 0 var(--radius-lg, 12px) var(--radius-lg, 12px);
   background: var(--h5-gradient-banner, linear-gradient(135deg, #0E3875 0%, #1B6FE8 100%));
   color: #fff;
 }
