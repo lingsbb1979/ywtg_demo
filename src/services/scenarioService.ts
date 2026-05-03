@@ -3,6 +3,8 @@
  * T15.64 resetDemo()：清空并写入固定演示种子数据
  */
 import { getTable, resetTables, setTable } from "./sqliteMirrorRepository"
+import { ANALYSIS_LINK_ROWS } from "../mock/seeds/seedAnalysisLink"
+import { DATA_POINT_ROWS, FACTOR_TYPE_ROWS } from "../mock/seeds/seedDataPoints"
 
 // ── 时间辅助函数（置顶避免前向引用问题）─────────────────────────────────────────
 
@@ -126,6 +128,14 @@ export function resetDemo(): void {
   // 清空当前活跃应急事件（确保演示开始时大屏无弹窗）
   setTable("emergency_incident", [])
   setTable("emergency_order",    [])
+  // IoT 分析配置：带 point_ids 的完整关联版本（用于 IoT 驱动触发和分析页展示）
+  setTable("space_analysis_config", ANALYSIS_LINK_ROWS)
+  // 数据点定义（用于遥测页展示因子名称/单位/阈值）
+  setTable("iot_data_point",  DATA_POINT_ROWS)
+  setTable("iot_factor_type", FACTOR_TYPE_ROWS)
+  // 清空历史遥测和分析档案，确保演示数据干净
+  setTable("iot_telemetry",          [])
+  setTable("space_analysis_archive", [])
 }
 
 // ── T15.65 triggerOrangeCrack ─────────────────────────────────────────────────

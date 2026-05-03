@@ -159,16 +159,11 @@ export function startOrangeCrackIot(callbacks: IotDemoCallbacks): void {
     appendTelemetry(CRACK_POINT_ID, value)
     callbacks.onTick(tick, value)
 
-    // 执行风险分析
-    const result = calculateBuildingRisk(CRACK_SPACE_ID)
-    const crackMetric = result.ok
-      ? result.metrics.find((m) => m.metricId === 1)
-      : null
+    // 执行风险分析（写入 space_analysis_archive，如果配置已存在）
+    calculateBuildingRisk(CRACK_SPACE_ID)
 
-    const triggered =
-      crackMetric != null &&
-      (crackMetric.riskLevel === "ORANGE" || crackMetric.riskLevel === "RED") &&
-      value >= CRACK_LIMIT_H
+    // 直接基于注入值判断阈值，不依赖 space_analysis_config 是否已播种
+    const triggered = value >= CRACK_LIMIT_H
 
     if (triggered) {
       ensureAlarm({
@@ -181,7 +176,7 @@ export function startOrangeCrackIot(callbacks: IotDemoCallbacks): void {
       })
       clearInterval(orangeTimer!)
       orangeTimer = null
-      callbacks.onDone("triggered", crackMetric!.riskLevel)
+      callbacks.onDone("triggered", "ORANGE")
       return
     }
 
@@ -210,16 +205,11 @@ export function startRedTiltIot(callbacks: IotDemoCallbacks): void {
     appendTelemetry(TILT_POINT_ID, value)
     callbacks.onTick(tick, value)
 
-    // 执行风险分析
-    const result = calculateBuildingRisk(TILT_SPACE_ID)
-    const tiltMetric = result.ok
-      ? result.metrics.find((m) => m.metricId === 2)
-      : null
+    // 执行风险分析（写入 space_analysis_archive，如果配置已存在）
+    calculateBuildingRisk(TILT_SPACE_ID)
 
-    const triggered =
-      tiltMetric != null &&
-      tiltMetric.riskLevel === "RED" &&
-      value >= TILT_LIMIT_HH
+    // 直接基于注入值判断阈值，不依赖 space_analysis_config 是否已播种
+    const triggered = value >= TILT_LIMIT_HH
 
     if (triggered) {
       ensureAlarm({
