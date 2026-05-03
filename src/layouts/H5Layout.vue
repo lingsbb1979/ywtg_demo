@@ -2,7 +2,10 @@
   <div class="h5-layout">
     <!-- 顶部 header -->
     <header class="h5-layout__header">
+      <button v-if="showBack" class="h5-layout__back" @click="goBack">←</button>
+      <div v-else class="h5-layout__header-side" />
       <span class="h5-layout__title">{{ pageTitle }}</span>
+      <div class="h5-layout__header-side" />
     </header>
 
     <!-- 内容区 -->
@@ -34,14 +37,21 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()
+const router = useRouter()
 
+const ROOT_PATHS = ['/h5/work-orders', '/h5/mine']
+const showBack = computed(() => !ROOT_PATHS.some(p => route.path.startsWith(p)))
 const pageTitle = computed(() => (route.meta?.title as string) ?? "历史建筑安全监测")
 
 function isActive(path: string): boolean {
   return route.path.startsWith(path)
+}
+
+function goBack(): void {
+  router.back()
 }
 </script>
 
@@ -64,12 +74,32 @@ function isActive(path: string): boolean {
   height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 0 4px;
   background: #1677ff;
   color: #fff;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.h5-layout__header-side {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.h5-layout__back {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .h5-layout__content {

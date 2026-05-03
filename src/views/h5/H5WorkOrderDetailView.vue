@@ -43,15 +43,6 @@
 
   <div class="h5-work-order-detail h5-main" style="background: var(--h5-bg-page, #F7F9FC)">
 
-    <!-- ===== 顶部导航栏（h5-header）===== -->
-    <header class="h5-header">
-      <button class="h5-header__back" @click="goBack">←</button>
-      <span class="h5-header__title">工单详情</span>
-      <div class="h5-header__actions">
-        <span style="font-size:18px">🔔</span>
-      </div>
-    </header>
-
     <!-- ===== 加载中 / 无数据 ===== -->
     <div v-if="loading" class="h5-detail-loading">
       <span style="color:var(--h5-text-muted,#94A3B8)">加载中...</span>
@@ -489,48 +480,6 @@ onMounted(() => {
   padding-bottom: calc(var(--h5-tabbar-height, 56px) + env(safe-area-inset-bottom) + 16px);
 }
 
-/* ===== 顶部导航栏 ===== */
-.h5-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  height: var(--h5-header-height, 56px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  background: linear-gradient(135deg, #0E3875 0%, #1B6FE8 100%);
-  color: #fff;
-}
-.h5-header__back {
-  width: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: -12px;
-  color: rgba(255,255,255,0.9);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  font-size: 18px;
-}
-.h5-header__title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #fff;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-.h5-header__actions {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  min-height: 44px;
-}
-
 /* ===== 空/加载状态 ===== */
 .h5-detail-loading,
 .h5-detail-empty {
@@ -547,8 +496,6 @@ onMounted(() => {
 /* ===== 顶部 Banner ===== */
 .h5-detail-banner {
   padding: 20px 16px 16px;
-  margin: 0 16px;
-  border-radius: 0 0 var(--radius-lg, 12px) var(--radius-lg, 12px);
   background: var(--h5-gradient-banner, linear-gradient(135deg, #0E3875 0%, #1B6FE8 100%));
   color: #fff;
 }
@@ -579,7 +526,7 @@ onMounted(() => {
   border-radius: var(--radius-lg, 12px);
   border: 1px solid var(--h5-border, #EEF2F7);
   box-shadow: var(--h5-shadow-card, 0 2px 8px rgba(0,0,0,0.06));
-  margin: 8px 16px 0;
+  margin: 8px 0 0;
 }
 
 .h5-detail-card {

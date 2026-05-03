@@ -8,13 +8,6 @@
   -->
   <div class="h5-building-metrics h5-main" style="background: var(--h5-bg-page, #F7F9FC)">
 
-    <!-- ===== 顶部导航栏 ===== -->
-    <header class="h5-header">
-      <button class="h5-header__back" @click="goBack">←</button>
-      <span class="h5-header__title">建筑指标</span>
-      <div class="h5-header__actions" />
-    </header>
-
     <!-- ===== 加载中 ===== -->
     <div v-if="loading" class="h5-building-metrics__loading">
       <span style="color:var(--h5-text-muted,#94A3B8)">加载中...</span>
@@ -269,41 +262,6 @@ function goBack() {
   min-height: 100vh;
   background: var(--h5-bg-page, #F7F9FC);
   padding-bottom: calc(var(--h5-tabbar-height, 56px) + env(safe-area-inset-bottom) + 16px);
-}
-
-/* ===== 顶部导航 ===== */
-.h5-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  height: var(--h5-header-height, 56px);
-  padding: 0 16px;
-  background: linear-gradient(135deg, #0E3875 0%, #1B6FE8 100%);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  gap: 12px;
-}
-
-.h5-header__back {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  min-width: 32px;
-  min-height: var(--h5-touch-min, 44px);
-  display: flex;
-  align-items: center;
-}
-
-.h5-header__title {
-  flex: 1;
-  font-size: 17px;
-  font-weight: 600;
-  color: #fff;
 }
 
 /* ===== 加载/空状态 ===== */
