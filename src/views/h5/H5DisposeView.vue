@@ -172,11 +172,11 @@ const msgSuccess  = ref(false)
 
 // ── T15.105 GPS mock ────────────────────────────────────────────────────────
 const gpsChecked  = ref(false)
-/** 演示用固定模拟坐标（佳木斯市区附近） */
-const mockLocation = {
+/** 演示用固定模拟坐标（佳木斯市区附近，可被上次记录覆盖） */
+const mockLocation = ref({
   lat: 46.8301 + (Math.random() - 0.5) * 0.002,
   lng: 130.3631 + (Math.random() - 0.5) * 0.002,
-}
+})
 /** 演示距离：50-300 米随机 */
 const mockDistance = ref(Math.floor(50 + Math.random() * 250))
 
@@ -246,7 +246,7 @@ function handleSubmit() {
   const result = submitDisposal(orderId.value, {
     disposalDesc: description.value.trim(),
     gpsLocation:  gpsChecked.value
-      ? `${mockLocation.lat.toFixed(5)},${mockLocation.lng.toFixed(5)}`
+      ? `${mockLocation.value.lat.toFixed(5)},${mockLocation.value.lng.toFixed(5)}`
       : null,
     imageUrls: photos.value.length > 0 ? photos.value.join(",") : null,
   })
@@ -282,6 +282,7 @@ onMounted(() => {
     id: number; order_id: number
     disposal_desc: string | null
     image_urls: string | null
+    gps_location: string | null
     disposal_time: string | null
   }>("work_order_disposal")
   const prevList = disposals
@@ -291,6 +292,15 @@ onMounted(() => {
     const prev = prevList[0]
     if (prev.disposal_desc) description.value = prev.disposal_desc
     if (prev.image_urls) photos.value = prev.image_urls.split(",").filter(Boolean)
+    if (prev.gps_location) {
+      const parts = (prev.gps_location as string).split(",")
+      const lat = parseFloat(parts[0])
+      const lng = parseFloat(parts[1])
+      if (!isNaN(lat) && !isNaN(lng)) {
+        mockLocation.value = { lat, lng }
+        gpsChecked.value = true
+      }
+    }
   }
 
   loading.value = false
