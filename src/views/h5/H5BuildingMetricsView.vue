@@ -90,6 +90,49 @@
         </div>
       </div>
 
+      <!-- IoT 实时遥测数据 -->
+      <div class="h5-card h5-building-metrics__section" data-zone="iot-telemetry">
+        <div class="h5-building-metrics__section-title">📡 IoT 实时采集数据</div>
+        <div v-if="iotSummary && iotSummary.points.length > 0" class="h5-iot-points">
+          <div
+            v-for="pt in iotSummary.points"
+            :key="pt.pointId"
+            class="h5-iot-point"
+          >
+            <div class="h5-iot-point__head">
+              <span class="h5-iot-point__name">{{ pt.factorName }}</span>
+              <span class="h5-iot-point__code">{{ pt.factorCode }}</span>
+            </div>
+            <div class="h5-iot-point__row">
+              <span
+                class="h5-iot-point__value tabular-nums"
+                :class="h5ValueClass(pt)"
+              >
+                {{ pt.latestValue !== null ? pt.latestValue.toFixed(2) : '--' }}
+              </span>
+              <span class="h5-iot-point__unit">{{ pt.unit }}</span>
+              <span class="h5-iot-point__ts tabular-nums">{{ pt.latestTs?.slice(11, 19) ?? '--' }}</span>
+            </div>
+            <div class="h5-iot-point__thresholds">
+              橙色: ≥{{ pt.limitH ?? '--' }} · 红色: ≥{{ pt.limitHh ?? '--' }}
+            </div>
+            <!-- 最近10条 -->
+            <div v-if="pt.recent10.length > 0" class="h5-iot-sparkline">
+              <span
+                v-for="(r, i) in pt.recent10"
+                :key="i"
+                class="h5-iot-spark"
+                :class="h5SparkClass(pt, r.value)"
+                :title="`${r.ts}: ${r.value}`"
+              >{{ r.value !== null ? r.value.toFixed(1) : '·' }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="h5-building-metrics__empty-hint">
+          暂无遥测数据，请先初始化演示数据
+        </div>
+      </div>
+
       <!-- 分析结果 -->
       <div v-if="analysisResults.length > 0" class="h5-card h5-building-metrics__section" data-zone="analysis">
         <div class="h5-building-metrics__section-title">分析结果</div>
@@ -124,6 +167,7 @@
 import { ref, computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { getTable } from "@/services/sqliteMirrorRepository"
+import { getBuildingIotSummary, type BuildingIotSummary } from "@/services/iotDemoService"
 
 // ── 路由 ──────────────────────────────────────────────────────────────────────
 const route  = useRoute()
@@ -179,6 +223,24 @@ const building        = ref(null as SpaceRow | null)
 const metrics         = ref<MetricDisplay[]>([])
 const analysisResults = ref<AnalysisRow[]>([])
 const activeAlarmCount = ref(0)
+const iotSummary      = ref(null as BuildingIotSummary | null)
+
+type IotPoint = BuildingIotSummary["points"][number]
+
+function h5ValueClass(pt: IotPoint): string {
+  const v = pt.latestValue
+  if (v === null) return ""
+  if (pt.limitHh !== null && v >= pt.limitHh) return "h5-val--red"
+  if (pt.limitH  !== null && v >= pt.limitH)  return "h5-val--orange"
+  return "h5-val--green"
+}
+
+function h5SparkClass(pt: IotPoint, v: number | null): string {
+  if (v === null) return "spark-gray"
+  if (pt.limitHh !== null && v >= pt.limitHh) return "spark-red"
+  if (pt.limitH  !== null && v >= pt.limitH)  return "spark-orange"
+  return "spark-green"
+}
 
 // ── 计算属性 ──────────────────────────────────────────────────────────────────
 const riskColor = computed<string>(() => {
@@ -247,6 +309,9 @@ onMounted(() => {
   activeAlarmCount.value = alarmRows.filter(
     a => a.building_id === id && (a.status === "ACTIVE" || a.status === "PENDING")
   ).length
+
+  // IoT 遥测汇总
+  iotSummary.value = getBuildingIotSummary(id)
 
   loading.value = false
 })
@@ -463,4 +528,79 @@ function goBack() {
   font-size: 11px;
   color: var(--h5-text-muted, #94A3B8);
 }
+
+/* ===== IoT 遥测 ===== */
+.h5-iot-points {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.h5-iot-point {
+  padding: 10px;
+  border: 1px solid var(--h5-border, #EEF2F7);
+  border-radius: 8px;
+  background: var(--h5-bg-card, #fff);
+}
+.h5-iot-point__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.h5-iot-point__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--h5-text-title, #1C2B4A);
+}
+.h5-iot-point__code {
+  font-size: 11px;
+  padding: 1px 6px;
+  background: rgba(27,111,232,0.08);
+  color: var(--h5-primary, #1B6FE8);
+  border-radius: 4px;
+}
+.h5-iot-point__row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.h5-iot-point__value {
+  font-size: 22px;
+  font-weight: 700;
+}
+.h5-val--green  { color: #059669; }
+.h5-val--orange { color: #D97706; }
+.h5-val--red    { color: #DC2626; }
+.h5-iot-point__unit {
+  font-size: 12px;
+  color: var(--h5-text-muted, #94A3B8);
+}
+.h5-iot-point__ts {
+  font-size: 11px;
+  color: var(--h5-text-muted, #94A3B8);
+  margin-left: auto;
+}
+.h5-iot-point__thresholds {
+  font-size: 11px;
+  color: var(--h5-text-muted, #94A3B8);
+  margin-bottom: 6px;
+}
+.h5-iot-sparkline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.h5-iot-spark {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+}
+.spark-green  { background: #D1FAE5; color: #059669; }
+.spark-orange { background: #FEF3C7; color: #D97706; }
+.spark-red    { background: #FEE2E2; color: #DC2626; }
+.spark-gray   { background: #F1F5F9; color: #94A3B8; }
 </style>

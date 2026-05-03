@@ -214,6 +214,41 @@
             查看全部告警 →
           </router-link>
         </div>
+
+        <!-- IoT 实时数据区域（选中建筑时显示）(data-zone="iot-panel") -->
+        <div v-if="selectedPoint" class="screen-iot-panel" data-zone="iot-panel">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar screen-panel__title-bar--iot" />
+            📡 {{ selectedPoint.name }} IoT 数据
+          </div>
+          <div v-if="selectedIotSummary" class="screen-iot-points">
+            <div
+              v-for="pt in selectedIotSummary.points"
+              :key="pt.pointId"
+              class="screen-iot-point"
+            >
+              <span class="screen-iot-point__label">{{ pt.factorName }}</span>
+              <span
+                class="screen-iot-point__value tabular-nums"
+                :class="screenValueClass(pt)"
+              >
+                {{ pt.latestValue !== null ? pt.latestValue.toFixed(2) : '--' }}
+              </span>
+              <span class="screen-iot-point__unit">{{ pt.unit }}</span>
+              <!-- 最近10条迷你条形 -->
+              <div class="screen-iot-sparkline">
+                <span
+                  v-for="(r, i) in pt.recent10"
+                  :key="i"
+                  class="screen-iot-sparkline__bar"
+                  :class="screenDotClass(pt, r.value)"
+                  :title="`${r.ts}: ${r.value}`"
+                />
+              </div>
+            </div>
+          </div>
+          <div v-else class="screen-iot-empty">暂无遥测数据</div>
+        </div>
       </aside>
     </main>
 
@@ -335,6 +370,7 @@ import {
   type EmergencyFlowNode,
 } from "@/services/emergencyService"
 import { getTable } from "@/services/sqliteMirrorRepository"
+import { getBuildingIotSummary, type BuildingIotSummary } from "@/services/iotDemoService"
 
 // ── 响应式状态 ────────────────────────────────────────────────────────────────
 const kpi           = ref<ScreenKpi>({ totalBuildings: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 })
@@ -343,6 +379,29 @@ const selectedPoint = ref<MapPoint | null>(null)
 const hazardList  = ref<HazardListItem[]>([])
 const board       = ref<WorkOrderBoard>({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 })
 const currentTime = ref("")
+
+// IoT mini 面板：点击建筑时读取遥测汇总
+const selectedIotSummary = computed((): BuildingIotSummary | null => {
+  if (!selectedPoint.value) return null
+  return getBuildingIotSummary(selectedPoint.value.id)
+})
+
+type IotPointSummary = BuildingIotSummary["points"][number]
+
+function screenValueClass(pt: IotPointSummary): string {
+  const v = pt.latestValue
+  if (v === null) return ""
+  if (pt.limitHh !== null && v >= pt.limitHh) return "screen-iot--red"
+  if (pt.limitH  !== null && v >= pt.limitH)  return "screen-iot--orange"
+  return "screen-iot--green"
+}
+
+function screenDotClass(pt: IotPointSummary, v: number | null): string {
+  if (v === null) return "bar-gray"
+  if (pt.limitHh !== null && v >= pt.limitHh) return "bar-red"
+  if (pt.limitH  !== null && v >= pt.limitH)  return "bar-orange"
+  return "bar-green"
+}
 
 /**
  * T15.118 — 地图失败列表兜底模式。
@@ -1169,5 +1228,63 @@ onUnmounted(() => clearInterval(timer))
 .emergency-fade-enter-from,
 .emergency-fade-leave-to {
   opacity: 0;
+}
+
+/* ===== IoT 实时数据 mini 面板 ===== */
+.screen-iot-panel {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.screen-panel__title-bar--iot {
+  background: linear-gradient(180deg, #38BDF8 0%, transparent 100%);
+}
+.screen-iot-points {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.screen-iot-point {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+}
+.screen-iot-point__label {
+  font-size: 11px;
+  color: var(--screen-text-muted, rgba(255,255,255,0.5));
+  min-width: 52px;
+}
+.screen-iot-point__value {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: right;
+}
+.screen-iot-point__unit {
+  font-size: 10px;
+  color: var(--screen-text-muted, rgba(255,255,255,0.5));
+}
+.screen-iot--green  { color: #34D399; }
+.screen-iot--orange { color: #FBBF24; }
+.screen-iot--red    { color: #F87171; }
+.screen-iot-sparkline {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 2px;
+  height: 8px;
+}
+.screen-iot-sparkline__bar {
+  flex: 1;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+.bar-green  { background: #34D399; }
+.bar-orange { background: #FBBF24; }
+.bar-red    { background: #F87171; }
+.bar-gray   { background: rgba(255,255,255,0.2); }
+.screen-iot-empty {
+  font-size: 12px;
+  color: var(--screen-text-muted, rgba(255,255,255,0.4));
+  padding: 8px 0;
 }
 </style>

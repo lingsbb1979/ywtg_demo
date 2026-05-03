@@ -200,6 +200,59 @@
           </button>
         </div>
 
+        <!-- 场景 5：IoT 驱动橙色裂缝（新增，不影响上方按钮） -->
+        <div class="admin-scenario-card admin-scenario-card--iot-orange">
+          <div class="admin-scenario-card__badge" style="background:#FEF3C7;color:#D97706">
+            <span>📡</span>
+            IoT · ORANGE
+          </div>
+          <div class="admin-scenario-card__title">IoT 模拟触发橙色（裂缝扩展）</div>
+          <div class="admin-scenario-card__detail">
+            <strong>B003</strong> 杏林路民国砖楼<br>
+            每秒注入裂缝原始遥测数据，分析引擎计算超阈值后自动触发橙色告警
+            <div v-if="iotOrangeTick > 0" class="admin-iot-progress">
+              第 {{ iotOrangeTick }} 次注入 · 当前值 {{ iotOrangeValue.toFixed(2) }} mm
+              <span v-if="iotOrangeState === 'triggered'" class="text-warning">✓ 已触发橙色告警</span>
+              <span v-else-if="iotOrangeState === 'timeout'" class="text-danger">⏱ 超时未触发</span>
+              <span v-else class="text-muted">注入中…</span>
+            </div>
+          </div>
+          <button
+            class="btn-pc-primary"
+            :disabled="iotOrangeRunning"
+            @click="doIotOrange"
+          >
+            {{ iotOrangeRunning ? `注入中 (${iotOrangeTick})…` : '📡 IoT 触发橙色裂缝' }}
+          </button>
+        </div>
+
+        <!-- 场景 6：IoT 驱动红色倾斜（新增，不影响上方按钮） -->
+        <div class="admin-scenario-card admin-scenario-card--iot-red">
+          <div class="admin-scenario-card__badge" style="background:#FEE2E2;color:#DC2626">
+            <span>📡</span>
+            IoT · RED
+          </div>
+          <div class="admin-scenario-card__title">IoT 模拟触发红色（倾斜超限）</div>
+          <div class="admin-scenario-card__detail">
+            <strong>B012</strong> 前进路俄式民居<br>
+            每秒注入倾角原始遥测数据，分析引擎计算超红色阈值后触发应急告警
+            <div v-if="iotRedTick > 0" class="admin-iot-progress">
+              第 {{ iotRedTick }} 次注入 · 当前值 {{ iotRedValue.toFixed(2) }} °
+              <span v-if="iotRedState === 'triggered'" class="text-danger">🔴 已触发红色告警</span>
+              <span v-else-if="iotRedState === 'timeout'" class="text-danger">⏱ 超时未触发</span>
+              <span v-else class="text-muted">注入中…</span>
+            </div>
+          </div>
+          <button
+            class="btn-pc-primary btn-pc-primary--red"
+            style="background:var(--color-danger,#EF4444);border-color:var(--color-danger,#EF4444)"
+            :disabled="iotRedRunning"
+            @click="doIotRed"
+          >
+            {{ iotRedRunning ? `注入中 (${iotRedTick})…` : '📡 IoT 触发红色倾斜' }}
+          </button>
+        </div>
+
       </div>
     </div>
 
@@ -273,6 +326,22 @@
             </div>
           </div>
         </button>
+        <!-- IoT 采集数据快捷跳转 -->
+        <router-link class="admin-shortcut-btn" to="/admin/telemetry" target="_blank">
+          <span class="admin-shortcut-btn__icon">📡</span>
+          <div>
+            <div class="admin-shortcut-btn__label">IoT 采集数据</div>
+            <div class="admin-shortcut-btn__desc">查看遥测历史 · 手动新增采集</div>
+          </div>
+        </router-link>
+        <!-- 数据分析快捷跳转 -->
+        <router-link class="admin-shortcut-btn" to="/admin/analysis" target="_blank">
+          <span class="admin-shortcut-btn__icon">📊</span>
+          <div>
+            <div class="admin-shortcut-btn__label">风险分析</div>
+            <div class="admin-shortcut-btn__desc">分析结果 · 公式 · 风险评分</div>
+          </div>
+        </router-link>
       </div>
     </div>
 
@@ -301,7 +370,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"
+import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
 import {
   resetDemo,
@@ -310,6 +379,13 @@ import {
   triggerTimeoutSupervision,
   simulateDataRecovery,
 } from "@/services/scenarioService"
+import {
+  startOrangeCrackIot,
+  startRedTiltIot,
+  stopAllIotDemo,
+  isOrangeRunning,
+  isRedRunning,
+} from "@/services/iotDemoService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 
 // ── 当前日期 ──────────────────────────────────────────────────────────────────
@@ -428,6 +504,66 @@ function doDataRecovery() {
   }
 }
 
+// ── IoT 模拟触发（新增，不影响上方按钮）─────────────────────────────────────
+
+const iotOrangeTick  = ref(0)
+const iotOrangeValue = ref(0)
+const iotOrangeState = ref<"idle" | "running" | "triggered" | "timeout">("idle")
+const iotRedTick     = ref(0)
+const iotRedValue    = ref(0)
+const iotRedState    = ref<"idle" | "running" | "triggered" | "timeout">("idle")
+
+const iotOrangeRunning = computed(() => iotOrangeState.value === "running" || isOrangeRunning())
+const iotRedRunning    = computed(() => iotRedState.value === "running" || isRedRunning())
+
+function doIotOrange() {
+  iotOrangeTick.value  = 0
+  iotOrangeValue.value = 0
+  iotOrangeState.value = "running"
+  log("▶ IoT 橙色裂缝模拟开始：B003 每秒注入裂缝遥测数据…", "info")
+
+  startOrangeCrackIot({
+    onTick(tick, value) {
+      iotOrangeTick.value  = tick
+      iotOrangeValue.value = value
+    },
+    onDone(outcome, riskLevel) {
+      if (outcome === "triggered") {
+        iotOrangeState.value = "triggered"
+        loadStats()
+        log(`✓ IoT 橙色触发成功：B003 裂缝值 ${iotOrangeValue.value.toFixed(2)}mm | ${riskLevel} 告警已写入 alarm_record`, "success")
+      } else {
+        iotOrangeState.value = "timeout"
+        log("⚠ IoT 橙色触发：注入次数已达上限，请检查分析配置", "error")
+      }
+    },
+  })
+}
+
+function doIotRed() {
+  iotRedTick.value  = 0
+  iotRedValue.value = 0
+  iotRedState.value = "running"
+  log("▶ IoT 红色倾斜模拟开始：B012 每秒注入倾角遥测数据…", "info")
+
+  startRedTiltIot({
+    onTick(tick, value) {
+      iotRedTick.value  = tick
+      iotRedValue.value = value
+    },
+    onDone(outcome) {
+      if (outcome === "triggered") {
+        iotRedState.value = "triggered"
+        loadStats()
+        log(`✓ IoT 红色触发成功：B012 倾角值 ${iotRedValue.value.toFixed(2)}° | RED 告警已写入 alarm_record`, "success")
+      } else {
+        iotRedState.value = "timeout"
+        log("⚠ IoT 红色触发：注入次数已达上限，请检查分析配置", "error")
+      }
+    },
+  })
+}
+
 // ── T15.117 当前工单详情快捷跳转 ─────────────────────────────────────────────
 
 const router = useRouter()
@@ -449,10 +585,14 @@ function goToOrder() {
   }
 }
 
-// ── 初始化 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// ── 初始化 ────────────────────────────────────────────────────────────────────
 
 onMounted(() => {
   loadStats()
+})
+
+onBeforeUnmount(() => {
+  stopAllIotDemo()
 })
 </script>
 
@@ -592,6 +732,19 @@ onMounted(() => {
 .admin-scenario-card--timeout{ border-left: 4px solid #8B5CF6; }
 .admin-scenario-card--recovery{ border-left: 4px solid var(--color-success, #10B981); }
 .admin-scenario-card--reset  { border-left: 4px solid var(--color-danger, #EF4444); }
+.admin-scenario-card--iot-orange { border-left: 4px solid #F59E0B; background: #FFFBEB; }
+.admin-scenario-card--iot-red    { border-left: 4px solid #DC2626; background: #FFF5F5; }
+
+.admin-iot-progress {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  color: var(--pc-text-body, #334155);
+}
+.text-muted { color: var(--pc-text-muted, #94A3B8); }
 
 .admin-scenario-card__badge {
   display: inline-flex;

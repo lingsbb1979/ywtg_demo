@@ -58,6 +58,8 @@ const ROLE_CONFIG: Record<
       { path: "/admin/work-orders",  label: "工单中心" },
       { path: "/screen/emergency",   label: "应急处置" },
       { path: "/admin/supervision",  label: "督办管理" },
+      { path: "/admin/telemetry",    label: "IoT采集数据" },
+      { path: "/admin/analysis",     label: "数据分析" },
       { path: "/admin/demo-console", label: "演示控制台" },
     ],
   },

@@ -120,7 +120,49 @@
       </div>
     </div>
 
-    <!-- ③ 全局概览区（zone:overview）-->
+    <!-- ③ 遥测数据区（zone:telemetry）— 最新值 + 最近10条 -->
+    <div v-if="selectedBuildingId && iotSummary" class="pc-card admin-card" data-zone="telemetry">
+      <div class="admin-card__header">
+        <span class="admin-card__title">📡 IoT 最新采集数据</span>
+        <span class="admin-card__subtitle">{{ iotSummary.buildingName }}（{{ iotSummary.spaceCode }}）</span>
+        <button class="btn-pc-secondary btn-sm" style="margin-left:auto" @click="loadIotSummary">↻ 刷新</button>
+      </div>
+      <div class="admin-telemetry-points">
+        <div
+          v-for="pt in iotSummary.points"
+          :key="pt.pointId"
+          class="admin-tele-point"
+        >
+          <div class="admin-tele-point__head">
+            <span class="admin-tele-point__factor">{{ pt.factorName }}</span>
+            <span class="admin-tele-point__code">{{ pt.factorCode }}</span>
+          </div>
+          <div class="admin-tele-point__latest">
+            <span class="admin-tele-point__value tabular-nums"
+              :class="latestValueClass(pt)">
+              {{ pt.latestValue !== null ? pt.latestValue.toFixed(2) : '--' }}
+            </span>
+            <span class="admin-tele-point__unit">{{ pt.unit }}</span>
+            <span class="admin-tele-point__ts tabular-nums">{{ pt.latestTs ?? '--' }}</span>
+          </div>
+          <div class="admin-tele-point__thresholds tabular-nums">
+            橙色阈值: {{ pt.limitH ?? '--' }} · 红色阈值: {{ pt.limitHh ?? '--' }}
+          </div>
+          <!-- 最近10条 -->
+          <div v-if="pt.recent10.length > 0" class="admin-tele-recent">
+            <span
+              v-for="(r, i) in pt.recent10"
+              :key="i"
+              class="admin-tele-recent__dot"
+              :title="`${r.ts}: ${r.value}`"
+              :class="recentDotClass(pt, r.value)"
+            >{{ r.value !== null ? r.value.toFixed(1) : '--' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 全局概览区（zone:overview）-->
     <div class="pc-card admin-card" data-zone="overview">
       <div class="admin-card__header">
         <span class="admin-card__title">🏚 全部建筑风险概览</span>
@@ -149,6 +191,7 @@
 import { ref, onMounted } from "vue"
 import { getAnalysisResult, calculateBuildingRisk, type AnalysisMetricResult } from "@/services/analysisService"
 import { listBuildings, type BuildingListItem } from "@/services/buildingService"
+import { getBuildingIotSummary, type BuildingIotSummary } from "@/services/iotDemoService"
 
 // ── 建筑列表 ──────────────────────────────────────────────────────────────────
 
@@ -157,6 +200,32 @@ const buildingList = ref([] as BuildingListItem[])
 // ── 选择状态 ──────────────────────────────────────────────────────────────────
 
 const selectedBuildingId = ref(null as number | null)
+
+// ── IoT 遥测汇总 ──────────────────────────────────────────────────────────────
+
+const iotSummary = ref(null as BuildingIotSummary | null)
+
+function loadIotSummary() {
+  if (!selectedBuildingId.value) { iotSummary.value = null; return }
+  iotSummary.value = getBuildingIotSummary(selectedBuildingId.value)
+}
+
+type PointSummary = BuildingIotSummary["points"][number]
+
+function latestValueClass(pt: PointSummary): string {
+  const v = pt.latestValue
+  if (v === null) return ""
+  if (pt.limitHh !== null && v >= pt.limitHh) return "text-danger"
+  if (pt.limitH  !== null && v >= pt.limitH)  return "text-warning"
+  return "text-success"
+}
+
+function recentDotClass(pt: PointSummary, v: number | null): string {
+  if (v === null) return "dot-gray"
+  if (pt.limitHh !== null && v >= pt.limitHh) return "dot-red"
+  if (pt.limitH  !== null && v >= pt.limitH)  return "dot-orange"
+  return "dot-green"
+}
 
 // ── 分析结果 ──────────────────────────────────────────────────────────────────
 
@@ -197,6 +266,7 @@ function riskBadgeClass(level: string | null | undefined): string {
 function selectBuilding(id: number) {
   selectedBuildingId.value = id
   loadAnalysis()
+  loadIotSummary()
 }
 
 function loadAnalysis() {
@@ -212,6 +282,7 @@ function loadAnalysis() {
     msg.value   = `❌ 查询失败：${result.error}`
     msgClass.value = "admin-msg--error"
   }
+  loadIotSummary()
 }
 
 function doCalculate() {
@@ -521,4 +592,83 @@ onMounted(() => {
 .badge--warning { background: #FEF3C7; color: #D97706; }
 .badge--info    { background: #EDE9FE; color: #8B5CF6; }
 .badge--success { background: #D1FAE5; color: #10B981; }
+
+/* ===== IoT 遥测区 ===== */
+.admin-telemetry-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 20px;
+}
+.admin-tele-point {
+  flex: 1;
+  min-width: 200px;
+  max-width: 280px;
+  border: 1px solid var(--pc-border, #E2E8F0);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px;
+  background: var(--pc-bg-page, #F8FAFC);
+}
+.admin-tele-point__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.admin-tele-point__factor {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pc-text-h1, #1C2B4A);
+}
+.admin-tele-point__code {
+  font-size: 11px;
+  padding: 1px 6px;
+  background: rgba(27,111,232,0.08);
+  color: var(--pc-primary, #1B6FE8);
+  border-radius: 4px;
+}
+.admin-tele-point__latest {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.admin-tele-point__value {
+  font-size: 24px;
+  font-weight: 700;
+}
+.admin-tele-point__unit {
+  font-size: 13px;
+  color: var(--pc-text-muted, #64748B);
+}
+.admin-tele-point__ts {
+  font-size: 11px;
+  color: var(--pc-text-muted, #94A3B8);
+  margin-left: auto;
+}
+.admin-tele-point__thresholds {
+  font-size: 11px;
+  color: var(--pc-text-muted, #94A3B8);
+  margin-bottom: 8px;
+}
+.admin-tele-recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.admin-tele-recent__dot {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 500;
+}
+.dot-green  { background: #D1FAE5; color: #059669; }
+.dot-orange { background: #FEF3C7; color: #D97706; }
+.dot-red    { background: #FEE2E2; color: #DC2626; }
+.dot-gray   { background: #F1F5F9; color: #94A3B8; }
+.text-success { color: #059669; }
+.text-warning { color: #D97706; }
+.text-danger  { color: #DC2626; }
 </style>
