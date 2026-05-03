@@ -79,6 +79,12 @@ export function getActiveIncident(): EmergencyIncident | null {
   return active.reduce((a, b) => (Number(a.id) >= Number(b.id) ? a : b))
 }
 
+/** 获取所有应急事件（含归档），按 id 降序 */
+export function getAllIncidents(): EmergencyIncident[] {
+  const rows = getTable<EmergencyIncident>("emergency_incident")
+  return [...rows].sort((a, b) => Number(b.id) - Number(a.id))
+}
+
 /** 获取指定预案的步骤节点，按 sort_order 升序 */
 export function getPlanNodes(planId: number): EmergencyFlowNode[] {
   const rows = getTable<EmergencyFlowNode>("emergency_flow_node_config")
@@ -163,6 +169,17 @@ export function resolveIncident(
     close_type: closeType,
   }
   setTable("emergency_incident", updatedIncidents)
+
+  // 关闭关联告警（alarm_record → CLOSED），大屏告警随之消除
+  if (incident.alarm_record_id != null) {
+    const alarmRows = getTable<Record<string, unknown>>("alarm_record")
+    const alarmIdx = alarmRows.findIndex((r) => Number(r.id) === Number(incident.alarm_record_id))
+    if (alarmIdx !== -1) {
+      const updatedAlarms = [...alarmRows]
+      updatedAlarms[alarmIdx] = { ...updatedAlarms[alarmIdx], status: "CLOSED", update_time: now }
+      setTable("alarm_record", updatedAlarms)
+    }
+  }
 
   if (closeType === "REPAIR_ORDER") {
     // 生成修缮工单

@@ -192,10 +192,39 @@ const filterTabs = computed(() => [
   { label: '全部',   value: 'ALL',        count: todoList.value.length },
   { label: '待处理', value: 'PENDING',    count: todoList.value.filter(i => i.status === 'PENDING').length },
   { label: '处理中', value: 'PROCESSING', count: todoList.value.filter(i => i.status === 'PROCESSING').length },
+  { label: '待核查', value: 'CHECKING',   count: todoList.value.filter(i => i.status === 'CHECKING').length },
 ])
 
 function loadData() {
-  todoList.value = selectH5TodoList()
+  // selectH5TodoList 只返回 PENDING+PROCESSING；CHECKING（待核查）工单单独补全
+  const base = selectH5TodoList()
+  const allOrders = getTable<{
+    id: number; order_no: string; status: string
+    order_level: string | null; alarm_level: string | null
+    building_id: number | null; alarm_id: string | null
+    dispatch_time: string | null; current_node: string | null
+  }>("work_order")
+  const spaces = getTable<{ id: number; name: string }>("iot_space")
+  const alarms = getTable<{ alarm_id: string; alarm_title: string | null }>("alarm_record")
+  const spaceMap = new Map(spaces.map(s => [s.id, s.name]))
+  const alarmMap = new Map(alarms.map(a => [a.alarm_id, a.alarm_title ?? null]))
+  const checkingIds = new Set(base.map(i => i.id))
+  const checking: H5TodoItem[] = allOrders
+    .filter(o => o.status === 'CHECKING' && !checkingIds.has(o.id))
+    .map(o => ({
+      id:           o.id,
+      orderNo:      o.order_no,
+      status:       o.status,
+      orderLevel:   o.order_level,
+      alarmLevel:   o.alarm_level,
+      buildingId:   o.building_id,
+      buildingName: o.building_id != null ? (spaceMap.get(o.building_id) ?? null) : null,
+      alarmId:      o.alarm_id,
+      alarmTitle:   o.alarm_id ? (alarmMap.get(o.alarm_id) ?? null) : null,
+      dispatchTime: o.dispatch_time,
+      currentNode:  o.current_node,
+    }))
+  todoList.value = [...base, ...checking]
   activeIncident.value = getActiveIncident() as IncidentRow | null
 }
 
@@ -234,9 +263,7 @@ function onCardClick(item: H5TodoItem) {
 
 <style scoped>
 .h5-workorders {
-  padding: 0 0 80px;
   background: var(--h5-bg-page, #F7F9FC);
-  min-height: 100vh;
   max-width: 414px;
   margin: 0 auto;
   padding-bottom: calc(var(--h5-tabbar-height, 56px) + 16px);
@@ -283,14 +310,7 @@ function onCardClick(item: H5TodoItem) {
 
 /* zone:header — sticky 顶部渐变横幅（移动端 banner 规范）*/
 .h5-workorders__header {
-  background: linear-gradient(135deg, #0E3875 0%, var(--h5-gradient-banner, #1B6FE8) 100%);
-  padding: 12px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: none; /* H5Layout 顶部已提供标题，内层 header 不再重复显示 */
 }
 .h5-workorders__title {
   font-size: 16px;

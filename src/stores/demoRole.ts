@@ -56,6 +56,7 @@ const ROLE_CONFIG: Record<
       { path: "/admin/dashboard",    label: "工作台" },
       { path: "/admin/alarms",       label: "告警中心" },
       { path: "/admin/work-orders",  label: "工单中心" },
+      { path: "/screen/emergency",   label: "应急处置" },
       { path: "/admin/supervision",  label: "督办管理" },
       { path: "/admin/demo-console", label: "演示控制台" },
     ],

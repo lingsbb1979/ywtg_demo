@@ -292,4 +292,36 @@ function handleResolve(closeType: "REPAIR_ORDER" | "REPORT_GOV"): void {
   color: var(--h5-text-muted, #94A3B8);
   font-size: 13px;
 }
+
+.h5-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 22px;
+  background: var(--h5-primary, #1677FF);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(22,119,255,0.35);
+  transition: opacity 0.15s;
+}
+.h5-btn-primary:active { opacity: 0.85; }
+
+.h5-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 24px;
+  border: 1px solid var(--h5-border, #D1D5DB);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--h5-text-secondary, #475569);
+  font-size: 14px;
+  cursor: pointer;
+}
 </style>
