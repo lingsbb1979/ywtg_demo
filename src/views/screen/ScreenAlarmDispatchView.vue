@@ -233,8 +233,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
-import { listAlarms, type AlarmListItem } from "@/services/alarmService"
-import { getTable, update } from "@/services/sqliteMirrorRepository"
+import {
+  listAlarms,
+  confirmAlarm as serviceConfirmAlarm,
+  dispatchAlarm as serviceDispatchAlarm,
+  type AlarmListItem,
+} from "@/services/alarmService"
+import { getTable } from "@/services/sqliteMirrorRepository"
 
 // ── 响应式数据 ─────────────────────────────────────────────────────────────────
 
@@ -302,19 +307,27 @@ function selectAlarm(alarm: AlarmListItem) {
 function confirmAlarm() {
   if (!selectedAlarm.value) return
   const id = selectedAlarm.value.id
-  update("alarm_record", id, { status: "PENDING" })
-  loadAlarms()
-  actionMsg.value = `✓ 已确认告警 #${id}`
+  const result = serviceConfirmAlarm(id)
+  if (result.ok) {
+    loadAlarms()
+    actionMsg.value = `✓ 已确认告警 #${id}`
+  } else {
+    actionMsg.value = `✗ ${result.error}`
+  }
   setTimeout(() => { actionMsg.value = "" }, 3000)
 }
 
 function dispatchAlarm() {
   if (!selectedAlarm.value) return
   const alarm = selectedAlarm.value
-  update("alarm_record", alarm.id, { status: "DISPATCHED" })
-  loadAlarms()
-  actionMsg.value = `✓ 告警 #${alarm.id} 已派单`
-  setTimeout(() => { actionMsg.value = "" }, 3000)
+  const result = serviceDispatchAlarm(alarm.id)
+  if (result.ok) {
+    loadAlarms()
+    actionMsg.value = `✓ 已派单，工单号：${result.orderNo}`
+  } else {
+    actionMsg.value = `✗ ${result.error}`
+  }
+  setTimeout(() => { actionMsg.value = "" }, 4000)
 }
 
 // ── 数据加载 ──────────────────────────────────────────────────────────────────
