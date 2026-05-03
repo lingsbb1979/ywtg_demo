@@ -302,7 +302,7 @@ const timelineEvents = computed((): TimelineEvent[] => {
     key:      "create",
     title:    "告警触发 · 工单创建",
     time:     normalizeTime(o.dispatchTime) || "—",
-    dotClass: "h5-timeline-dot--active",
+    dotClass: "h5-timeline-dot--done",
     sortKey:  normalizeTime(o.dispatchTime),
   })
 
@@ -377,7 +377,18 @@ const timelineEvents = computed((): TimelineEvent[] => {
   }
 
   // 按时间升序
-  return events.sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+  const sorted = events.sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+
+  // 最后一个"普通"节点标为蓝色（当前所在步骤），warning/success 保持原色
+  const KEEP_CLASS = new Set(["h5-timeline-dot--warning", "h5-timeline-dot--success"])
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    if (!KEEP_CLASS.has(sorted[i].dotClass)) {
+      sorted[i] = { ...sorted[i], dotClass: "h5-timeline-dot--active" }
+      break
+    }
+  }
+
+  return sorted
 })
 
 // ── 辅助函数 ──────────────────────────────────────────────────────────────────
