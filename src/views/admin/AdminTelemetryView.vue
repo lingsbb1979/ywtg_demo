@@ -34,8 +34,8 @@
       <!-- 建筑选择 -->
       <div class="admin-form-group">
         <label class="admin-form-label">选择建筑</label>
-        <select v-model="selectedBuildingId" class="select-pc" @change="onBuildingChange">
-          <option :value="null">-- 全部建筑 --</option>
+        <select v-model="selectedBuildingId" class="select-pc">
+          <option :value="null">— 全部建筑 —</option>
           <option v-for="b in buildingOptions" :key="b.id" :value="b.id">
             {{ b.name }}（{{ b.spaceCode }}）
           </option>
@@ -48,7 +48,7 @@
         <select v-model="selectedPointId" class="select-pc">
           <option :value="null">-- 请选择数据点 --</option>
           <option v-for="p in filteredPoints" :key="p.id" :value="p.id">
-            {{ p.factor_code ?? `数据点 ${p.id}` }} (id={{ p.id }})
+            {{ p.factor_name ?? p.factor_code ?? `数据点` }} (id={{ p.id }})
           </option>
         </select>
       </div>
@@ -73,7 +73,7 @@
       </div>
 
       <div v-if="rows.length === 0" class="admin-empty admin-empty--inline">
-        {{ selectedPointId ? '暂无采集数据，可在下方新增模拟采集' : '请先选择数据点' }}
+        {{ selectedBuildingId ? '尚无采集数据，可在下方新增模拟采集' : '请先选择建筑' }}
       </div>
 
       <table v-else class="admin-table">
@@ -149,7 +149,7 @@ import { getTable } from "@/services/sqliteMirrorRepository"
 
 // ── 数据点与建筑 ──────────────────────────────────────────────────────────────
 
-const dataPoints = ref([] as Array<{ id: number; space_id: number; factor_code: string | null; limit_hh: number | null }>)
+const dataPoints = ref([] as Array<{ id: number; space_id: number; factor_id: number; factor_code: string | null; factor_name: string | null; limit_h: number | null; limit_hh: number | null }>)
 const buildingOptions = ref([] as Array<{ id: number; name: string; spaceCode: string }>)
 
 // ── 筛选状态 ──────────────────────────────────────────────────────────────────
@@ -179,8 +179,8 @@ const filteredPoints = computed(() => {
 // ── 事件处理 ──────────────────────────────────────────────────────────────────
 
 function onBuildingChange() {
+  // watch(selectedBuildingId) handles auto-load
   selectedPointId.value = null
-  rows.value = []
 }
 
 function loadData() {
@@ -210,14 +210,29 @@ function doAdd() {
 
 // ── 数据加载 ──────────────────────────────────────────────────────────────────
 
-onMounted(() => {
-  // 加载数据点列表
-  dataPoints.value = getTable("iot_data_point") as Array<{
+function reloadMeta() {
+  // 加载因子类型字典（用于显示名称）
+  const factorTypes = getTable("iot_factor_type") as Array<{
+    id: number
+    factor_code: string
+    factor_name: string
+    unit: string
+  }>
+  const ftMap = new Map(factorTypes.map((f) => [f.id, f]))
+
+  // 加载数据点，关联因子名称
+  const rawPoints = getTable("iot_data_point") as Array<{
     id: number
     space_id: number
-    factor_code: string | null
+    factor_id: number
+    limit_h: number | null
     limit_hh: number | null
   }>
+  dataPoints.value = rawPoints.map((p) => ({
+    ...p,
+    factor_code: ftMap.get(p.factor_id)?.factor_code ?? null,
+    factor_name: ftMap.get(p.factor_id)?.factor_name ?? null,
+  }))
 
   // 加载建筑列表（type="2"）
   const spaces = getTable("iot_space") as Array<{
@@ -229,12 +244,37 @@ onMounted(() => {
   buildingOptions.value = spaces
     .filter((s) => s.type === "2")
     .map((s) => ({ id: s.id, name: s.name, spaceCode: s.space_code }))
+}
+
+onMounted(() => {
+  reloadMeta()
 })
 
 // 监听 selectedPointId 变化时自动查询
 watch(selectedPointId, (val) => {
   if (val) loadData()
   else rows.value = []
+})
+
+// 选建筑后，自动加载该建筑所有数据点的最近 50 条遥测（聚合视图）
+watch(selectedBuildingId, (buildingId) => {
+  selectedPointId.value = null
+  if (!buildingId) { rows.value = []; return }
+  // 取该建筑所有数据点
+  const pts = dataPoints.value.filter((p) => p.space_id === buildingId).map((p) => p.id)
+  if (pts.length === 0) { rows.value = []; return }
+  // 读取 iot_telemetry，过滤该建筑所有点，按时间降序取最近 50 条
+  const telemetry = getTable("iot_telemetry") as Array<{ ts: string; point_id: number; value_num: number | null; value_str: string | null }>
+  rows.value = telemetry
+    .filter((r) => pts.includes(r.point_id))
+    .sort((a, b) => (a.ts > b.ts ? -1 : 1))
+    .slice(0, 50)
+    .map((r) => ({
+      ts:       r.ts,
+      pointId:  r.point_id,
+      valueNum: r.value_num,
+      valueStr: r.value_str,
+    }))
 })
 </script>
 

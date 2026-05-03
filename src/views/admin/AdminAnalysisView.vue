@@ -275,8 +275,28 @@ function loadAnalysis() {
   if (result.ok) {
     metrics.value = result.metrics
     if (result.metrics.length === 0) {
-      msg.value   = "ℹ️ 该建筑尚无分析结果，请点击重新计算"
-      msgClass.value = "admin-msg--info"
+      // 自动触发一次计算，让 IoT 触发后的数据直接可见
+      const calc = calculateBuildingRisk(selectedBuildingId.value)
+      if (calc.ok && calc.metrics.length > 0) {
+        metrics.value = calc.metrics.map((m) => ({
+          metricId:      m.metricId,
+          latestValue:   m.valueNum,
+          riskLevel:     m.riskLevel,
+          calcTime:      calc.calcTime,
+          thresholds:    {},
+          riskLevelDesc: {},
+          factorCode:    "",
+          unit:          "",
+        }))
+        msg.value   = `ℹ️ 该建筑尚无历史分析，已自动计算最新风险。请点“重新计算风险”查看完整结果。`
+        msgClass.value = "admin-msg--info"
+        // 正式重新读取完整结果
+        const result2 = getAnalysisResult(selectedBuildingId.value)
+        if (result2.ok) metrics.value = result2.metrics
+      } else {
+        msg.value   = "ℹ️ 该建筑尚无遥测数据，请先在演示控制台触发 IoT 模拟。"
+        msgClass.value = "admin-msg--info"
+      }
     }
   } else {
     msg.value   = `❌ 查询失败：${result.error}`
