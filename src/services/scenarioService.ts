@@ -142,7 +142,8 @@ export interface RedAlertOptions {
 let _tiltSeq = 0
 
 /**
- * 追加一条 B012 红色倾斜告警 + 配套 PENDING 工单。
+ * 追加一条 B012 红色倾斜告警（仅写 alarm_record）。
+ * 工单由操作员点击"自动派单"后由 dispatchAlarm() 创建，不在此预建。
  */
 export function triggerRedAlert(options: RedAlertOptions = {}): void {
   const nowStr = options.nowStr ?? _fmtTs(Date.now())
@@ -173,42 +174,6 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
     handle_user:   null,
     create_time:   nowStr,
     update_time:   nowStr,
-  }])
-
-  // ─ work_order ─
-  const orders = getTable<{ id?: number }>("work_order")
-  const orderId = orders.length > 0
-    ? Math.max(...orders.map((r) => r.id ?? 0)) + 1
-    : 1
-  setTable("work_order", [...orders, {
-    id:              orderId,
-    order_no:        `WO-TILT-${String(orderId).padStart(4, "0")}`,
-    order_code:      `WO-TILT-${String(orderId).padStart(4, "0")}`,
-    alarm_id:        "ALM-TILT-012",
-    building_id:     1012,
-    order_type:      "INSPECT",
-    order_level:     "URGENT",
-    alarm_level:     "RED",
-    dispatch_type:   "ASSIGN",
-    dispatch_org_id: 10,
-    dispatch_user_id: 100,
-    dispatch_org:    "安全监测部",
-    receive_org_id:  20,
-    receive_user_id: null,
-    receive_org:     "现场维修组",
-    receive_role_key: "FIELD_WORKER",
-    assignee_id:     null,
-    priority:        1,
-    status:          "PENDING",
-    current_node:    "DISPATCH",
-    source_id:       null,
-    source_type:     null,
-    dispatch_time:   nowStr,
-    accept_time:     null,
-    finish_time:     null,
-    check_time:      null,
-    create_time:     nowStr,
-    update_time:     nowStr,
   }])
 }
 
