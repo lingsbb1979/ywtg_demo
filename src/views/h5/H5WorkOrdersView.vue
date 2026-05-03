@@ -17,14 +17,6 @@
     （底部 tabbar 由 H5Layout 提供，不在本视图中）
   -->
   <div class="h5-workorders">
-    <!-- zone:header — 顶部黏性标题栏（T15.75 低保真 / T15.76 高保真渐变）-->
-    <div class="h5-wo-header" data-zone="header">
-      <div class="h5-wo-header__main">
-        <span class="h5-wo-header__title">待办工单</span>
-        <span class="h5-wo-header__count tabular-nums">{{ filteredList.length }} 条</span>
-      </div>
-    </div>
-
     <!-- zone:filter-tabs — 状态筛选标签（全部 / 待处理 / 处理中）-->
     <div class="h5-filter-tabs" data-zone="filter-tabs">
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='ALL'}" @click="activeFilter='ALL'">全部</button>
@@ -215,37 +207,6 @@ function onCardClick(item: H5TodoItem) {
 }
 
 /* ─────────────────────────────────────
-   zone:header — 顶部黏性标题栏（T15.76 高保真：渐变蓝背景）
-   ───────────────────────────────────── */
-.h5-wo-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  height: var(--h5-header-height, 56px);
-  background: linear-gradient(135deg, #0E3875 0%, #1B6FE8 100%);
-  border-bottom: 1px solid var(--h5-border, #EEF2F7);
-}
-.h5-wo-header__main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.h5-wo-header__title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--h5-text-inverse, #fff);
-}
-.h5-wo-header__count {
-  font-size: 13px;
-  color: rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.15);
-  padding: 2px 8px;
-  border-radius: var(--radius-full, 9999px);
-}
-
 /* ─────────────────────────────────────
    zone:filter-tabs — 状态筛选标签
    ───────────────────────────────────── */
@@ -254,7 +215,7 @@ function onCardClick(item: H5TodoItem) {
   background: var(--h5-bg-card, #fff);
   border-bottom: 1px solid var(--h5-border, #EEF2F7);
   position: sticky;
-  top: var(--h5-header-height, 56px);
+  top: 0;
   z-index: 9;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

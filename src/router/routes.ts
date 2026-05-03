@@ -159,7 +159,7 @@ export const routes: RouteRecordRaw[] = [
         path: "work-orders",
         name: "h5-work-orders",
         component: H5WorkOrdersView,
-        meta: { title: "H5 待办工单" }
+        meta: { title: "待办工单" }
       },
       {
         path: "work-orders/:id",

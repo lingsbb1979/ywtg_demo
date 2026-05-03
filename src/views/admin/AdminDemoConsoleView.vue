@@ -220,7 +220,7 @@
         <router-link class="admin-shortcut-btn" to="/h5/work-orders" target="_blank">
           <span class="admin-shortcut-btn__icon">📱</span>
           <div>
-            <div class="admin-shortcut-btn__label">打开 H5 移动端</div>
+            <div class="admin-shortcut-btn__label">打开移动端</div>
             <div class="admin-shortcut-btn__desc">外勤接单处置演示</div>
           </div>
         </router-link>
