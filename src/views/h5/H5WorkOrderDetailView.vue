@@ -277,6 +277,12 @@ const actionMsg = ref("")
 
 // ── 时间轴事件（动态合并所有节点）─────────────────────────────────────────────
 
+/** 统一时间格式：去掉 T 和毫秒，保留 "YYYY-MM-DD HH:mm" */
+function normalizeTime(t: string | null | undefined): string {
+  if (!t) return ""
+  return t.replace("T", " ").replace(/\.\d+Z?$/, "").slice(0, 16)
+}
+
 interface TimelineEvent {
   key:      string
   title:    string
@@ -295,9 +301,9 @@ const timelineEvents = computed((): TimelineEvent[] => {
   events.push({
     key:      "create",
     title:    "告警触发 · 工单创建",
-    time:     o.dispatchTime?.slice(0, 16) ?? "—",
+    time:     normalizeTime(o.dispatchTime) || "—",
     dotClass: "h5-timeline-dot--active",
-    sortKey:  o.dispatchTime ?? "",
+    sortKey:  normalizeTime(o.dispatchTime),
   })
 
   // 2. 外勤接单
@@ -305,20 +311,20 @@ const timelineEvents = computed((): TimelineEvent[] => {
     events.push({
       key:      "accept",
       title:    "外勤接单",
-      time:     o.acceptTime.slice(0, 16),
+      time:     normalizeTime(o.acceptTime),
       dotClass: "h5-timeline-dot--done",
-      sortKey:  o.acceptTime,
+      sortKey:  normalizeTime(o.acceptTime),
     })
   }
 
   // 3. 处置记录（来自 work_order_disposal）
   o.disposals?.forEach((d, i) => {
-    const t = d.disposalTime ?? d.createTime ?? ""
+    const t = normalizeTime(d.disposalTime ?? d.createTime)
     events.push({
       key:      `disposal-${d.id}`,
       title:    `提交处置记录 #${i + 1}`,
       sub:      d.disposalDesc ?? undefined,
-      time:     t.slice(0, 16),
+      time:     t,
       dotClass: "h5-timeline-dot--done",
       sortKey:  t,
     })
@@ -333,12 +339,12 @@ const timelineEvents = computed((): TimelineEvent[] => {
   o.logs?.forEach((l) => {
     const cfg = LOG_NODE[l.nodeType ?? ""]
     if (!cfg) return
-    const t = l.actionTime ?? l.createTime ?? ""
+    const t = normalizeTime(l.actionTime ?? l.createTime)
     events.push({
       key:      `log-${l.id}`,
       title:    cfg.title,
       sub:      l.remark ?? undefined,
-      time:     t.slice(0, 16),
+      time:     t,
       dotClass: cfg.dotClass,
       sortKey:  t,
     })
@@ -347,24 +353,26 @@ const timelineEvents = computed((): TimelineEvent[] => {
   // 5. 如果 finishTime 存在但 log 里没有 FINISH 节点（兼容旧数据）
   const hasFinishLog = o.logs?.some((l) => l.nodeType === "FINISH")
   if (o.finishTime && !hasFinishLog) {
+    const t = normalizeTime(o.finishTime)
     events.push({
       key:      "finish-fallback",
       title:    "处置完成 · 待核查",
-      time:     o.finishTime.slice(0, 16),
+      time:     t,
       dotClass: "h5-timeline-dot--done",
-      sortKey:  o.finishTime,
+      sortKey:  t,
     })
   }
 
   // 6. checkTime 兼容（log VERIFY 优先）
   const hasVerifyLog = o.logs?.some((l) => l.nodeType === "VERIFY")
   if (o.checkTime && !hasVerifyLog) {
+    const t = normalizeTime(o.checkTime)
     events.push({
       key:      "check-fallback",
       title:    "核查通过 · 销号",
-      time:     o.checkTime.slice(0, 16),
+      time:     t,
       dotClass: "h5-timeline-dot--success",
-      sortKey:  o.checkTime,
+      sortKey:  t,
     })
   }
 
