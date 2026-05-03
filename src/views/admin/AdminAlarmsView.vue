@@ -286,7 +286,9 @@
                   <div class="admin-timeline-dot admin-timeline-dot--success"></div>
                   <div class="admin-timeline-content">
                     <div class="admin-timeline-content__title">已派单处置</div>
-                    <div class="admin-timeline-content__time">工单生成中...</div>
+                    <div class="admin-timeline-content__time">
+                      {{ dispatchedOrderNo ? `工单号：${dispatchedOrderNo}` : '工单已生成，可到工单中心查看' }}
+                    </div>
                   </div>
                 </li>
               </ul>
@@ -356,6 +358,7 @@ const levelFilter        = ref("")
 const keyword            = ref("")
 const drawerVisible      = ref(false)
 const actionMsg          = ref("")
+const dispatchedOrderNo  = ref("")
 
 // ── 状态筛选标签 ──────────────────────────────────────────────────────────────
 
@@ -424,6 +427,7 @@ function openDrawer(alarm: AlarmListItem) {
   currentAlarm.value  = alarm
   drawerVisible.value = true
   actionMsg.value = ""
+  dispatchedOrderNo.value = ""
   // 加载完整详情（含 disposalSuggestion）
   const result = getAlarm(alarm.id)
   currentAlarmDetail.value = result.ok ? result.data : null
@@ -452,12 +456,13 @@ function dispatchAlarm() {
   const alarm = currentAlarm.value
   const result = serviceDispatchAlarm(alarm.id)
   if (result.ok) {
+    dispatchedOrderNo.value = result.orderNo ?? ""
     loadData()
-    actionMsg.value = `✓ 告警 #${alarm.id} 已派单，工单 ${result.orderNo}`
+    actionMsg.value = `✓ 已派单，工单号：${result.orderNo}`
   } else {
     actionMsg.value = `✗ ${result.error}`
   }
-  setTimeout(() => { actionMsg.value = "" }, 3000)
+  setTimeout(() => { actionMsg.value = "" }, 4000)
 }
 
 // ── 数据加载 ──────────────────────────────────────────────────────────────────

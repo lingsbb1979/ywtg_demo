@@ -26,14 +26,14 @@ npm run dev
 
 | 端       | 路由               | 说明                      |
 |---------|--------------------|--------------------------|
-| 大屏端   | /screen/home       | 一体化综合监管大屏         |
-| 大屏应急 | /screen/emergency  | 应急管理页面               |
-| 后台管理 | /admin/dashboard   | 管理后台主页               |
-| 后台工单 | /admin/work-orders | 工单列表管理               |
-| 后台告警 | /admin/alarms      | 告警管理                   |
-| 后台督办 | /admin/supervision | 督办管理                   |
-| 移动端   | /h5/work-orders    | H5 移动端工单处置          |
-| 演示控制台 | /admin/demo-console | 演示场景控制台（重置/触发）|
+| 大屏端   | http://localhost:5173/screen/home       | 一体化综合监管大屏         |
+| 大屏应急 | http://localhost:5173/screen/emergency  | 应急管理页面               |
+| 后台管理 | http://localhost:5173/admin/dashboard   | 管理后台主页               |
+| 后台工单 | http://localhost:5173/admin/work-orders | 工单列表管理               |
+| 后台告警 | http://localhost:5173/admin/alarms      | 告警管理                   |
+| 后台督办 | http://localhost:5173/admin/supervision | 督办管理                   |
+| 移动端   | http://localhost:5173/h5/work-orders    | H5 移动端工单处置          |
+| 演示控制台 | http://localhost:5173/admin/demo-console | 演示场景控制台（重置/触发）|
 
 ---
 
@@ -129,3 +129,83 @@ const partial = exportToSql({ tableNames: ["alarm_record", "work_order"] })
 cd source
 npx vitest run
 ```
+
+
+---
+
+
+| 端 | 地址 | 是否需要登录 | 账号 |
+|---|---|---|---|
+| 大屏端 | /screen/home | **不需要** | 直接访问 |
+| 大屏应急 | /screen/emergency | **不需要** | 直接访问 |
+| 后台管理 | /admin/dashboard | 需要 | **admin / admin** |
+| 后台工单 | /admin/work-orders | 需要 | **admin / admin** |
+| 后台告警 | /admin/alarms | 需要 | **admin / admin** |
+| 后台督办 | /admin/supervision | 需要 | **admin / admin** |
+| 演示控制台 | /admin/demo-console | 需要 | **admin / admin** |
+| 移动端 | /h5/work-orders | 需要 | **field / 123456** |
+
+
+**说明：**
+
+- `/screen/*` 在路由里没有 `requiresAuth: true`，无需登录，直接访问
+- 所有 `/admin/*` 共用一个 admin 账号，登录一次就通
+- `/h5/*` 理论上也是 admin 账号能进，但演示语义上用 `field`（外勤人员）更合理，右上角切到"街道外勤"视角会自动帮你切到 field 账号并跳转
+
+**现在登录体验已修复**：改用 `localStorage` 后，登录一次就永久生效，直接点 URL 不再要求重新登录。
+
+### 角色
+领导参观
+市级值班员
+街道外勤
+省级监管
+国家监管
+
+### 演示账号
+
+| 端       | 路由               | 说明                      |
+|---------|--------------------|--------------------------|
+| 大屏端   | http://localhost:5173/screen/home       | 一体化综合监管大屏         |
+| 大屏应急 | http://localhost:5173/screen/emergency  | 应急管理页面               |
+| 后台管理 | http://localhost:5173/admin/dashboard   | 管理后台主页               |
+| 后台工单 | http://localhost:5173/admin/work-orders | 工单列表管理               |
+| 后台告警 | http://localhost:5173/admin/alarms      | 告警管理                   |
+| 后台督办 | http://localhost:5173/admin/supervision | 督办管理                   |
+| 移动端   | http://localhost:5173/h5/work-orders    | H5 移动端工单处置          |
+| 演示控制台 | http://localhost:5173/admin/demo-console | 演示场景控制台（重置/触发）|
+
+**H5 为什么不提示登录**：因为你已经用 admin 登录了，auth 只检查"是否有人登录"，不检查是谁。H5 路由有 `requiresAuth` 但 admin 账号满足条件，所以直接放行。这是正确行为——切到"街道外勤"视角后，自动换成 field 账号，再访问 H5 就是 field 身份。
+
+**大屏为什么不需要登录**：`/screen/*` 路由没有 `requiresAuth`，这是故意的——大屏一般是投影在会议室/指挥中心的专用屏，一直开着不需要每次登录。两种用途都适用：值班员盯屏不用登录，领导参观直接看。这个设计没问题，不需要改。
+
+**账号规划建议**，3个账号对应3个真实角色，去掉"省级/国家监管"这两个占位的鸡肋选项：
+
+| 角色 | 账号 | 密码 | 默认落地页 |
+|---|---|---|---|
+| 市级值班员 | admin | admin | /admin/dashboard |
+| 领导参观 | leader | 123456 | /screen/home |
+| 街道外勤 | field | 123456 | /admin/demo-console → H5 |
+
+**账号体系（最终版，3个账号）**
+
+| 演示视角 | 账号 | 密码 | 切换后跳转 |
+|---|---|---|---|
+| 市级值班员 | `admin` | `admin` | /admin/dashboard |
+| 领导参观 | `leader` | `123456` | /screen/home |
+| 街道外勤 | `field` | `123456` | /admin/demo-console |
+| 省级督办 | `admin` | `admin` | /admin/supervision 督办管理、建筑档案、大屏、演示控制台 |
+| 演示控制台 | `admin` | `admin` | /admin/demo-console 督办管理、建筑档案、大屏、演示控制台 |
+
+- 原来 `user` 账号去掉了（没有对应角色，是多余的）
+- `leader` 是新增账号，之前领导参观也用 admin，现在区分开
+
+**右上角从鸡肋变成有用的**
+
+之前：只有一个"演示视角"下拉，什么都不显示
+
+现在：`市级值班员 · admin  [切换 ▾]`
+- 左边白色粗体显示当前角色名
+- 蓝色等宽字体显示当前账号（一眼能认出）
+- 下拉选项也变成 `市级值班员（admin）` 格式，切换前就知道会换成哪个账号
+
+**省级监管/国家监管从下拉移除**，就 3 个真实演示选项，不拖泥带水。

@@ -89,29 +89,46 @@
       <!-- ===== 现场证据（zone:photo-section）===== -->
       <div class="h5-card h5-dispose__section" data-zone="photo-section">
         <div class="h5-dispose__section-title">现场证据</div>
-        <button
-          class="h5-dispose__photo-btn"
-          @click="handleSelectPhotos"
-        >
-          <span>📷</span>
-          {{ photos.length > 0 ? `已选择 ${photos.length} 张照片` : '选择演示照片' }}
-        </button>
+        <!-- 隐藏的真实 file input -->
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept="image/*"
+          multiple
+          style="display:none"
+          @change="handleFileInputChange"
+        />
+        <div class="h5-dispose__photo-btns">
+          <!-- 真实拍照上传 -->
+          <button class="h5-dispose__photo-btn" @click="fileInputRef?.click()">
+            <span>📷</span>
+            选择照片
+          </button>
+          <!-- 演示占位图 -->
+          <button class="h5-dispose__photo-btn h5-dispose__photo-btn--demo" @click="handleSelectPhotos">
+            <span>🎨</span>
+            演示占位
+          </button>
+        </div>
+        <p v-if="uploading" class="h5-dispose__photo-hint">上传中... {{ uploadProgress }}%</p>
         <!-- 照片预览列表 -->
-        <div v-if="photos.length > 0" class="h5-dispose__photo-list">
+        <div v-if="photos.length > 0" class="h5-dispose__photo-list" style="margin-top: 12px">
           <div
             v-for="(photo, idx) in photos"
             :key="idx"
             class="h5-dispose__photo-item"
           >
-            <div class="h5-dispose__photo-placeholder">
-              <span class="h5-dispose__photo-icon">📷</span>
-              <span class="h5-dispose__photo-label">证据 {{ idx + 1 }}</span>
-              <span class="h5-dispose__photo-tag">演示</span>
-            </div>
+            <!-- 真实图片、演示占位图均使用 <img> 显示 -->
+            <img
+              :src="photo"
+              class="h5-dispose__photo-thumb"
+              :alt="`证据 ${idx + 1}`"
+            />
+            <button class="h5-dispose__photo-remove" @click="removePhoto(idx)" title="删除">×</button>
           </div>
         </div>
         <p v-if="photos.length === 0" class="h5-dispose__photo-hint">
-          点击上方按钮选择演示照片（将生成 3 张证据占位图）
+          点击“选择照片”上传现场照片，或点击“演示占位”生成占位图
         </p>
       </div>
 
@@ -138,6 +155,7 @@ import { ref, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { submitDisposal } from "@/services/workOrderService"
 import { getTable } from "@/services/sqliteMirrorRepository"
+import { uploadFile } from "@/utils/fileUpload"
 
 // ── 路由 ──────────────────────────────────────────────────────────────────────
 const route  = useRoute()
@@ -166,17 +184,51 @@ function handleGPS() {
   gpsChecked.value = true
 }
 
-// ── T15.106 照片 mock ──────────────────────────────────────────────────────
+// ── T15.106 照片 mock + 真实上传 ───────────────────────────────────────────────
 const photos = ref<string[]>([])
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploading     = ref(false)
+const uploadProgress = ref(0)
+
+// 演示占位图路径（由内置文件服务器自动生成 SVG）
 const DEMO_PHOTOS = [
-  "demo-photo-1.jpg",
-  "demo-photo-2.jpg",
-  "demo-photo-3.jpg",
+  "/uploads/demo-photo-1.jpg",
+  "/uploads/demo-photo-2.jpg",
+  "/uploads/demo-photo-3.jpg",
 ]
 
 function handleSelectPhotos() {
-  // 演示模式：生成 3 张证据占位图
-  photos.value = [...DEMO_PHOTOS]
+  // 演示模式：直接添加 3 张占位图 URL（不重复添加）
+  for (const p of DEMO_PHOTOS) {
+    if (!photos.value.includes(p)) photos.value.push(p)
+  }
+}
+
+async function handleFileInputChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  if (files.length === 0) return
+  uploading.value = true
+  uploadProgress.value = 0
+  try {
+    // 逐个上传，更新进度
+    const urls: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      const url = await uploadFile(files[i])
+      urls.push(url)
+      uploadProgress.value = Math.round(((i + 1) / files.length) * 100)
+    }
+    photos.value.push(...urls)
+  } catch (err) {
+    console.error("上传失败", err)
+  } finally {
+    uploading.value = false
+    input.value = "" // 允许重复选择同一文件
+  }
+}
+
+function removePhoto(idx: number) {
+  photos.value.splice(idx, 1)
 }
 
 // ── 事件处理 ──────────────────────────────────────────────────────────────────
@@ -397,57 +449,75 @@ onMounted(() => {
   color: var(--h5-text-muted, #94A3B8);
 }
 
-/* ===== 照片 mock ===== */
+/* ===== 照片上传 ===== */
+.h5-dispose__photo-btns {
+  display: flex;
+  gap: 8px;
+}
+
 .h5-dispose__photo-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 12px;
+  gap: 6px;
+  flex: 1;
+  padding: 12px 8px;
   border-radius: 8px;
   border: 1px dashed var(--h5-border, #CBD5E1);
   background: var(--h5-bg-page, #F7F9FC);
   color: var(--h5-text-muted, #64748B);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   min-height: var(--h5-touch-min, 44px);
+}
+
+.h5-dispose__photo-btn--demo {
+  flex: 0 0 auto;
+  width: auto;
+  font-size: 12px;
+  color: var(--h5-primary, #1B6FE8);
+  border-color: var(--h5-primary, #1B6FE8);
+  background: rgba(27,111,232,0.04);
 }
 
 .h5-dispose__photo-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-top: 12px;
 }
 
-.h5-dispose__photo-placeholder {
+.h5-dispose__photo-item {
+  position: relative;
   aspect-ratio: 1;
-  background: linear-gradient(135deg, rgba(27,111,232,0.1) 0%, rgba(27,111,232,0.05) 100%);
   border-radius: 8px;
+  overflow: hidden;
   border: 1px solid var(--h5-border, #EEF2F7);
+  background: #f1f5f9;
+}
+
+.h5-dispose__photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.h5-dispose__photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-}
-
-.h5-dispose__photo-icon {
-  font-size: 24px;
-}
-
-.h5-dispose__photo-label {
-  font-size: 11px;
-  color: var(--h5-text-muted, #94A3B8);
-}
-
-.h5-dispose__photo-tag {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(27,111,232,0.1);
-  color: var(--h5-primary, #1B6FE8);
 }
 
 .h5-dispose__photo-hint {

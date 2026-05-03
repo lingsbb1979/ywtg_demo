@@ -93,7 +93,7 @@
           <div class="admin-scenario-card__info">
             <div class="admin-scenario-card__title">全量重置</div>
             <div class="admin-scenario-card__detail">
-              重置后：23 栋建筑 · 2 条默认告警 · 2 条默认工单 · 督办清空
+              重置后：3 栋建筑 · 活跃告警 0 条 · 在处工单 0 条 · 督办清空（含 2 条已销号历史工单）
             </div>
             <div class="admin-scenario-card__warning">
               ⚠️ 重置演示数据（全部清空重建），此操作不可撤销
@@ -344,10 +344,12 @@ function clearLog() {
 // ── 辅助：刷新状态统计 ─────────────────────────────────────────────────────────
 
 function loadStats() {
+  const alarmRows = getTable<{ status?: string }>("alarm_record")
+  const orderRows = getTable<{ status?: string }>("work_order")
   stats.value = {
     spaces:       getTable("iot_space").length,
-    alarms:       getTable("alarm_record").length,
-    orders:       getTable("work_order").length,
+    alarms:       alarmRows.filter((r) => r.status === "ACTIVE").length,
+    orders:       orderRows.filter((r) => r.status !== "CLOSED").length,
     supervisions: getTable("supervision_order").length,
   }
 }

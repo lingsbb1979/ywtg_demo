@@ -27,10 +27,11 @@
 
     <!-- zone:filter-tabs — 状态筛选标签（全部 / 待处理 / 处理中）-->
     <div class="h5-filter-tabs" data-zone="filter-tabs">
-      <!-- tabs: 全部|待处理|处理中; active: var(--h5-primary, #1B6FE8) -->
+      <!-- tabs: 全部|待处理|处理中|待核查; active: var(--h5-primary, #1B6FE8) -->
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='ALL'}" @click="activeFilter='ALL'">全部</button>
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='PENDING'}" @click="activeFilter='PENDING'">待处理</button>
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='PROCESSING'}" @click="activeFilter='PROCESSING'">处理中</button>
+      <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='CHECKING'}" @click="activeFilter='CHECKING'">待核查</button>
     </div>
 
     <!-- zone:workorder-list — 工单卡片列表 -->
@@ -91,6 +92,13 @@
             >
               去处置
             </button>
+            <span
+              v-else-if="item.status === 'CHECKING'"
+              class="h5-accept-btn h5-accept-btn--checking"
+              style="cursor:default"
+            >
+              待核查
+            </span>
 
             <!-- 现场证据入口（h5-evidence-entry） -->
             <router-link
@@ -131,6 +139,9 @@ const activeFilter = ref('ALL')
 const STATUS_LABEL: Record<string, string> = {
   PENDING:    "待处理",
   PROCESSING: "处理中",
+  CHECKING:   "待核查",
+  FINISHED:   "已销号",
+  CLOSED:     "已销号",
 }
 
 /** 筛选后的工单列表 */
@@ -425,6 +436,15 @@ function onCardClick(item: H5TodoItem) {
   background: #F1F5F9;
   color: var(--h5-text-body, #4A5568);
   border: 1px solid var(--h5-border, #EEF2F7);
+}
+.h5-accept-btn--checking {
+  background: rgba(245,158,11,0.08);
+  color: #B45309;
+  border: 1px solid rgba(245,158,11,0.3);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 /* 证据入口 */

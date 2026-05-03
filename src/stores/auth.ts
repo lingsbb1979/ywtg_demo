@@ -13,34 +13,39 @@ import { ref, computed } from "vue"
 
 /** Demo 固定账号配置（不含真实密码哈希，仅用于演示） */
 const DEMO_CREDENTIALS: Record<string, string> = {
-  admin: "admin"
+  admin:  "admin",
+  leader: "123456",
+  field:  "123456",
 }
 
-/** sessionStorage 键：登录会话状态，与 SQLiteMirror 业务表无关 */
+/**
+ * localStorage 键：登录会话状态，与 SQLiteMirror 业务表无关。
+ * 使用 localStorage 而非 sessionStorage，保证跨标签页、刷新后不丢失登录态。
+ */
 const SESSION_KEY = "ywtg.session.auth"
 
-/** 安全读取 sessionStorage（Node 环境无 sessionStorage，降级为 null） */
+/** 安全读取 localStorage（Node 环境降级为 null） */
 function readSession(): string | null {
   try {
-    return globalThis.sessionStorage?.getItem(SESSION_KEY) ?? null
+    return globalThis.localStorage?.getItem(SESSION_KEY) ?? null
   } catch {
     return null
   }
 }
 
-/** 安全写入 sessionStorage */
+/** 安全写入 localStorage */
 function writeSession(username: string): void {
   try {
-    globalThis.sessionStorage?.setItem(SESSION_KEY, username)
+    globalThis.localStorage?.setItem(SESSION_KEY, username)
   } catch {
     // Node 测试环境忽略
   }
 }
 
-/** 安全清除 sessionStorage */
+/** 安全清除 localStorage */
 function clearSession(): void {
   try {
-    globalThis.sessionStorage?.removeItem(SESSION_KEY)
+    globalThis.localStorage?.removeItem(SESSION_KEY)
   } catch {
     // Node 测试环境忽略
   }
@@ -76,6 +81,20 @@ export const useAuthStore = defineStore("auth", () => {
     return { success: true }
   }
 
+  /**
+   * 仅内存登录（新标签页用）：校验账号但不写 localStorage，
+   * 不影响其他标签页的持久化状态。
+   */
+  async function loginNoSave(username: string, password: string): Promise<LoginResult> {
+    await Promise.resolve()
+    const expected = DEMO_CREDENTIALS[username]
+    if (!expected || expected !== password) {
+      return { success: false, message: "用户名或密码错误" }
+    }
+    _currentUser.value = username
+    return { success: true }
+  }
+
   /** 退出登录，清除状态和会话 */
   function logout(): void {
     _currentUser.value = null
@@ -86,6 +105,7 @@ export const useAuthStore = defineStore("auth", () => {
     currentUser,
     isLoggedIn,
     login,
+    loginNoSave,
     logout
   }
 })
