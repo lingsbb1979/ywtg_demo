@@ -176,6 +176,7 @@
           <div class="screen-quick-links">
             <router-link class="screen-quick-link" to="/screen/work-orders">工单中心</router-link>
             <router-link class="screen-quick-link screen-quick-link--emergency" to="/screen/emergency" data-testid="emergency-link">应急处置</router-link>
+            <router-link class="screen-quick-link screen-quick-link--supervision" to="/screen/performance">绩效督办</router-link>
             <router-link class="screen-quick-link" to="/admin/demo-console">演示控制台</router-link>
           </div>
         </div>
@@ -659,6 +660,14 @@ onUnmounted(() => clearInterval(timer))
 }
 .screen-quick-link:hover {
   background: rgba(27,111,232,0.30);
+}
+.screen-quick-link--supervision {
+  background: rgba(245,158,11,0.15);
+  border-color: rgba(245,158,11,0.35);
+  color: #F59E0B;
+}
+.screen-quick-link--supervision:hover {
+  background: rgba(245,158,11,0.28);
 }
 
 /* ===== 告警入口区域 (data-zone="alarm-entry") ===== */
