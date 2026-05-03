@@ -479,7 +479,7 @@ export function acceptWorkOrder(
     accept_time: string | null; update_time: string | null
   }>("work_order")
 
-  const idx = rows.findIndex((r) => r.id === id)
+  const idx = rows.findIndex((r) => Number(r.id) === Number(id))
   if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
 
   const row = rows[idx]
@@ -552,7 +552,7 @@ export function submitDisposal(
     finish_time: string | null; update_time: string | null
   }>("work_order")
 
-  const idx = rows.findIndex((r) => r.id === id)
+  const idx = rows.findIndex((r) => Number(r.id) === Number(id))
   if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
 
   const row = rows[idx]
@@ -639,11 +639,11 @@ export function verifyWorkOrder(
 ): VerifyWorkOrderResult {
   const rows = getTable<{
     id: number; status: string; current_node: string
-    alarm_id: string | null
+    alarm_id: string | null; source_id: number | null; source_type: string | null
     check_time: string | null; update_time: string | null
   }>("work_order")
 
-  const idx = rows.findIndex((r) => r.id === id)
+  const idx = rows.findIndex((r) => Number(r.id) === Number(id))
   if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
 
   const row = rows[idx]
@@ -657,10 +657,19 @@ export function verifyWorkOrder(
   rows[idx] = { ...row, status: "FINISHED", current_node: "DONE", check_time: now, update_time: now }
   setTable("work_order", rows)
 
-  // 同步关闭告警
-  if (row.alarm_id) {
-    const alarmRows = getTable<{ alarm_id: string | null; status: string; update_time?: string | null }>("alarm_record")
-    const alarmIdx  = alarmRows.findIndex((a) => a.alarm_id === row.alarm_id)
+  // 同步关闭告警：优先用 source_id（alarm_record 数字主键），兜底用 alarm_id 字符串
+  const sourceId = row.source_type === "ALARM" && row.source_id != null ? Number(row.source_id) : null
+  if (sourceId != null) {
+    const alarmRows = getTable<{ id: number | null; alarm_id: string | null; status: string; update_time?: string | null }>("alarm_record")
+    const alarmIdx  = alarmRows.findIndex((a) => Number(a.id) === sourceId)
+    if (alarmIdx !== -1) {
+      alarmRows[alarmIdx] = { ...alarmRows[alarmIdx], status: "CLOSED", update_time: now }
+      setTable("alarm_record", alarmRows)
+    }
+  } else if (row.alarm_id) {
+    // 兜底：按 alarm_id 字符串匹配（可能有重复，只关闭第一条）
+    const alarmRows = getTable<{ id: number | null; alarm_id: string | null; status: string; update_time?: string | null }>("alarm_record")
+    const alarmIdx  = alarmRows.findIndex((a) => a.alarm_id === row.alarm_id && a.status !== "CLOSED")
     if (alarmIdx !== -1) {
       alarmRows[alarmIdx] = { ...alarmRows[alarmIdx], status: "CLOSED", update_time: now }
       setTable("alarm_record", alarmRows)
@@ -721,7 +730,7 @@ export function rejectWorkOrder(
     finish_time: string | null; update_time: string | null
   }>("work_order")
 
-  const idx = rows.findIndex((r) => r.id === id)
+  const idx = rows.findIndex((r) => Number(r.id) === Number(id))
   if (idx === -1) return { ok: false, error: `work_order 中不存在 id=${id} 的工单` }
 
   const row = rows[idx]
