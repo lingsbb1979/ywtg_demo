@@ -276,6 +276,23 @@ onMounted(() => {
   const orders = getTable<{ id: number; order_no: string }>("work_order")
   const found  = orders.find(o => o.id === id)
   orderNo.value = found?.order_no ?? `WO-${id}`
+
+  // 加载最近一次处置记录，供退回重办时修改
+  const disposals = getTable<{
+    id: number; order_id: number
+    disposal_desc: string | null
+    image_urls: string | null
+    disposal_time: string | null
+  }>("work_order_disposal")
+  const prevList = disposals
+    .filter(d => d.order_id === id)
+    .sort((a, b) => (b.disposal_time ?? "").localeCompare(a.disposal_time ?? ""))
+  if (prevList.length > 0) {
+    const prev = prevList[0]
+    if (prev.disposal_desc) description.value = prev.disposal_desc
+    if (prev.image_urls) photos.value = prev.image_urls.split(",").filter(Boolean)
+  }
+
   loading.value = false
 })
 </script>
