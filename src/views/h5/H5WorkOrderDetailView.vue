@@ -234,34 +234,12 @@
       <div class="h5-card h5-detail-card" data-zone="timeline">
         <div class="h5-detail-card__title">处置时间轴</div>
         <ul class="h5-timeline">
-          <li class="h5-timeline-item">
-            <div class="h5-timeline-dot h5-timeline-dot--active"></div>
+          <li v-for="evt in timelineEvents" :key="evt.key" class="h5-timeline-item">
+            <div class="h5-timeline-dot" :class="evt.dotClass"></div>
             <div class="h5-timeline-content">
-              <span class="h5-timeline-content__title">告警触发 · 工单创建</span>
-              <span class="h5-timeline-content__time tabular-nums">
-                {{ order.dispatchTime?.slice(0, 16) ?? '—' }}
-              </span>
-            </div>
-          </li>
-          <li v-if="order.acceptTime" class="h5-timeline-item">
-            <div class="h5-timeline-dot h5-timeline-dot--done"></div>
-            <div class="h5-timeline-content">
-              <span class="h5-timeline-content__title">外勤接单</span>
-              <span class="h5-timeline-content__time tabular-nums">{{ order.acceptTime?.slice(0, 16) }}</span>
-            </div>
-          </li>
-          <li v-if="order.finishTime" class="h5-timeline-item">
-            <div class="h5-timeline-dot h5-timeline-dot--done"></div>
-            <div class="h5-timeline-content">
-              <span class="h5-timeline-content__title">处置完成 · 待核查</span>
-              <span class="h5-timeline-content__time tabular-nums">{{ order.finishTime?.slice(0, 16) }}</span>
-            </div>
-          </li>
-          <li v-if="order.checkTime" class="h5-timeline-item">
-            <div class="h5-timeline-dot h5-timeline-dot--success"></div>
-            <div class="h5-timeline-content">
-              <span class="h5-timeline-content__title">核查通过 · 销号</span>
-              <span class="h5-timeline-content__time tabular-nums">{{ order.checkTime?.slice(0, 16) }}</span>
+              <span class="h5-timeline-content__title">{{ evt.title }}</span>
+              <span v-if="evt.sub" class="h5-timeline-content__sub" style="display:block;font-size:12px;color:var(--h5-text-muted,#94A3B8);margin-top:2px">{{ evt.sub }}</span>
+              <span class="h5-timeline-content__time tabular-nums">{{ evt.time }}</span>
             </div>
           </li>
         </ul>
@@ -271,7 +249,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { getWorkOrder, type WorkOrderDetail } from "@/services/workOrderService"
 import { update } from "@/services/sqliteMirrorRepository"
@@ -296,6 +274,103 @@ const STATUS_LABEL: Record<string, string> = {
 const order     = ref(null as WorkOrderDetail | null)
 const loading   = ref(true)
 const actionMsg = ref("")
+
+// ── 时间轴事件（动态合并所有节点）─────────────────────────────────────────────
+
+interface TimelineEvent {
+  key:      string
+  title:    string
+  sub?:     string
+  time:     string
+  dotClass: string
+  sortKey:  string
+}
+
+const timelineEvents = computed((): TimelineEvent[] => {
+  if (!order.value) return []
+  const o = order.value
+  const events: TimelineEvent[] = []
+
+  // 1. 工单创建
+  events.push({
+    key:      "create",
+    title:    "告警触发 · 工单创建",
+    time:     o.dispatchTime?.slice(0, 16) ?? "—",
+    dotClass: "h5-timeline-dot--active",
+    sortKey:  o.dispatchTime ?? "",
+  })
+
+  // 2. 外勤接单
+  if (o.acceptTime) {
+    events.push({
+      key:      "accept",
+      title:    "外勤接单",
+      time:     o.acceptTime.slice(0, 16),
+      dotClass: "h5-timeline-dot--done",
+      sortKey:  o.acceptTime,
+    })
+  }
+
+  // 3. 处置记录（来自 work_order_disposal）
+  o.disposals?.forEach((d, i) => {
+    const t = d.disposalTime ?? d.createTime ?? ""
+    events.push({
+      key:      `disposal-${d.id}`,
+      title:    `提交处置记录 #${i + 1}`,
+      sub:      d.disposalDesc ?? undefined,
+      time:     t.slice(0, 16),
+      dotClass: "h5-timeline-dot--done",
+      sortKey:  t,
+    })
+  })
+
+  // 4. work_order_log 中的重要节点（FINISH / REJECT / VERIFY）
+  const LOG_NODE: Record<string, { title: string; dotClass: string }> = {
+    FINISH: { title: "处置完成 · 提交核查",   dotClass: "h5-timeline-dot--done"    },
+    REJECT: { title: "⚠ 退回重办",            dotClass: "h5-timeline-dot--warning"  },
+    VERIFY: { title: "✓ 核查通过 · 销号",      dotClass: "h5-timeline-dot--success"  },
+  }
+  o.logs?.forEach((l) => {
+    const cfg = LOG_NODE[l.nodeType ?? ""]
+    if (!cfg) return
+    const t = l.actionTime ?? l.createTime ?? ""
+    events.push({
+      key:      `log-${l.id}`,
+      title:    cfg.title,
+      sub:      l.remark ?? undefined,
+      time:     t.slice(0, 16),
+      dotClass: cfg.dotClass,
+      sortKey:  t,
+    })
+  })
+
+  // 5. 如果 finishTime 存在但 log 里没有 FINISH 节点（兼容旧数据）
+  const hasFinishLog = o.logs?.some((l) => l.nodeType === "FINISH")
+  if (o.finishTime && !hasFinishLog) {
+    events.push({
+      key:      "finish-fallback",
+      title:    "处置完成 · 待核查",
+      time:     o.finishTime.slice(0, 16),
+      dotClass: "h5-timeline-dot--done",
+      sortKey:  o.finishTime,
+    })
+  }
+
+  // 6. checkTime 兼容（log VERIFY 优先）
+  const hasVerifyLog = o.logs?.some((l) => l.nodeType === "VERIFY")
+  if (o.checkTime && !hasVerifyLog) {
+    events.push({
+      key:      "check-fallback",
+      title:    "核查通过 · 销号",
+      time:     o.checkTime.slice(0, 16),
+      dotClass: "h5-timeline-dot--success",
+      sortKey:  o.checkTime,
+    })
+  }
+
+  // 按时间升序
+  return events.sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+})
 
 // ── 辅助函数 ──────────────────────────────────────────────────────────────────
 
@@ -696,6 +771,7 @@ onMounted(() => {
 .h5-timeline-dot--active { border-color: var(--h5-primary, #1B6FE8); background: rgba(27,111,232,0.12); }
 .h5-timeline-dot--done   { border-color: #10B981; background: rgba(16,185,129,0.12); }
 .h5-timeline-dot--success { border-color: #10B981; background: #10B981; }
+.h5-timeline-dot--warning { border-color: #F59E0B; background: #F59E0B; }
 
 .h5-timeline-content {
   flex: 1;
