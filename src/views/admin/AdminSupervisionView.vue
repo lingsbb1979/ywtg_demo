@@ -160,6 +160,7 @@ interface SupervisionOrder {
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING:   "待处理",
+  ISSUED:    "待处理",
   REPLIED:   "已回复",
   CLOSED:    "已关闭",
   ESCALATED: "已升级",

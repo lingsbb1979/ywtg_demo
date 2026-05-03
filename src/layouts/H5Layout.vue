@@ -43,7 +43,7 @@ const route = useRoute()
 const router = useRouter()
 
 const ROOT_PATHS = ['/h5/work-orders', '/h5/mine']
-const showBack = computed(() => !ROOT_PATHS.some(p => route.path.startsWith(p)))
+const showBack = computed(() => !ROOT_PATHS.includes(route.path))
 const pageTitle = computed(() => (route.meta?.title as string) ?? "历史建筑安全监测")
 
 function isActive(path: string): boolean {
