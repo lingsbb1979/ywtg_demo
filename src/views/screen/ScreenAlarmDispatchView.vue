@@ -180,14 +180,14 @@
         <div class="dispatch-action-buttons">
           <button
             class="btn-screen-primary"
-            :disabled="!selectedAlarm || selectedAlarm.status === 'CLOSED'"
+            :disabled="!selectedAlarm || selectedAlarm.status !== 'ACTIVE'"
             @click="confirmAlarm"
           >
             确认告警
           </button>
           <button
             class="btn-screen-primary dispatch-btn-dispatch"
-            :disabled="!selectedAlarm || selectedAlarm.status !== 'ACTIVE' && selectedAlarm.status !== 'PENDING'"
+            :disabled="!selectedAlarm || (selectedAlarm.status !== 'ACTIVE' && selectedAlarm.status !== 'PENDING')"
             @click="dispatchAlarm"
           >
             自动派单
