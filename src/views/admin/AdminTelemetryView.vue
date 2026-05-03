@@ -73,24 +73,24 @@
       </div>
 
       <div v-if="rows.length === 0" class="admin-empty admin-empty--inline">
-        {{ selectedBuildingId ? '尚无采集数据，可在下方新增模拟采集' : '请先选择建筑' }}
+        暂无采集数据，请先在演示控制台触发 IoT 模拟
       </div>
 
       <table v-else class="admin-table">
         <thead>
           <tr>
             <th>采集时间</th>
-            <th>数据点</th>
+            <th>建筑</th>
+            <th>因子</th>
             <th>采集值</th>
-            <th>文本值</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(row, idx) in rows" :key="idx">
             <td class="tabular-nums">{{ row.ts }}</td>
-            <td class="tabular-nums">{{ row.pointId }}</td>
-            <td class="tabular-nums">{{ row.valueNum ?? '—' }}</td>
-            <td>{{ row.valueStr ?? '—' }}</td>
+            <td class="tabular-nums">{{ pointBuildingLabel(row.pointId) }}</td>
+            <td>{{ pointFactorLabel(row.pointId) }}</td>
+            <td class="tabular-nums">{{ row.valueNum ?? row.valueStr ?? '—' }}</td>
           </tr>
         </tbody>
       </table>
@@ -176,6 +176,20 @@ const filteredPoints = computed(() => {
   return dataPoints.value.filter((p) => p.space_id === selectedBuildingId.value)
 })
 
+/** 根据 pointId 返回所属建筑编号（如 B003） */
+function pointBuildingLabel(pointId: number): string {
+  const dp = dataPoints.value.find((p) => p.id === pointId)
+  if (!dp) return `pt${pointId}`
+  const b = buildingOptions.value.find((b) => b.id === dp.space_id)
+  return b ? b.spaceCode : `空间${dp.space_id}`
+}
+
+/** 根据 pointId 返回因子名称（如 裂缝宽度） */
+function pointFactorLabel(pointId: number): string {
+  const dp = dataPoints.value.find((p) => p.id === pointId)
+  return dp?.factor_name ?? dp?.factor_code ?? `点${pointId}`
+}
+
 // ── 事件处理 ──────────────────────────────────────────────────────────────────
 
 function onBuildingChange() {
@@ -248,33 +262,46 @@ function reloadMeta() {
 
 onMounted(() => {
   reloadMeta()
+  loadRows()   // 页面加载时立即显示最近数据
 })
 
-// 监听 selectedPointId 变化时自动查询
+/**
+ * 统一加载行数据：
+ *   - buildingId=null → 全部建筑最近 100 条
+ *   - buildingId=xxx  → 该建筑所有数据点最近 50 条
+ */
+function loadRows(buildingId: number | null = selectedBuildingId.value) {
+  const telemetry = getTable("iot_telemetry") as Array<{
+    ts: string; point_id: number; value_num: number | null; value_str: string | null
+  }>
+
+  if (!buildingId) {
+    // 全部建筑：取最近 100 条
+    rows.value = telemetry
+      .sort((a, b) => (a.ts > b.ts ? -1 : 1))
+      .slice(0, 100)
+      .map((r) => ({ ts: r.ts, pointId: r.point_id, valueNum: r.value_num, valueStr: r.value_str }))
+  } else {
+    // 指定建筑：取该建筑所有数据点
+    const pts = dataPoints.value.filter((p) => p.space_id === buildingId).map((p) => p.id)
+    rows.value = telemetry
+      .filter((r) => pts.includes(r.point_id))
+      .sort((a, b) => (a.ts > b.ts ? -1 : 1))
+      .slice(0, 50)
+      .map((r) => ({ ts: r.ts, pointId: r.point_id, valueNum: r.value_num, valueStr: r.value_str }))
+  }
+}
+
+// 监听 selectedPointId 变化时走精确查询
 watch(selectedPointId, (val) => {
   if (val) loadData()
-  else rows.value = []
+  else loadRows()
 })
 
-// 选建筑后，自动加载该建筑所有数据点的最近 50 条遥测（聚合视图）
+// 选建筑后自动加载该建筑遥测
 watch(selectedBuildingId, (buildingId) => {
   selectedPointId.value = null
-  if (!buildingId) { rows.value = []; return }
-  // 取该建筑所有数据点
-  const pts = dataPoints.value.filter((p) => p.space_id === buildingId).map((p) => p.id)
-  if (pts.length === 0) { rows.value = []; return }
-  // 读取 iot_telemetry，过滤该建筑所有点，按时间降序取最近 50 条
-  const telemetry = getTable("iot_telemetry") as Array<{ ts: string; point_id: number; value_num: number | null; value_str: string | null }>
-  rows.value = telemetry
-    .filter((r) => pts.includes(r.point_id))
-    .sort((a, b) => (a.ts > b.ts ? -1 : 1))
-    .slice(0, 50)
-    .map((r) => ({
-      ts:       r.ts,
-      pointId:  r.point_id,
-      valueNum: r.value_num,
-      valueStr: r.value_str,
-    }))
+  loadRows(buildingId ?? null)
 })
 </script>
 
