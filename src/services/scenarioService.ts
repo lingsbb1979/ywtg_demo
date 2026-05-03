@@ -79,16 +79,53 @@ const SEED_WORK_ORDERS = [
     create_time: "2024-03-08 09:00:00", update_time: "2024-03-08 14:00:00" },
 ]
 
-// ── 导出函数 ──────────────────────────────────────────────────────────────────
+// ── 应急预案配置种子数据 ─────────────────────────────────────────────────────────────────────
+
+/**
+ * 1 条预案模板（emergency_plan_config）。
+ * 重置演示数据时播种，大屏弹窗从此表读取预案信息。
+ */
+const SEED_EMERGENCY_PLANS = [
+  {
+    id: 1,
+    plan_code: "EP-RED-TILT",
+    plan_name: "危房倾斜红色应急预案",
+    level_code: "RED",
+    trigger_condition_json: null,
+    related_dept_json: JSON.stringify(["fire", "street", "bureau"]),
+    release_condition_json: null,
+    can_transfer_work_order: 1,
+    status: 1,
+  },
+]
+
+/**
+ * 5 个预案步骤（emergency_flow_node_config）。
+ * sort_order 决定展示顺序，大屏弹窗按此顺序逐步解锁。
+ */
+const SEED_EMERGENCY_NODES = [
+  { id: 1, plan_id: 1, node_code: "CONFIRM",  node_name: "确认险情属实",                   sort_order: 1, target_role_keys: "DUTY_OFFICER", required_material_json: null, limit_minutes: 5   },
+  { id: 2, plan_id: 1, node_code: "NOTIFY",   node_name: "通知消防大队 + 街道办主任",   sort_order: 2, target_role_keys: "DUTY_OFFICER", required_material_json: null, limit_minutes: 5   },
+  { id: 3, plan_id: 1, node_code: "REPORT",   node_name: "向黑龙江省住建厅上报（708号令。2小时内）", sort_order: 3, target_role_keys: "DUTY_OFFICER", required_material_json: null, limit_minutes: 120 },
+  { id: 4, plan_id: 1, node_code: "EXPERT",   node_name: "专家到场评估，出具鉴定意见",   sort_order: 4, target_role_keys: "EXPERT",       required_material_json: null, limit_minutes: 60  },
+  { id: 5, plan_id: 1, node_code: "CLOSE",    node_name: "选择结案方式（请外勤手机操作）", sort_order: 5, target_role_keys: "FIELD_WORKER",  required_material_json: null, limit_minutes: null },
+]
+
+// ── 导出函数 ────────────────────────────────────────────────────────────────────────────────
 
 /**
  * 一键清空所有表并写入固定演示种子数据（幂等）。
  */
 export function resetDemo(): void {
   resetTables()
-  setTable("iot_space",    SEED_SPACES)
-  setTable("alarm_record", SEED_ALARMS)
-  setTable("work_order",   SEED_WORK_ORDERS)
+  setTable("iot_space",                  SEED_SPACES)
+  setTable("alarm_record",               SEED_ALARMS)
+  setTable("work_order",                 SEED_WORK_ORDERS)
+  setTable("emergency_plan_config",      SEED_EMERGENCY_PLANS)
+  setTable("emergency_flow_node_config", SEED_EMERGENCY_NODES)
+  // 清空当前活跃应急事件（确保演示开始时大屏无弹窗）
+  setTable("emergency_incident", [])
+  setTable("emergency_order",    [])
 }
 
 // ── T15.65 triggerOrangeCrack ─────────────────────────────────────────────────
@@ -142,7 +179,8 @@ export interface RedAlertOptions {
 let _tiltSeq = 0
 
 /**
- * 追加一条 B012 红色倾斜告警（仅写 alarm_record）。
+ * 追加一条 B012 红色倾斜告警（写 alarm_record），
+ * 同时在 emergency_incident 创建一条待核实应急事件（关联预案 EP-RED-TILT）。
  * 工单由操作员点击"自动派单"后由 dispatchAlarm() 创建，不在此预建。
  */
 export function triggerRedAlert(options: RedAlertOptions = {}): void {
@@ -175,6 +213,63 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
     create_time:   nowStr,
     update_time:   nowStr,
   }])
+
+  // ─ emergency_incident（若已有活跃事件则跳过，防止重复触发）─
+  const incidents = getTable<{ id?: number; status?: number }>("emergency_incident")
+  const hasActive = incidents.some((r) => Number(r.status) !== 40)
+  if (!hasActive) {
+    // 查找红色预案 id（EP-RED-TILT），降级为 1
+    const plans = getTable<{ id?: number; level_code?: string }>("emergency_plan_config")
+    const plan = plans.find((p) => p.level_code === "RED")
+    const planId = plan?.id ?? 1
+
+    const nextIncidentId = incidents.length > 0
+      ? Math.max(...incidents.map((r) => r.id ?? 0)) + 1
+      : 1
+    setTable("emergency_incident", [...incidents, {
+      id:                  nextIncidentId,
+      incident_no:         `EM-${nowStr.replace(/[-: ]/g, "").slice(0, 14)}`,
+      source_type:         1,        // 系统预警自动触发
+      building_id:         1012,
+      level:               3,        // II级（重大）
+      status:              10,       // 待核实
+      trigger_time:        nowStr,
+      report_to_province:  0,
+      evacuation_status:   0,
+      plan_id:             planId,
+      current_step:        0,
+      close_type:          null,
+      alarm_record_id:     alarmId,
+    }])
+  }
+
+  // ─ work_order（若已有 alarm_id=ALM-TILT-012 的 PENDING/PROCESSING 工单则跳过，防止重复）─
+  const orders = getTable<{ id?: number; alarm_id?: string; status?: string }>("work_order")
+  const hasOrder = orders.some(
+    (o) => o.alarm_id === "ALM-TILT-012" && (o.status === "PENDING" || o.status === "PROCESSING"),
+  )
+  if (!hasOrder) {
+    const nextOrderId = orders.length > 0
+      ? Math.max(...orders.map((r) => r.id ?? 0)) + 1
+      : 1
+    setTable("work_order", [...orders, {
+      id:               nextOrderId,
+      order_no:         `WO-TILT-012-${String(_tiltSeq).padStart(3, "0")}`,
+      alarm_id:         "ALM-TILT-012",
+      source_type:      "ALARM",
+      building_id:      1012,
+      status:           "PENDING",
+      order_level:      "URGENT",
+      alarm_level:      "RED",
+      dispatch_time:    nowStr,
+      assignee_id:      null,
+      receive_org_id:   null,
+      current_node:     "DISPATCH",
+      description:      null,
+      create_time:      nowStr,
+      update_time:      nowStr,
+    }])
+  }
 }
 
 // ── T15.67 triggerTimeoutSupervision ─────────────────────────────────────────
@@ -189,7 +284,7 @@ let _supSeq = 0
  * 追加一条超时工单（dispatch_time 提前 200 min）+ 配套督办单。
  */
 export function triggerTimeoutSupervision(options: SupervisionOptions = {}): void {
-  const nowStr = options.nowStr ?? _fmtTs(Date.now())
+  const nowStr = options.nowStr ?? "2024-03-08 11:00:00"
   _supSeq++
 
   const dispatchMs = _parseTs(nowStr) - 200 * 60 * 1000
@@ -243,9 +338,13 @@ export function triggerTimeoutSupervision(options: SupervisionOptions = {}): voi
     order_no:         `WO-TIMEOUT-${String(orderId).padStart(4, "0")}`,
     building_id:      1001,
     building_name:    "历史建筑A栋",
+    title:            "工单超时督办",
+    source_type:      "WORK_ORDER",
+    level_code:       "GENERAL",
     supervision_type: "超时督办",
     reason:           `工单派单时间：${dispatchTs}，超出 SLA ${120} 分钟，请及时处理。`,
     status:           "PENDING",
+    issue_time:       nowStr,
     handler_id:       null,
     handler_name:     null,
     reply:            null,

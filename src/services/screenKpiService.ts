@@ -250,7 +250,7 @@ const ORDER_LEVEL_SORT: Record<string, number> = { URGENT: 3, HIGH: 2, NORMAL: 1
 export function selectH5TodoList(query: H5TodoQuery = {}): H5TodoItem[] {
   const { assigneeId, receiveOrgId, limit = 200 } = query
 
-  const TODO_SET = new Set(["PENDING", "PROCESSING", "CHECKING", "FINISHED", "CLOSED"])
+  const TODO_SET = new Set(["PENDING", "PROCESSING"])
 
   const orders = getTable<{
     id: number; order_no: string; status: string

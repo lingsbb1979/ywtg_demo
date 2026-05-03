@@ -119,10 +119,10 @@ describe("T15.67 triggerTimeoutSupervision() — 督办单", () => {
     expect((getTable<SupRow>("supervision_order"))[0].level_code).toBe("GENERAL")
   })
 
-  it("督办 status=ISSUED", async () => {
+  it("督办 status=PENDING（督办单初始待处理）", async () => {
     const { triggerTimeoutSupervision } = await importService()
     triggerTimeoutSupervision()
-    expect((getTable<SupRow>("supervision_order"))[0].status).toBe("ISSUED")
+    expect((getTable<SupRow>("supervision_order"))[0].status).toBe("PENDING")
   })
 
   it("督办 issue_time 等于 nowStr", async () => {

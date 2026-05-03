@@ -332,7 +332,7 @@ export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): Con
 
   rows[idx] = {
     ...row,
-    status:      "PENDING",
+    status:      "ACTIVE",
     handle_user: operator,
     handle_time: handleTime,
     update_time: handleTime,
@@ -340,7 +340,7 @@ export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): Con
 
   setTable("alarm_record", rows)
 
-  return { ok: true, id, status: "PENDING", handleUser: operator, handleTime }
+  return { ok: true, id, status: "ACTIVE", handleUser: operator, handleTime }
 }
 
 // ── dispatchAlarm ─────────────────────────────────────────────────────────────

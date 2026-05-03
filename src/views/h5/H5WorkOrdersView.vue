@@ -17,7 +17,13 @@
     （底部 tabbar 由 H5Layout 提供，不在本视图中）
   -->
   <div class="h5-workorders">
-    <!-- zone:filter-tabs — 状态筛选标签（全部 / 待处理 / 处理中）-->
+    <!-- zone:header — sticky 顶部：工单数量 + 筛选入口 -->
+    <div class="h5-workorders__header" data-zone="header">
+      <span class="h5-workorders__title">待办工单</span>
+      <span class="h5-workorders__count">共 {{ filteredList.length }} 条</span>
+    </div>
+
+    <!-- zone:filter-tabs — 状态筛选标签（active 主色 var(--h5-primary, #1B6FE8)）-->
     <div class="h5-filter-tabs" data-zone="filter-tabs">
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='ALL'}" @click="activeFilter='ALL'">全部</button>
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='PENDING'}" @click="activeFilter='PENDING'">待处理</button>
@@ -204,6 +210,27 @@ function onCardClick(item: H5TodoItem) {
   max-width: 414px;
   margin: 0 auto;
   padding-bottom: calc(var(--h5-tabbar-height, 56px) + 16px);
+}
+
+/* zone:header — sticky 顶部渐变横幅（移动端 banner 规范）*/
+.h5-workorders__header {
+  background: linear-gradient(135deg, #0E3875 0%, var(--h5-gradient-banner, #1B6FE8) 100%);
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.h5-workorders__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+.h5-workorders__count {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
 }
 
 /* ─────────────────────────────────────

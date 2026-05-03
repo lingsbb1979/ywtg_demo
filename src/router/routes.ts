@@ -13,6 +13,7 @@ import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
 import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
 import H5DisposeView from "@/views/h5/H5DisposeView.vue"
 import H5BuildingMetricsView from "@/views/h5/H5BuildingMetricsView.vue"
+import H5EmergencyView from "@/views/h5/H5EmergencyView.vue"
 import ScreenHomeView from "@/views/screen/ScreenHomeView.vue"
 import ScreenAlarmDispatchView from "@/views/screen/ScreenAlarmDispatchView.vue"
 import ScreenWorkOrdersView from "@/views/screen/ScreenWorkOrdersView.vue"
@@ -184,6 +185,12 @@ export const routes: RouteRecordRaw[] = [
         name: "h5-mine",
         component: H5MineView,
         meta: { title: "我的" }
+      },
+      {
+        path: "emergency/:id",
+        name: "h5-emergency",
+        component: H5EmergencyView,
+        meta: { title: "应急结案" }
       }
     ]
   }

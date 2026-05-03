@@ -254,6 +254,7 @@ export const TableRegistry: Readonly<Record<string, readonly string[]>> = {
   emergency_incident: [
     "id", "incident_no", "source_type", "building_id", "level",
     "status", "trigger_time", "report_to_province", "evacuation_status",
+    "plan_id", "current_step", "close_type", "alarm_record_id",
   ],
   emergency_order: [
     "id", "incident_id", "order_type", "target_dept",
