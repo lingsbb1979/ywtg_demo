@@ -238,6 +238,13 @@
             <div class="admin-shortcut-btn__desc">核查工单 · 销号闭环</div>
           </div>
         </router-link>
+        <router-link class="admin-shortcut-btn" to="/admin/supervision" target="_blank">
+          <span class="admin-shortcut-btn__icon">⏰</span>
+          <div>
+            <div class="admin-shortcut-btn__label">督办管理</div>
+            <div class="admin-shortcut-btn__desc">超时督办 · 回复办结</div>
+          </div>
+        </router-link>
         <router-link class="admin-shortcut-btn" to="/admin/buildings" target="_blank">
           <span class="admin-shortcut-btn__icon">🏚</span>
           <div>

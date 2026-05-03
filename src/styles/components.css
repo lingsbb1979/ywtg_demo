@@ -880,8 +880,9 @@
 
 /* ===== 操作小按钮 ===== */
 .btn-icon-sm {
-  width: 28px;
+  min-width: 44px;
   height: 28px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -890,12 +891,24 @@
   background: #fff;
   color: var(--pc-text-muted, #64748B);
   cursor: pointer;
+  font-size: 12px;
   transition: all 150ms ease;
 }
 .btn-icon-sm:hover {
   border-color: var(--pc-primary, #1B6FE8);
   color: var(--pc-primary, #1B6FE8);
   background: rgba(27,111,232,0.06);
+}
+.btn-icon-sm--success {
+  border-color: #10B981;
+  color: #10B981;
+}
+.btn-icon-sm--success:hover {
+  background: rgba(16,185,129,0.08);
+}
+.btn-icon-sm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ===== 状态徽标 ===== */

@@ -75,9 +75,18 @@
                   <button
                     class="btn-icon-sm"
                     title="填写回复"
+                    :disabled="item.status === 'CLOSED'"
                     @click="openReply(item)"
                   >
                     回复
+                  </button>
+                  <button
+                    v-if="item.status === 'REPLIED'"
+                    class="btn-icon-sm btn-icon-sm--success"
+                    title="办结督办"
+                    @click="closeSupervision(item)"
+                  >
+                    办结
                   </button>
                 </div>
               </td>
@@ -223,6 +232,17 @@ function submitReply() {
     setTimeout(() => {
       cancelReply()
     }, 1500)
+  }
+}
+
+function closeSupervision(item: SupervisionOrder) {
+  const now = new Date().toISOString().replace("T", " ").slice(0, 19)
+  const rows = getTable<SupervisionOrder>("supervision_order")
+  const idx  = rows.findIndex((r) => r.id === item.id)
+  if (idx !== -1) {
+    rows[idx] = { ...rows[idx], status: "CLOSED", update_time: now }
+    setTable("supervision_order", rows)
+    loadData()
   }
 }
 
