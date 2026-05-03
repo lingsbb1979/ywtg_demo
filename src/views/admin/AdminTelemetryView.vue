@@ -108,7 +108,7 @@
           <select v-model="newPointId" class="select-pc">
             <option :value="null">-- 选择数据点 --</option>
             <option v-for="p in dataPoints" :key="p.id" :value="p.id">
-              {{ p.factor_code ?? `数据点 ${p.id}` }} (id={{ p.id }}, 空间={{ p.space_id }})
+              {{ p.factor_name ?? p.factor_code ?? `数据点` }} (id={{ p.id }})
             </option>
           </select>
         </div>
