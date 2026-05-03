@@ -5,10 +5,10 @@
       <div class="admin-layout__header-title">佳木斯历史建筑智慧安全监测平台</div>
 
       <div class="admin-layout__header-right">
-        <!-- 当前账号展示（始终显示登录账号，不随视角变化） -->
+        <!-- 当前账号展示（显示当前演示视角的角色名） -->
         <span class="admin-layout__account-badge">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-          <code class="admin-layout__account-badge-name">{{ authStore.currentUser }}</code>
+          <code class="admin-layout__account-badge-name">{{ currentRoleLabel }}</code>
         </span>
 
         <!-- 新建演示标签下拉：点击在新标签页以对应角色打开 -->
@@ -63,13 +63,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue"
-import { useDemoRoleStore, ROLE_ACCOUNT, getDefaultPathForRole } from "@/stores/demoRole"
-import { useAuthStore } from "@/stores/auth"
+import { ref, computed, onMounted, onUnmounted } from "vue"
+import { useDemoRoleStore, ROLE_ACCOUNT, getDefaultPathForRole, DEMO_ROLE_OPTIONS } from "@/stores/demoRole"
 import type { DemoRole } from "@/stores/demoRole"
 
 const demoRoleStore = useDemoRoleStore()
-const authStore = useAuthStore()
+
+/** 当前演示视角的中文名（用于顶部角色标签） */
+const currentRoleLabel = computed(() => {
+  const opt = DEMO_ROLE_OPTIONS.find(o => o.value === demoRoleStore.currentRole)
+  return opt?.label ?? demoRoleStore.currentRole
+})
 
 /** 自定义下拉开关 */
 const showDropdown = ref(false)
