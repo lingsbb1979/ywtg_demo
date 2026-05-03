@@ -27,11 +27,11 @@
 
     <!-- zone:filter-tabs — 状态筛选标签（全部 / 待处理 / 处理中）-->
     <div class="h5-filter-tabs" data-zone="filter-tabs">
-      <!-- tabs: 全部|待处理|处理中|待核查; active: var(--h5-primary, #1B6FE8) -->
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='ALL'}" @click="activeFilter='ALL'">全部</button>
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='PENDING'}" @click="activeFilter='PENDING'">待处理</button>
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='PROCESSING'}" @click="activeFilter='PROCESSING'">处理中</button>
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='CHECKING'}" @click="activeFilter='CHECKING'">待核查</button>
+      <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='FINISHED'}" @click="activeFilter='FINISHED'">已完成</button>
     </div>
 
     <!-- zone:workorder-list — 工单卡片列表 -->
@@ -99,6 +99,13 @@
             >
               待核查
             </span>
+            <span
+              v-else-if="item.status === 'FINISHED' || item.status === 'CLOSED'"
+              class="h5-accept-btn h5-accept-btn--finished"
+              style="cursor:default"
+            >
+              已销号
+            </span>
 
             <!-- 现场证据入口（h5-evidence-entry） -->
             <router-link
@@ -133,7 +140,7 @@ import {
 const router   = useRouter()
 const todoList = ref([] as H5TodoItem[])
 
-/** 状态筛选 'ALL' | 'PENDING' | 'PROCESSING' */
+/** 状态筛选 'ALL' | 'PENDING' | 'PROCESSING' | 'CHECKING' | 'FINISHED' */
 const activeFilter = ref('ALL')
 
 const STATUS_LABEL: Record<string, string> = {
@@ -147,6 +154,9 @@ const STATUS_LABEL: Record<string, string> = {
 /** 筛选后的工单列表 */
 const filteredList = computed(() => {
   if (activeFilter.value === 'ALL') return todoList.value
+  if (activeFilter.value === 'FINISHED') {
+    return todoList.value.filter(item => item.status === 'FINISHED' || item.status === 'CLOSED')
+  }
   return todoList.value.filter(item => item.status === activeFilter.value)
 })
 
@@ -441,6 +451,15 @@ function onCardClick(item: H5TodoItem) {
   background: rgba(245,158,11,0.08);
   color: #B45309;
   border: 1px solid rgba(245,158,11,0.3);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.h5-accept-btn--finished {
+  background: rgba(16,185,129,0.08);
+  color: #065F46;
+  border: 1px solid rgba(16,185,129,0.3);
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 6px;

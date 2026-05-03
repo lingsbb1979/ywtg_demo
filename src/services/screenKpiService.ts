@@ -244,12 +244,12 @@ export interface H5TodoItem {
 const ORDER_LEVEL_SORT: Record<string, number> = { URGENT: 3, HIGH: 2, NORMAL: 1 }
 
 /**
- * H5 外勤待办：PENDING + PROCESSING + CHECKING 工单，按 orderLevel 降序、同级 dispatchTime 升序。
+ * H5 外勤工单：PENDING + PROCESSING + CHECKING + FINISHED/CLOSED 全部，按 orderLevel 降序、同级 dispatchTime 升序。
  */
 export function selectH5TodoList(query: H5TodoQuery = {}): H5TodoItem[] {
-  const { assigneeId, receiveOrgId, limit = 50 } = query
+  const { assigneeId, receiveOrgId, limit = 200 } = query
 
-  const TODO_SET = new Set(["PENDING", "PROCESSING", "CHECKING"])
+  const TODO_SET = new Set(["PENDING", "PROCESSING", "CHECKING", "FINISHED", "CLOSED"])
 
   const orders = getTable<{
     id: number; order_no: string; status: string
