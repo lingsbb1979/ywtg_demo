@@ -127,7 +127,7 @@ let _tiltSeq = 0
  * 追加一条 B012 红色倾斜告警 + 配套 PENDING 工单。
  */
 export function triggerRedAlert(options: RedAlertOptions = {}): void {
-  const { nowStr = "2024-03-08 11:00:00" } = options
+  const nowStr = options.nowStr ?? _fmtTs(Date.now())
   _tiltSeq++
 
   // ─ alarm_record ─
@@ -219,7 +219,7 @@ let _supSeq = 0
  * 追加一条超时工单（dispatch_time 提前 200 min）+ 配套督办单。
  */
 export function triggerTimeoutSupervision(options: SupervisionOptions = {}): void {
-  const { nowStr = "2024-03-08 11:00:00" } = options
+  const nowStr = options.nowStr ?? _fmtTs(Date.now())
   _supSeq++
 
   const dispatchMs = _parseTs(nowStr) - 200 * 60 * 1000

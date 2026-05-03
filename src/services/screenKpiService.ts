@@ -209,14 +209,15 @@ export function selectWorkOrderBoard(options: WorkOrderBoardOptions = {}): WorkO
       case "PENDING":    pending++;    break
       case "PROCESSING": processing++; break
       case "CHECKING":   checking++;   break
-      case "FINISHED":   finished++;   break
+      case "FINISHED":
+      case "CLOSED":     finished++;   break  // CLOSED 视为已完成
     }
     if (ACTIVE_SET.has(o.status) && o.dispatch_time) {
       if (nowMs - parseTs(o.dispatch_time) > slaMsec) overdueCount++
     }
   }
 
-  return { pending, processing, checking, finished, total: orders.length, overdueCount }
+  return { pending, processing, checking, finished, total: pending + processing + checking + finished, overdueCount }
 }
 
 // ── T15.63 selectH5TodoList ───────────────────────────────────────────────────
