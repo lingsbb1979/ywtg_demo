@@ -35,14 +35,14 @@ describe("T15.122 triggerRedAlert — 红色告警写入验证", () => {
     expect(red).toBeDefined()
   })
 
-  it("triggerRedAlert() 写入 alarm_level=RED 的 PENDING 工单", async () => {
+  it("triggerRedAlert() 写入 emergency_incident（应急事件，非工单）", async () => {
     const { resetDemo, triggerRedAlert } = await import("../src/services/scenarioService")
     const { getTable } = await import("../src/services/sqliteMirrorRepository")
     resetDemo()
     triggerRedAlert()
-    const orders = getTable<{ alarm_level: string; status: string }>("work_order")
-    const pending = orders.find((o) => o.alarm_level === "RED" && o.status === "PENDING")
-    expect(pending).toBeDefined()
+    const incidents = getTable<{ status: number; building_id: number }>("emergency_incident")
+    const incident = incidents.find((i) => i.building_id === 1012 && i.status === 10)
+    expect(incident).toBeDefined()
   })
 
   it("重复触发 triggerRedAlert() 不应清空已有数据", async () => {

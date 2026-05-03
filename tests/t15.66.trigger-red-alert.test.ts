@@ -1,7 +1,8 @@
 /**
  * T15.66 — 场景引擎 triggerRedAlert()
  *
- * 模拟 B012（id=1012）生成红色倾斜告警，并附一条工单（PENDING）。
+ * 模拟 B012（id=1012）生成红色倾斜告警，并创建应急事件。
+ * 红色告警走应急流程，工单在 H5 结案时由 resolveIncident('REPAIR_ORDER') 创建，此处不预建。
  *
  * 函数签名：
  *   triggerRedAlert(options?: RedAlertOptions): void
@@ -10,9 +11,9 @@
  * 逻辑：
  *   - 向 alarm_record 追加 1 条 RED 倾斜告警（alarm_type=TILT，building_id=1012）
  *   - alarm_id 固定为 "ALM-TILT-012"，status=ACTIVE
- *   - 向 work_order 追加 1 条工单（status=PENDING）
- *   - 工单 alarm_id="ALM-TILT-012"，building_id=1012，order_level="URGENT"
- *   - trigger_time / dispatch_time = nowStr ?? "2024-03-08 11:00:00"
+ *   - 向 emergency_incident 追加 1 条应急事件（status=10 待核实）
+ *   - 不创建 work_order（红色走应急流程，工单在结案时创建）
+ *   - trigger_time = nowStr ?? 当前时间
  *
  * 测试范围（14 条）：
  *   - 导出检查
@@ -22,12 +23,13 @@
  *   - 告警 building_id=1012
  *   - 告警 status=ACTIVE
  *   - 告警 alarm_id=ALM-TILT-012
- *   - work_order 增加 1 条
- *   - 工单 status=PENDING
- *   - 工单 order_level=URGENT
- *   - 工单 alarm_id=ALM-TILT-012
- *   - 工单 building_id=1012
+ *   - emergency_incident 增加 1 条
+ *   - 应急事件 status=10（待核实）
+ *   - 应急事件 building_id=1012
+ *   - 应急事件 alarm_record_id 非空
+ *   - work_order 不增加（红色不预建工单）
  *   - 告警 trigger_time 等于 nowStr
+ *   - 不影响 iot_space 表
  *   - 不影响 iot_space 表
  */
 
@@ -51,6 +53,8 @@ beforeEach(() => {
   setTable("alarm_record", [])
   setTable("work_order",   [])
   setTable("iot_space",    [])
+  setTable("emergency_incident", [])
+  setTable("emergency_plan_config", [])
 })
 
 afterEach(() => {
@@ -65,9 +69,8 @@ type AlarmRow = {
   id: number; alarm_id: string; alarm_type: string | null; alarm_level: string
   building_id: number | null; status: string; trigger_time: string | null
 }
-type WoRow = {
-  id: number; status: string; order_level: string | null
-  alarm_id: string | null; building_id: number | null
+type IncidentRow = {
+  id: number; status: number; building_id: number | null; alarm_record_id: number | null
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -124,35 +127,35 @@ describe("T15.66 triggerRedAlert() — 告警", () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────────
-describe("T15.66 triggerRedAlert() — 工单", () => {
-  it("work_order 增加 1 条", async () => {
+describe("T15.66 triggerRedAlert() — 应急事件", () => {
+  it("emergency_incident 增加 1 条", async () => {
     const { triggerRedAlert } = await importService()
     triggerRedAlert()
-    expect(getTable("work_order").length).toBe(1)
+    expect(getTable("emergency_incident").length).toBe(1)
   })
 
-  it("工单 status=PENDING", async () => {
+  it("应急事件 status=10（待核实）", async () => {
     const { triggerRedAlert } = await importService()
     triggerRedAlert()
-    expect((getTable<WoRow>("work_order"))[0].status).toBe("PENDING")
+    expect((getTable<IncidentRow>("emergency_incident"))[0].status).toBe(10)
   })
 
-  it("工单 order_level=URGENT", async () => {
+  it("应急事件 building_id=1012", async () => {
     const { triggerRedAlert } = await importService()
     triggerRedAlert()
-    expect((getTable<WoRow>("work_order"))[0].order_level).toBe("URGENT")
+    expect((getTable<IncidentRow>("emergency_incident"))[0].building_id).toBe(1012)
   })
 
-  it("工单 alarm_id=ALM-TILT-012", async () => {
+  it("应急事件 alarm_record_id 非空", async () => {
     const { triggerRedAlert } = await importService()
     triggerRedAlert()
-    expect((getTable<WoRow>("work_order"))[0].alarm_id).toBe("ALM-TILT-012")
+    expect((getTable<IncidentRow>("emergency_incident"))[0].alarm_record_id).not.toBeNull()
   })
 
-  it("工单 building_id=1012", async () => {
+  it("work_order 不增加（红色告警不预建工单）", async () => {
     const { triggerRedAlert } = await importService()
     triggerRedAlert()
-    expect((getTable<WoRow>("work_order"))[0].building_id).toBe(1012)
+    expect(getTable("work_order").length).toBe(0)
   })
 })
 

@@ -23,6 +23,22 @@
       <span class="h5-workorders__count">共 {{ filteredList.length }} 条</span>
     </div>
 
+    <!-- zone:emergency-banner — 活跃应急事件提醒（有活跃应急时显示在工单列表顶部）
+         激活状态主色 var(--h5-primary, #1B6FE8) / 应急红色覆盖 -->
+    <div
+      v-if="activeIncident"
+      class="h5-emergency-banner"
+      role="alert"
+      @click="router.push(`/h5/emergency/${activeIncident.id}`)"
+    >
+      <span class="h5-emergency-banner__icon">🚨</span>
+      <div class="h5-emergency-banner__text">
+        <span class="h5-emergency-banner__title">红色应急事件待处置</span>
+        <span class="h5-emergency-banner__sub">{{ activeIncidentBuilding }} · {{ activeIncident.incident_no }}</span>
+      </div>
+      <span class="h5-emergency-banner__arrow">进入结案 ›</span>
+    </div>
+
     <!-- zone:filter-tabs — 状态筛选标签（active 主色 var(--h5-primary, #1B6FE8)）-->
     <div class="h5-filter-tabs" data-zone="filter-tabs">
       <button class="h5-filter-tab" :class="{'h5-filter-tab--active':activeFilter==='ALL'}" @click="activeFilter='ALL'">全部</button>
@@ -134,9 +150,22 @@ import {
   selectH5TodoList,
   type H5TodoItem,
 } from "@/services/screenKpiService"
+import { getActiveIncident } from "@/services/emergencyService"
+import { getTable } from "@/services/sqliteMirrorRepository"
 
 const router   = useRouter()
 const todoList = ref([] as H5TodoItem[])
+
+// ── 活跃应急事件（有事件时在列表顶部显示红色横幅）──────────────────────────────────
+type IncidentRow = { id: number; incident_no: string; building_id: number | null; status: number }
+const activeIncident = ref<IncidentRow | null>(null)
+
+const activeIncidentBuilding = computed(() => {
+  if (!activeIncident.value) return ""
+  const spaces = getTable<{ id: number; name: string }>("iot_space")
+  const space = spaces.find((s) => Number(s.id) === Number(activeIncident.value!.building_id))
+  return space?.name ?? `建筑 #${activeIncident.value.building_id}`
+})
 
 /** 状态筛选 'ALL' | 'PENDING' | 'PROCESSING' | 'CHECKING' | 'FINISHED' */
 const activeFilter = ref('ALL')
@@ -167,6 +196,7 @@ const filterTabs = computed(() => [
 
 function loadData() {
   todoList.value = selectH5TodoList()
+  activeIncident.value = getActiveIncident() as IncidentRow | null
 }
 
 onMounted(loadData)
@@ -210,6 +240,45 @@ function onCardClick(item: H5TodoItem) {
   max-width: 414px;
   margin: 0 auto;
   padding-bottom: calc(var(--h5-tabbar-height, 56px) + 16px);
+}
+
+/* zone:emergency-banner — 活跃应急提醒横幅 */
+.h5-emergency-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #c0392b 0%, #e74c3c 100%);
+  cursor: pointer;
+  user-select: none;
+  animation: em-pulse 2s ease-in-out infinite;
+}
+@keyframes em-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.88; }
+}
+.h5-emergency-banner__icon { font-size: 20px; flex-shrink: 0; }
+.h5-emergency-banner__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.h5-emergency-banner__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.h5-emergency-banner__sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.82);
+}
+.h5-emergency-banner__arrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* zone:header — sticky 顶部渐变横幅（移动端 banner 规范）*/

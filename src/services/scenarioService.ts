@@ -242,34 +242,8 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
       alarm_record_id:     alarmId,
     }])
   }
-
-  // ─ work_order（若已有 alarm_id=ALM-TILT-012 的 PENDING/PROCESSING 工单则跳过，防止重复）─
-  const orders = getTable<{ id?: number; alarm_id?: string; status?: string }>("work_order")
-  const hasOrder = orders.some(
-    (o) => o.alarm_id === "ALM-TILT-012" && (o.status === "PENDING" || o.status === "PROCESSING"),
-  )
-  if (!hasOrder) {
-    const nextOrderId = orders.length > 0
-      ? Math.max(...orders.map((r) => r.id ?? 0)) + 1
-      : 1
-    setTable("work_order", [...orders, {
-      id:               nextOrderId,
-      order_no:         `WO-TILT-012-${String(_tiltSeq).padStart(3, "0")}`,
-      alarm_id:         "ALM-TILT-012",
-      source_type:      "ALARM",
-      building_id:      1012,
-      status:           "PENDING",
-      order_level:      "URGENT",
-      alarm_level:      "RED",
-      dispatch_time:    nowStr,
-      assignee_id:      null,
-      receive_org_id:   null,
-      current_node:     "DISPATCH",
-      description:      null,
-      create_time:      nowStr,
-      update_time:      nowStr,
-    }])
-  }
+  // 红色告警走应急流程，工单由外勤在 H5 结案时选择"转为修缮工单"后由 resolveIncident() 创建，
+  // 此处不预建工单，避免应急流程与普通工单派遣流程混淆。
 }
 
 // ── T15.67 triggerTimeoutSupervision ─────────────────────────────────────────
