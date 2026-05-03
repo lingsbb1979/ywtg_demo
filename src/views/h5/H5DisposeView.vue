@@ -127,10 +127,10 @@
       <div class="h5-dispose__submit-row" data-zone="submit">
         <button
           class="h5-btn-primary h5-dispose__submit-btn"
-          :disabled="submitting || description.trim().length === 0"
+          :disabled="submitting || submitted || description.trim().length === 0"
           @click="handleSubmit"
         >
-          {{ submitting ? '提交中...' : '提交处置' }}
+          {{ submitted ? '已提交' : submitting ? '提交中...' : '提交处置' }}
         </button>
         <div v-if="msg" class="h5-dispose__msg" :class="msgSuccess ? 'h5-dispose__msg--success' : 'h5-dispose__msg--error'">
           {{ msg }}
@@ -158,6 +158,7 @@ const orderNo    = ref("")
 const loading    = ref(true)
 const description = ref("")
 const submitting  = ref(false)
+const submitted   = ref(false)
 const msg         = ref("")
 const msgSuccess  = ref(false)
 
@@ -243,6 +244,7 @@ function handleSubmit() {
   })
   submitting.value = false
   if (result.ok) {
+    submitted.value = true
     msg.value = "✓ 处置已提交，等待核查"
     msgSuccess.value = true
     setTimeout(() => {
@@ -264,9 +266,15 @@ onMounted(() => {
   }
   orderId.value = id
   // 获取工单编号
-  const orders = getTable<{ id: number; order_no: string }>("work_order")
-  const found  = orders.find(o => o.id === id)
+  const orders = getTable<{ id: number; order_no: string; status: string }>("work_order")
+  const found  = orders.find(o => Number(o.id) === id)
   orderNo.value = found?.order_no ?? `WO-${id}`
+  // 已提交待核查状态，禁用重复提交
+  if (found?.status === "CHECKING" || found?.status === "FINISHED") {
+    submitted.value = true
+    msg.value = "处置已提交，等待核查"
+    msgSuccess.value = true
+  }
 
   // 加载最近一次处置记录，供退回重办时修改
   const disposals = getTable<{
