@@ -162,7 +162,7 @@
                 <span>{{ alarm.alarm_level ?? '—' }}</span>
               </td>
               <td>
-                <span class="badge" :class="alarmStatusClass(alarm.status)">{{ alarm.status }}</span>
+                <span class="badge" :class="alarmStatusClass(alarm.status)">{{ alarmStatusLabel(alarm.status) }}</span>
               </td>
               <td class="tabular-nums">{{ alarm.alarm_time ?? '—' }}</td>
               <td>{{ alarm.description ?? alarm.alarm_type ?? '—' }}</td>
@@ -253,11 +253,23 @@ function riskBadgeClass(level: string | null | undefined): string {
   return map[level ?? "GREEN"] ?? "badge--success"
 }
 
+const ALARM_STATUS_LABEL: Record<string, string> = {
+  ACTIVE:     "待确认",
+  CONFIRMED:  "已确认",
+  DISPATCHED: "已派单",
+  CLOSED:     "已关闭",
+}
+const ALARM_STATUS_CLASS: Record<string, string> = {
+  ACTIVE:     "badge--danger",
+  CONFIRMED:  "badge--warning",
+  DISPATCHED: "badge--info",
+  CLOSED:     "badge--success",
+}
+function alarmStatusLabel(status: string): string {
+  return ALARM_STATUS_LABEL[status] ?? status
+}
 function alarmStatusClass(status: string): string {
-  if (status === "待确认") return "badge--danger"
-  if (status === "已确认") return "badge--warning"
-  if (status === "已派单") return "badge--info"
-  return "badge--success"
+  return ALARM_STATUS_CLASS[status] ?? "badge--success"
 }
 
 function orderStatusClass(status: string): string {
