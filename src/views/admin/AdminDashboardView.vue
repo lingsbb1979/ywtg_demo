@@ -91,19 +91,19 @@
     <!-- ② 快速数据操作区（zone:quick-actions），T15.70 P1：管理端突出待办和数据操作 -->
     <div class="admin-quick-actions" data-testid="admin-quick-actions" data-zone="quick-actions">
       <router-link class="admin-quick-btn" to="/admin/alarms">
-        <span class="admin-quick-btn__icon">⚠</span>
+        <span class="admin-quick-btn__icon">🚨</span>
         <span class="admin-quick-btn__label">告警确认 / 派单</span>
       </router-link>
       <router-link class="admin-quick-btn" to="/admin/work-orders">
-        <span class="admin-quick-btn__icon">✓</span>
+        <span class="admin-quick-btn__icon">📋</span>
         <span class="admin-quick-btn__label">工单核查销号</span>
       </router-link>
       <router-link class="admin-quick-btn" to="/admin/buildings">
-        <span class="admin-quick-btn__icon">▦</span>
+        <span class="admin-quick-btn__icon">🏗️</span>
         <span class="admin-quick-btn__label">建筑档案</span>
       </router-link>
       <router-link class="admin-quick-btn" to="/admin/telemetry">
-        <span class="admin-quick-btn__icon">∿</span>
+        <span class="admin-quick-btn__icon">📶</span>
         <span class="admin-quick-btn__label">实时采集</span>
       </router-link>
     </div>
@@ -292,6 +292,36 @@ onMounted(loadData)
   min-height: 100%;
   background: var(--pc-bg-page, #F0F4F9);
 }
+
+/* 快速操作入口 */
+.admin-quick-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.admin-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--pc-bg-card, #fff);
+  border: 1px solid var(--pc-border, #E2E8F0);
+  border-radius: var(--radius-md, 8px);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pc-text-title, #0F172A);
+  text-decoration: none;
+  box-shadow: var(--pc-shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  transition: box-shadow 150ms ease, background 150ms ease;
+  white-space: nowrap;
+}
+.admin-quick-btn:hover {
+  background: var(--pc-bg-hover, #F5F9FF);
+  box-shadow: var(--pc-shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+  color: var(--pc-primary, #1B6FE8);
+}
+.admin-quick-btn__icon { font-size: 18px; line-height: 1; }
+.admin-quick-btn__label { font-size: 13px; }
 
 /* 页面标题 — 高保真：linear-gradient 底边线增强视觉层次（T15.74）*/
 .admin-page-header {
