@@ -339,6 +339,7 @@ import {
   type AlarmListItem,
   type AlarmDetail,
 } from "@/services/alarmService"
+import { createIncidentFromAlarm } from "@/services/emergencyService"
 
 // ── 常量 ──────────────────────────────────────────────────────────────────────
 
@@ -457,18 +458,27 @@ function confirmAlarm() {
 function dispatchAlarm() {
   if (!currentAlarm.value) return
   const alarm = currentAlarm.value
+
+  // RED 级别告警→创建应急事件并跳转大屏应急页
+  if (alarm.alarmLevel === "RED") {
+    const result = createIncidentFromAlarm(alarm.id)
+    if (result.ok) {
+      loadData()
+      closeDrawer()
+      router.push("/screen/emergency")
+    } else {
+      actionMsg.value = `✗ ${result.error}`
+      setTimeout(() => { actionMsg.value = "" }, 4000)
+    }
+    return
+  }
+
   const result = serviceDispatchAlarm(alarm.id)
   if (result.ok) {
     dispatchedOrderNo.value = result.orderNo ?? ""
     loadData()
-    // RED 级别告警→关闭抖幘并跳转大屏应急指挥页
-    if (alarm.alarmLevel === "RED") {
-      closeDrawer()
-      router.push("/screen/emergency")
-    } else {
-      actionMsg.value = `✓ 已派单，工单号：${result.orderNo}`
-      setTimeout(() => { actionMsg.value = "" }, 4000)
-    }
+    actionMsg.value = `✓ 已派单，工单号：${result.orderNo}`
+    setTimeout(() => { actionMsg.value = "" }, 4000)
   } else {
     actionMsg.value = `✗ ${result.error}`
     setTimeout(() => { actionMsg.value = "" }, 4000)

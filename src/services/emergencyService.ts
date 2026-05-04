@@ -244,3 +244,60 @@ export function resolveIncident(
 
   return { ok: true }
 }
+
+// ── createIncidentFromAlarm ───────────────────────────────────────────────────
+
+export type CreateIncidentResult =
+  | { ok: true;  incidentId: number; incidentNo: string }
+  | { ok: false; error: string }
+
+/**
+ * 为已确认的 RED 告警创建应急事件。
+ * 若该告警已关联应急事件，则幂等返回已有事件 id。
+ */
+export function createIncidentFromAlarm(alarmRecordId: number): CreateIncidentResult {
+  // 1. 查告警
+  const alarms = getTable<Record<string, unknown>>("alarm_record")
+  const alarm  = alarms.find((r) => Number(r["id"]) === Number(alarmRecordId))
+  if (!alarm) return { ok: false, error: `告警 id=${alarmRecordId} 不存在` }
+
+  // 2. 幂等：已有关联事件则直接返回
+  const incidents = getTable<EmergencyIncident>("emergency_incident")
+  const existing  = incidents.find((r) => Number(r.alarm_record_id) === Number(alarmRecordId))
+  if (existing) return { ok: true, incidentId: existing.id, incidentNo: existing.incident_no }
+
+  // 3. 选红色预案
+  const plans  = getTable<{ id?: number; level_code?: string }>("emergency_plan_config")
+  const plan   = plans.find((p) => p.level_code === "RED")
+  const planId = plan?.id ?? 1
+
+  // 4. 生成事件
+  const now      = new Date().toISOString().replace("T", " ").slice(0, 19)
+  const nextId   = incidents.length > 0
+    ? Math.max(...incidents.map((r) => Number(r.id) || 0)) + 1
+    : 1
+  const incidentNo = `EM-${now.replace(/[-: ]/g, "").slice(0, 14)}`
+
+  setTable("emergency_incident", [...incidents, {
+    id:                 nextId,
+    incident_no:        incidentNo,
+    source_type:        1,
+    building_id:        Number(alarm["building_id"]) || null,
+    level:              3,
+    status:             10,   // 待核实
+    trigger_time:       String(alarm["trigger_time"] ?? now),
+    report_to_province: 0,
+    evacuation_status:  0,
+    plan_id:            planId,
+    current_step:       0,
+    close_type:         null,
+    alarm_record_id:    alarmRecordId,
+  }])
+
+  // 5. 告警状态更新为 DISPATCHED（已派遣至应急）
+  const alarmIdx = alarms.findIndex((r) => Number(r["id"]) === Number(alarmRecordId))
+  alarms[alarmIdx] = { ...alarms[alarmIdx], status: "DISPATCHED" }
+  setTable("alarm_record", alarms)
+
+  return { ok: true, incidentId: nextId, incidentNo }
+}
