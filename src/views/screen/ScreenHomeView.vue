@@ -508,26 +508,15 @@ use([LineChart, PieChart, BarChart, GridComponent, TooltipComponent, LegendCompo
 const AMAP_KEY           = (localStorage.getItem("AMAP_KEY")           || import.meta.env.VITE_AMAP_KEY           || "") as string
 const AMAP_SECURITY_CODE = (localStorage.getItem("AMAP_SECURITY_CODE") || import.meta.env.VITE_AMAP_SECURITY_CODE || "") as string
 
-// 高德地图风险颜色映射（与大屏风险色系保持一致）
-const AMAP_FILL_COLORS: Record<string, string> = {
-  red:    "#FF4E45",
-  orange: "#FFB03A",
-  yellow: "#FCD34D",
-  green:  "#20E6A4",
-}
-const AMAP_STROKE_COLORS: Record<string, string> = {
-  red:    "#FF8A85",
-  orange: "#FFD080",
-  yellow: "#FDE68A",
-  green:  "#6BEACC",
-}
+// 高德地图风险颜色已移至 CSS（.bldg-pin--{color} 类）
 
 declare global {
   interface Window {
     AMap?: Record<string, unknown> & {
       Map: new (container: HTMLElement, opts: Record<string, unknown>) => AMapInstance
-      CircleMarker: new (opts: Record<string, unknown>) => AMapMarker
+      Marker: new (opts: Record<string, unknown>) => AMapMarker
       LngLat: new (lng: number, lat: number) => unknown
+      Pixel: new (x: number, y: number) => unknown
       InfoWindow: new (opts: Record<string, unknown>) => AMapInfoWindow
       Scale: new (opts?: Record<string, unknown>) => void
       plugin: (plugins: string[], callback: () => void) => void
@@ -653,9 +642,9 @@ async function initAmapMap(): Promise<void> {
 
     amapInstance = new window.AMap.Map(amapContainerRef.value, {
       zoom:         14,
-      center:       [130.3620, 46.8221],   // 佳木斯市中心
-      mapStyle:     "amap://styles/dark",  // 深色风格，适配大屏 UI
-      features:     ["bg", "road", "point"],
+      center:       [130.3620, 46.8221],    // 佳木斯市中心
+      mapStyle:     "amap://styles/blue",   // 蓝色深色风格，与大屏 UI 色调一致
+      features:     ["bg", "road"],          // 去掉 "point"：消除地图上自带的圆形 POI 图标
       viewMode:     "2D",
       resizeEnable: true,
       showLabel:    true,
@@ -687,20 +676,26 @@ function addAmapMarkers(): void {
   for (const pt of mapPoints.value) {
     if (pt.longitude === null || pt.latitude === null) continue
 
-    const fillColor   = AMAP_FILL_COLORS[pt.color]   ?? "#20E6A4"
-    const strokeColor = AMAP_STROKE_COLORS[pt.color] ?? "#6BEACC"
-    const zIndex      = pt.color === "red" ? 200 : pt.color === "orange" ? 150 : pt.color === "yellow" ? 100 : 50
+    const zIndex = pt.color === "red" ? 200 : pt.color === "orange" ? 150 : pt.color === "yellow" ? 100 : 50
+    const label  = pt.shortName || pt.name.slice(0, 5)
 
-    const marker = new window.AMap.CircleMarker({
-      center:        new window.AMap.LngLat(pt.longitude, pt.latitude),
-      radius:        11,
-      strokeColor,
-      strokeWeight:  2,
-      strokeOpacity: 0.95,
-      fillColor,
-      fillOpacity:   0.88,
+    // 自定义 HTML 标记：发光圆点 + 脉冲圆环 + 建筑短名标签
+    const content = [
+      `<div class="bldg-pin bldg-pin--${pt.color}">`,
+      `  <div class="bldg-pin__beacon">`,
+      `    <div class="bldg-pin__ring"></div>`,
+      `    <div class="bldg-pin__core"></div>`,
+      `  </div>`,
+      `  <span class="bldg-pin__lbl">${label}</span>`,
+      `</div>`,
+    ].join("")
+
+    const marker = new window.AMap.Marker({
+      position: new window.AMap.LngLat(pt.longitude, pt.latitude),
+      content,
+      offset:   new window.AMap.Pixel(-20, -4),  // 水平居中，垂直对齐到圆点中心
       zIndex,
-      cursor:        "pointer",
+      cursor:   "pointer",
     })
 
     marker.on("click", () => {
@@ -1442,9 +1437,126 @@ onUnmounted(() => {
   50% { opacity: 0.4; transform: scale(0.7); }
 }
 /* 高德地图 logo 和版权区域样式覆盖（使其适配深色大屏）*/
-:deep(.amap-logo) { opacity: 0.5 !important; }
-:deep(.amap-copyright) { opacity: 0.5 !important; color: rgba(255,255,255,0.4) !important; }
-:deep(.amap-controls) { opacity: 0.7; }
+:deep(.amap-logo) { opacity: 0.4 !important; }
+:deep(.amap-copyright) { opacity: 0.4 !important; color: rgba(255,255,255,0.3) !important; }
+:deep(.amap-controls) { opacity: 0.6; }
+
+/* ── 建筑点位自定义标记 ── */
+:deep(.bldg-pin) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  user-select: none;
+  /* 水平居中 + 垂直对齐使 beacon 圆心落在坐标点 */
+  width: 40px;
+}
+:deep(.bldg-pin__beacon) {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+:deep(.bldg-pin__core) {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: relative;
+  z-index: 2;
+}
+:deep(.bldg-pin__ring) {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  z-index: 1;
+  animation: bldg-ring-expand 2.4s ease-out infinite;
+  pointer-events: none;
+}
+:deep(.bldg-pin__lbl) {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-align: center;
+  letter-spacing: 0.3px;
+  font-family: "MiSans", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 绿色（安全） */
+:deep(.bldg-pin--green .bldg-pin__core) {
+  background: #20E6A4;
+  box-shadow: 0 0 6px #20E6A4, 0 0 16px rgba(32,230,164,0.7), 0 0 28px rgba(32,230,164,0.3);
+}
+:deep(.bldg-pin--green .bldg-pin__ring) { border-color: #20E6A4; }
+:deep(.bldg-pin--green .bldg-pin__lbl)  {
+  color: #20E6A4;
+  background: rgba(0,15,10,0.82);
+  border: 1px solid rgba(32,230,164,0.4);
+  text-shadow: 0 0 6px rgba(32,230,164,0.8);
+}
+
+/* 橙色（橙色告警） */
+:deep(.bldg-pin--orange .bldg-pin__core) {
+  background: #FFB03A;
+  box-shadow: 0 0 6px #FFB03A, 0 0 16px rgba(255,176,58,0.7), 0 0 28px rgba(255,176,58,0.3);
+}
+:deep(.bldg-pin--orange .bldg-pin__ring) { border-color: #FFB03A; }
+:deep(.bldg-pin--orange .bldg-pin__lbl)  {
+  color: #FFB03A;
+  background: rgba(20,8,0,0.82);
+  border: 1px solid rgba(255,176,58,0.4);
+  text-shadow: 0 0 6px rgba(255,176,58,0.8);
+}
+
+/* 黄色（黄色告警） */
+:deep(.bldg-pin--yellow .bldg-pin__core) {
+  background: #FCD34D;
+  box-shadow: 0 0 6px #FCD34D, 0 0 16px rgba(252,211,77,0.7), 0 0 28px rgba(252,211,77,0.3);
+}
+:deep(.bldg-pin--yellow .bldg-pin__ring) { border-color: #FCD34D; }
+:deep(.bldg-pin--yellow .bldg-pin__lbl)  {
+  color: #FCD34D;
+  background: rgba(18,12,0,0.82);
+  border: 1px solid rgba(252,211,77,0.4);
+  text-shadow: 0 0 6px rgba(252,211,77,0.8);
+}
+
+/* 红色（紧急告警） */
+:deep(.bldg-pin--red .bldg-pin__core) {
+  background: #FF4E45;
+  box-shadow: 0 0 6px #FF4E45, 0 0 16px rgba(255,78,69,0.7), 0 0 28px rgba(255,78,69,0.3);
+}
+:deep(.bldg-pin--red .bldg-pin__ring) { border-color: #FF4E45; }
+:deep(.bldg-pin--red .bldg-pin__lbl)  {
+  color: #FF4E45;
+  background: rgba(25,0,0,0.82);
+  border: 1px solid rgba(255,78,69,0.4);
+  text-shadow: 0 0 6px rgba(255,78,69,0.8);
+}
+
+/* 脉冲扩散动画 */
+@keyframes bldg-ring-expand {
+  0%   { transform: scale(1); opacity: 0.8; }
+  80%  { transform: scale(2.8); opacity: 0.1; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* 红色告警额外叠加闪烁 */
+:deep(.bldg-pin--red .bldg-pin__core) {
+  animation: bldg-red-pulse 1.5s ease-in-out infinite;
+}
+@keyframes bldg-red-pulse {
+  0%, 100% { box-shadow: 0 0 6px #FF4E45, 0 0 16px rgba(255,78,69,0.7), 0 0 28px rgba(255,78,69,0.3); }
+  50%       { box-shadow: 0 0 12px #FF4E45, 0 0 28px rgba(255,78,69,0.9), 0 0 48px rgba(255,78,69,0.5); }
+}
 .screen-map__fallback-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

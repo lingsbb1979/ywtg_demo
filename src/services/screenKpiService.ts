@@ -47,6 +47,7 @@ export interface MapPoint {
   id:         number
   spaceCode:  string
   name:       string
+  shortName:  string
   latitude:   number | null
   longitude:  number | null
   riskLevel:  RiskLevel
@@ -66,7 +67,7 @@ const COLOR_MAP:   Record<RiskLevel, RiskColor> = {
  */
 export function selectMapPoints(): MapPoint[] {
   const spaces = getTable<{
-    id: number; space_code: string; name: string; type: string
+    id: number; space_code: string; name: string; short_name: string; type: string
     latitude: number | null; longitude: number | null
   }>("iot_space")
 
@@ -97,6 +98,7 @@ export function selectMapPoints(): MapPoint[] {
       id:        b.id,
       spaceCode: b.space_code,
       name:      b.name,
+      shortName: b.short_name ?? "",
       latitude:  b.latitude  ?? null,
       longitude: b.longitude ?? null,
       riskLevel,
