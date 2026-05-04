@@ -13,58 +13,70 @@
   -->
   <div class="screen-root screen-bg">
     <!-- ① 顶部标题栏（screen-header） -->
-    <header class="screen-header" data-testid="screen-header">
-      <div class="screen-header__left">
-        <span class="screen-header__logo-text">盾</span>
-        <div>
-          <h1 class="screen-header__title">国家建筑安全监测与应急指挥平台</h1>
-          <span class="screen-header__subtitle">NATIONAL BUILDING SAFETY MONITORING AND EMERGENCY COMMAND PLATFORM</span>
+    <header class="screen-header screen-command-header" data-testid="screen-header">
+      <span class="screen-header__kpi-anchor" data-zone="kpi" aria-hidden="true" />
+      <div class="screen-header__left screen-header__side screen-header__side--left">
+        <span class="screen-header__logo-text">
+          <img :src="screenIcons.shield" alt="" />
+        </span>
+        <div class="screen-header__clock">
+          <span class="screen-header__time">{{ currentTime }}</span>
+          <span class="screen-header__weather">多云 22℃</span>
         </div>
       </div>
-      <span class="screen-header__kpi-anchor" data-zone="kpi" aria-hidden="true" />
-      <div class="screen-emergency-pill">
-        <span class="screen-emergency-pill__icon">!</span>
-        <strong>红色应急响应中</strong>
-        <span>II级（重大）</span>
+      <div class="screen-header__center">
+        <h1 class="screen-header__title">国家建筑安全监测与应急指挥平台</h1>
+        <div class="screen-header__nav" aria-hidden="true">
+          <span>全域感知</span>
+          <span>实时互联</span>
+          <span>智能预警</span>
+          <span>高效处置</span>
+        </div>
       </div>
-      <div class="screen-header__right">
-        <span class="screen-header__time">{{ currentTime }}</span>
-        <span class="screen-header__weather">多云 22℃ · 北京市</span>
+      <div class="screen-header__right screen-header__side screen-header__side--right">
+        <span class="screen-header__location">北京市 · 北斗卫星定位：正常</span>
+        <span class="screen-header__user">管理员</span>
       </div>
     </header>
 
     <section class="screen-kpi-ribbon screen-kpi" data-testid="screen-kpi" data-zone="kpi">
       <div class="screen-kpi-item">
-        <span class="screen-kpi-item__label">当前应急事件</span>
-        <span class="screen-kpi-item__value tabular-nums">{{ kpi.activeAlarms }}</span>
-        <span class="screen-kpi-item__unit">起</span>
-      </div>
-      <div class="screen-kpi-divider" />
-      <div class="screen-kpi-item">
-        <span class="screen-kpi-item__label">红色风险建筑</span>
-        <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--warn">{{ kpi.openHazards }}</span>
+        <img class="screen-kpi-item__icon" :src="screenIcons.building" alt="" />
+        <span class="screen-kpi-item__label">监测建筑总数</span>
+        <span class="screen-kpi-item__value tabular-nums">{{ kpi.totalBuildings }}</span>
         <span class="screen-kpi-item__unit">栋</span>
       </div>
       <div class="screen-kpi-divider" />
       <div class="screen-kpi-item">
-        <span class="screen-kpi-item__label">受影响人数(预估)</span>
-        <span class="screen-kpi-item__value tabular-nums">1,256</span>
-        <span class="screen-kpi-item__unit">人</span>
-      </div>
-      <div class="screen-kpi-divider" />
-      <div class="screen-kpi-item screen-kpi-item--level">
-        <span class="screen-kpi-item__label">响应级别</span>
-        <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--red">II级</span>
-        <span class="screen-kpi-item__unit">重大</span>
-      </div>
-      <div class="screen-kpi-divider" />
-      <div class="screen-kpi-item">
-        <span class="screen-kpi-item__label">已到现场部门</span>
-        <span class="screen-kpi-item__value tabular-nums">5</span>
+        <img class="screen-kpi-item__icon" :src="screenIcons.point" alt="" />
+        <span class="screen-kpi-item__label">实时监测点位</span>
+        <span class="screen-kpi-item__value tabular-nums">{{ kpi.monitoringPoints }}</span>
         <span class="screen-kpi-item__unit">个</span>
       </div>
       <div class="screen-kpi-divider" />
       <div class="screen-kpi-item">
+        <img class="screen-kpi-item__icon" :src="screenIcons.warning" alt="" />
+        <span class="screen-kpi-item__label">当前风险建筑</span>
+        <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--warn">{{ kpi.openHazards }}</span>
+        <span class="screen-kpi-item__unit">栋</span>
+      </div>
+      <div class="screen-kpi-divider" />
+      <div class="screen-kpi-item screen-kpi-item--level">
+        <img class="screen-kpi-item__icon" :src="screenIcons.siren" alt="" />
+        <span class="screen-kpi-item__label">红色/活跃告警</span>
+        <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--red">{{ kpi.activeAlarms }}</span>
+        <span class="screen-kpi-item__unit">起</span>
+      </div>
+      <div class="screen-kpi-divider" />
+      <div class="screen-kpi-item">
+        <img class="screen-kpi-item__icon" :src="screenIcons.workOrder" alt="" />
+        <span class="screen-kpi-item__label">工单闭环率</span>
+        <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--success">{{ kpi.closeRate }}%</span>
+        <span class="screen-kpi-item__unit">今日</span>
+      </div>
+      <div class="screen-kpi-divider" />
+      <div class="screen-kpi-item">
+        <img class="screen-kpi-item__icon" :src="screenIcons.activity" alt="" />
         <span class="screen-kpi-item__label">应急处置进度</span>
         <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--success">62%</span>
         <span class="screen-kpi-item__unit">整体进度</span>
@@ -76,29 +88,72 @@
     <main class="screen-main screen-situation">
       <!-- 左侧隐患清单（screen-hazard-list）data-priority="1"：P1 最高优先信息 -->
       <aside class="screen-panel screen-panel--left screen-glass-card" data-testid="screen-hazard-list" data-priority="1" data-zone="hazard-list">
-        <div class="screen-panel__title">
-          <span class="screen-panel__title-bar" />
-          重点隐患清单
-          <span class="screen-panel__badge">{{ hazardList.length }}</span>
-        </div>
-        <ul class="screen-hazard-list__items">
-          <li
-            v-for="h in hazardList"
-            :key="h.id"
-            class="screen-hazard-item"
-            :class="`screen-hazard-item--${h.alarmLevel.toLowerCase()}`"
-          >
-            <span class="screen-hazard-item__dot" :class="`risk-dot--${h.alarmLevel.toLowerCase()}`" />
-            <div class="screen-hazard-item__info">
-              <span class="screen-hazard-item__name">{{ h.alarmTitle ?? h.alarmId }}</span>
-              <span class="screen-hazard-item__building">{{ h.buildingName ?? `建筑 #${h.buildingId}` }}</span>
+        <div class="screen-side-section screen-side-section--ring">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar" />
+            风险等级分布
+            <span class="screen-panel__badge">{{ kpi.totalBuildings }}</span>
+          </div>
+          <div class="screen-ring-block">
+            <div ref="riskChartRef" class="screen-ring-echart" />
+            <div class="screen-ring-legend">
+              <span v-for="item in riskDistribution" :key="item.key" class="screen-ring-legend__item">
+                <i :class="`risk-dot--${item.key}`" />
+                <em>{{ item.label }}</em>
+                <strong class="tabular-nums">{{ item.value }}</strong>
+              </span>
             </div>
-            <span class="screen-hazard-item__level badge-screen" :class="`badge-screen--${h.alarmLevel.toLowerCase()}`">
-              {{ h.alarmLevel }}
-            </span>
-          </li>
-          <li v-if="hazardList.length === 0" class="screen-hazard-list__empty">暂无活跃隐患</li>
-        </ul>
+          </div>
+        </div>
+
+        <div class="screen-side-section screen-side-section--ring">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar" />
+            隐患类型分布
+          </div>
+          <div ref="hazardTypeChartRef" class="screen-hazard-type-echart" />
+        </div>
+
+        <div class="screen-side-section screen-trend-card screen-side-section--trend">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar" />
+            工单趋势分析
+          </div>
+          <div class="screen-trend-chart" aria-label="最近七日工单趋势">
+            <div ref="trendChartRef" class="screen-trend-echart" />
+          </div>
+          <div class="screen-trend-labels">
+            <span v-for="item in trendSeries" :key="item.label">{{ item.label }}</span>
+          </div>
+        </div>
+
+        <div class="screen-side-section screen-resource-card">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar screen-panel__title-bar--iot" />
+            资源统计
+          </div>
+          <div class="screen-resource-grid">
+            <div v-for="item in resourceStats" :key="item.label" class="screen-resource-item">
+              <span><img :src="item.icon" alt="" /></span>
+              <strong class="tabular-nums">{{ item.value }}</strong>
+              <em>{{ item.label }}</em>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-side-section screen-side-section--status">
+          <div class="screen-panel__title">
+            <span class="screen-panel__title-bar screen-panel__title-bar--iot" />
+            系统运行状态
+          </div>
+          <div class="screen-status-strip">
+            <div v-for="item in systemStats" :key="item.label" class="screen-status-item">
+              <span><img :src="item.icon" alt="" /></span>
+              <strong class="tabular-nums">{{ item.value }}</strong>
+              <em>{{ item.label }}</em>
+            </div>
+          </div>
+        </div>
       </aside>
 
       <!-- 中央地图区（screen-map） -->
@@ -114,20 +169,24 @@
               title="地图加载失败，已切换到建筑列表模式"
             >列表模式</span>
           </div>
-          <div class="screen-map__city-decor" aria-hidden="true">
-            <span class="screen-map__decor-node screen-map__decor-node--green">应急管理局<small>已到场</small></span>
-            <span class="screen-map__decor-node screen-map__decor-node--red">消防救援支队<small>已到场</small></span>
-            <span class="screen-map__decor-node screen-map__decor-node--yellow">街道办事处<small>已到场</small></span>
-            <span class="screen-map__decor-node screen-map__decor-node--cyan">住建局<small>已到场</small></span>
-            <span class="screen-map__decor-node screen-map__decor-node--blue">医疗救护中心<small>距离2.3km</small></span>
+          <div class="screen-map__mock-layer" aria-hidden="true">
+            <span class="screen-map__district screen-map__district--a" />
+            <span class="screen-map__district screen-map__district--b" />
+            <span class="screen-map__district screen-map__district--c" />
+            <span class="screen-map__district screen-map__district--d" />
+            <span class="screen-map__road screen-map__road--main" />
+            <span class="screen-map__road screen-map__road--north" />
+            <span class="screen-map__road screen-map__road--south" />
+            <span class="screen-map__scanline" />
           </div>
           <!-- 地图失败降级：建筑列表模式 -->
           <div class="screen-map__fallback-list">
             <div
-              v-for="pt in mapPoints"
+              v-for="(pt, index) in mapPoints"
               :key="pt.id"
               class="screen-map__point"
               :class="[`screen-map__point--${pt.color}`, selectedPoint?.id === pt.id ? 'screen-map__point--selected' : '']"
+              :style="mapPointStyle(pt, index)"
               :title="`${pt.name}：${pt.summary}`"
               @click="selectedPoint = pt"
             >
@@ -176,18 +235,22 @@
           </div>
           <div class="screen-board">
             <div class="screen-board-item screen-board-item--pending">
+              <span class="board-icon board-icon--pending"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></span>
               <span class="screen-board-item__count tabular-nums">{{ board.pending }}</span>
               <span class="screen-board-item__label">待处理</span>
             </div>
             <div class="screen-board-item screen-board-item--processing">
+              <span class="board-icon board-icon--processing"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></span>
               <span class="screen-board-item__count tabular-nums">{{ board.processing }}</span>
               <span class="screen-board-item__label">处理中</span>
             </div>
             <div class="screen-board-item screen-board-item--checking">
+              <span class="board-icon board-icon--checking"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span>
               <span class="screen-board-item__count tabular-nums">{{ board.checking }}</span>
               <span class="screen-board-item__label">待核查</span>
             </div>
             <div class="screen-board-item screen-board-item--finished">
+              <span class="board-icon board-icon--finished"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>
               <span class="screen-board-item__count tabular-nums">{{ board.finished }}</span>
               <span class="screen-board-item__label">已销号</span>
             </div>
@@ -201,7 +264,7 @@
             <router-link class="screen-quick-link" to="/screen/work-orders">工单中心</router-link>
             <router-link class="screen-quick-link screen-quick-link--emergency" to="/screen/emergency" data-testid="emergency-link">应急处置</router-link>
             <router-link class="screen-quick-link screen-quick-link--supervision" to="/screen/performance">绩效督办</router-link>
-            <router-link class="screen-quick-link" to="/admin/demo-console">演示控制台</router-link>
+            <router-link class="screen-quick-link" to="/admin/demo-console">控制台</router-link>
           </div>
         </div>
 
@@ -240,12 +303,13 @@
         </div>
 
         <!-- IoT 实时数据区域（选中建筑时显示）(data-zone="iot-panel") -->
-        <div v-if="selectedPoint" class="screen-iot-panel" data-zone="iot-panel">
+        <div class="screen-iot-panel" data-zone="iot-panel">
           <div class="screen-panel__title">
             <span class="screen-panel__title-bar screen-panel__title-bar--iot" />
-            📡 {{ selectedPoint.name }} IoT 数据
+            选中建筑实时数据
+            <span v-if="selectedPoint" class="screen-iot-panel__name">{{ selectedPoint.name }}</span>
           </div>
-          <div v-if="selectedIotSummary" class="screen-iot-points">
+          <div v-if="selectedPoint && selectedIotSummary" class="screen-iot-points">
             <div
               v-for="pt in selectedIotSummary.points"
               :key="pt.pointId"
@@ -271,7 +335,8 @@
               </div>
             </div>
           </div>
-          <div v-else class="screen-iot-empty">暂无遥测数据</div>
+          <div v-else-if="selectedPoint" class="screen-iot-empty">暂无遥测数据</div>
+          <div v-else class="screen-iot-empty">点击地图建筑点位查看实时数据</div>
         </div>
       </aside>
     </main>
@@ -281,32 +346,32 @@
       <span class="screen-footer__status-text">系统状态：正常运行</span>
       <div class="screen-command-timeline">
         <div class="screen-command-node screen-command-node--red">
-          <span class="screen-command-node__icon">!</span>
+          <span class="screen-command-node__icon"><img :src="screenIcons.warning" alt="" /></span>
           <strong>预警触发</strong>
           <small>系统自动预警</small>
         </div>
         <div class="screen-command-node screen-command-node--red">
-          <span class="screen-command-node__icon">确</span>
+          <span class="screen-command-node__icon"><img :src="screenIcons.check" alt="" /></span>
           <strong>事件确认</strong>
           <small>值班员确认事件</small>
         </div>
         <div class="screen-command-node screen-command-node--orange">
-          <span class="screen-command-node__icon">案</span>
+          <span class="screen-command-node__icon"><img :src="screenIcons.fileCheck" alt="" /></span>
           <strong>启动预案</strong>
           <small>II级预案启动</small>
         </div>
         <div class="screen-command-node screen-command-node--orange">
-          <span class="screen-command-node__icon">队</span>
+          <span class="screen-command-node__icon"><img :src="screenIcons.team" alt="" /></span>
           <strong>人员疏散</strong>
           <small>疏散 856 人</small>
         </div>
         <div class="screen-command-node screen-command-node--blue">
-          <span class="screen-command-node__icon">专</span>
+          <span class="screen-command-node__icon"><img :src="screenIcons.searchCheck" alt="" /></span>
           <strong>专家会商</strong>
           <small>专家赶赴中</small>
         </div>
         <div class="screen-command-node screen-command-node--blue">
-          <span class="screen-command-node__icon">固</span>
+          <span class="screen-command-node__icon"><img :src="screenIcons.hardHat" alt="" /></span>
           <strong>处置加固</strong>
           <small>加固方案制定</small>
         </div>
@@ -403,7 +468,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue"
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from "vue"
+import { LineChart, PieChart, BarChart } from "echarts/charts"
+import { GridComponent, TooltipComponent, LegendComponent } from "echarts/components"
+import { init, use, type ECharts } from "echarts/core"
+import { CanvasRenderer } from "echarts/renderers"
 import {
   selectScreenKpi,
   selectMapPoints,
@@ -424,13 +493,43 @@ import {
 import { getTable } from "@/services/sqliteMirrorRepository"
 import { getBuildingIotSummary, type BuildingIotSummary } from "@/services/iotDemoService"
 
+use([LineChart, PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
+
+const screenIcons = {
+  shield: "/static/images/screen-icons/shield-check.svg",
+  building: "/static/images/screen-icons/building-2.svg",
+  point: "/static/images/screen-icons/radio-tower.svg",
+  warning: "/static/images/screen-icons/triangle-alert.svg",
+  siren: "/static/images/screen-icons/siren.svg",
+  workOrder: "/static/images/screen-icons/clipboard-check.svg",
+  chart: "/static/images/screen-icons/chart-line.svg",
+  server: "/static/images/screen-icons/server.svg",
+  database: "/static/images/screen-icons/database.svg",
+  activity: "/static/images/screen-icons/activity.svg",
+  team: "/static/images/screen-icons/users-round.svg",
+  package: "/static/images/screen-icons/package-check.svg",
+  check: "/static/images/screen-icons/circle-check.svg",
+  fileCheck: "/static/images/screen-icons/file-check.svg",
+  wrench: "/static/images/screen-icons/wrench.svg",
+  send: "/static/images/screen-icons/send.svg",
+  hardHat: "/static/images/screen-icons/hard-hat.svg",
+  searchCheck: "/static/images/screen-icons/search-check.svg",
+  archiveRestore: "/static/images/screen-icons/archive-restore.svg",
+}
+
 // ── 响应式状态 ────────────────────────────────────────────────────────────────
-const kpi           = ref<ScreenKpi>({ totalBuildings: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 })
+const kpi           = ref<ScreenKpi>({ totalBuildings: 0, monitoringPoints: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 })
 const mapPoints     = ref<MapPoint[]>([])
 const selectedPoint = ref<MapPoint | null>(null)
 const hazardList  = ref<HazardListItem[]>([])
 const board       = ref<WorkOrderBoard>({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 })
 const currentTime = ref("")
+const trendChartRef = ref<HTMLElement | null>(null)
+let trendChart: ECharts | null = null
+const riskChartRef = ref<HTMLElement | null>(null)
+let riskChart: ECharts | null = null
+const hazardTypeChartRef = ref<HTMLElement | null>(null)
+let hazardTypeChart: ECharts | null = null
 
 // IoT mini 面板刷新计数器（每次 loadData 自增，驱动 computed 重新读取 localStorage）
 const iotRefreshTick = ref(0)
@@ -509,7 +608,327 @@ function loadEmergency(): void {
 }
 
 // ── 告警入口：取最高风险的前 4 条用于右侧告警入口区域（data-zone="alarm-entry"）──
-const alarmEntryItems = computed<HazardListItem[]>(() => hazardList.value.slice(0, 4))
+const alarmEntryItems = computed<HazardListItem[]>(() => hazardList.value)
+
+const riskDistribution = computed(() => {
+  const counts = { red: 0, orange: 0, yellow: 0, green: 0 }
+  for (const item of hazardList.value) {
+    const level = item.alarmLevel.toLowerCase()
+    if (level === "red" || level === "orange" || level === "yellow") counts[level]++
+  }
+  const riskTotal = counts.red + counts.orange + counts.yellow
+  const total = Math.max(kpi.value.totalBuildings, riskTotal)
+  counts.green = Math.max(0, total - riskTotal)
+  return [
+    { key: "red",    label: "红色风险", value: counts.red,    color: "#FF4E45" },
+    { key: "orange", label: "橙色风险", value: counts.orange, color: "#FFB03A" },
+    { key: "yellow", label: "黄色风险", value: counts.yellow, color: "#FCD34D" },
+    { key: "green",  label: "绿色风险", value: counts.green,  color: "#20E6A4" },
+  ]
+})
+
+const riskRingStyle = computed(() => {
+  const total = riskDistribution.value.reduce((sum, item) => sum + item.value, 0)
+  if (total === 0) {
+    return { background: "conic-gradient(rgba(0,145,255,0.24) 0 100%)" }
+  }
+  let start = 0
+  const segments = riskDistribution.value.map((item) => {
+    const end = start + (item.value / total) * 100
+    const segment = `${item.color} ${start}% ${end}%`
+    start = end
+    return segment
+  })
+  return { background: `conic-gradient(${segments.join(", ")})` }
+})
+
+const hazardTypeStats = computed(() => {
+  const stats = [
+    { label: "结构安全", value: kpi.value.openHazards },
+    { label: "设备设施", value: kpi.value.activeAlarms },
+    { label: "施工安全", value: board.value.overdueCount },
+    { label: "环境监测", value: Math.max(0, mapPoints.value.length - kpi.value.activeAlarms) },
+  ]
+  const max = Math.max(...stats.map((item) => item.value), 1)
+  return stats.map((item) => ({ ...item, percent: Math.max(8, Math.round((item.value / max) * 100)) }))
+})
+
+const systemStats = computed(() => [
+  { icon: screenIcons.server,   value: "98.6%", label: "设备在线率" },
+  { icon: screenIcons.database, value: "97.3%", label: "数据接入率" },
+  { icon: screenIcons.activity, value: "99.9%", label: "平台稳定性" },
+])
+
+const demoTrendBaseline = [
+  { created: 4, finished: 3 },
+  { created: 5, finished: 4 },
+  { created: 6, finished: 4 },
+  { created: 7, finished: 5 },
+  { created: 6, finished: 6 },
+  { created: 8, finished: 6 },
+  { created: 9, finished: 7 },
+]
+
+const trendSeries = computed(() => {
+  const now = new Date()
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const d = new Date(now)
+    d.setDate(now.getDate() - (6 - index))
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const date = String(d.getDate()).padStart(2, "0")
+    return { key: `${d.getFullYear()}-${month}-${date}`, label: `${month}/${date}` }
+  })
+  const createdCounts = new Map(days.map((day) => [day.key, 0]))
+  const finishedCounts = new Map(days.map((day) => [day.key, 0]))
+  const orders = getTable<{ dispatch_time: string | null; finish_time?: string | null; status: string }>("work_order")
+
+  for (const order of orders) {
+    const dispatchDay = order.dispatch_time?.slice(0, 10)
+    if (dispatchDay && createdCounts.has(dispatchDay)) {
+      createdCounts.set(dispatchDay, (createdCounts.get(dispatchDay) ?? 0) + 1)
+    }
+    const finishDay = order.finish_time?.slice(0, 10)
+    if (finishDay && finishedCounts.has(finishDay)) {
+      finishedCounts.set(finishDay, (finishedCounts.get(finishDay) ?? 0) + 1)
+    }
+  }
+
+  return days.map((day, index) => ({
+    label: day.label,
+    created: (createdCounts.get(day.key) ?? 0) + demoTrendBaseline[index].created,
+    finished: (finishedCounts.get(day.key) ?? 0) + demoTrendBaseline[index].finished,
+  }))
+})
+
+const resourceStats = computed(() => [
+  { icon: screenIcons.point,   value: `${Math.max(getTable<Record<string, unknown>>("iot_device").length, mapPoints.value.length)}`, label: "监测设备" },
+  { icon: screenIcons.team,    value: "12", label: "应急队伍" },
+  { icon: screenIcons.check,   value: "36", label: "专家人员" },
+  { icon: screenIcons.package, value: "148", label: "应急物资" },
+])
+
+const mapBounds = computed(() => {
+  const coords = mapPoints.value.filter((pt) => pt.latitude !== null && pt.longitude !== null)
+  const lats = coords.map((pt) => pt.latitude as number)
+  const lngs = coords.map((pt) => pt.longitude as number)
+  return {
+    minLat: lats.length ? Math.min(...lats) : 46.78,
+    maxLat: lats.length ? Math.max(...lats) : 46.86,
+    minLng: lngs.length ? Math.min(...lngs) : 130.30,
+    maxLng: lngs.length ? Math.max(...lngs) : 130.42,
+  }
+})
+
+const fallbackMapPositions = [
+  [51, 50], [25, 24], [73, 22], [31, 69], [70, 70], [45, 26], [57, 75],
+  [18, 48], [83, 44], [38, 42], [61, 35], [48, 63], [76, 58], [23, 77],
+  [66, 18], [34, 18], [86, 74], [16, 30], [43, 80], [58, 23], [74, 36],
+  [29, 54], [52, 38],
+]
+
+function clampPercent(value: number): number {
+  return Math.max(9, Math.min(91, value))
+}
+
+function mapPointStyle(pt: MapPoint, index: number): Record<string, string> {
+  void pt
+  const [left, top] = fallbackMapPositions[index % fallbackMapPositions.length]
+  return { left: `${clampPercent(left)}%`, top: `${clampPercent(top)}%` }
+}
+
+function updateTrendChart(): void {
+  if (!trendChart) return
+  const labels = trendSeries.value.map((item) => item.label)
+  trendChart.setOption({
+    animationDuration: 600,
+    backgroundColor: "transparent",
+    color: ["#38E8FF", "#33F6A2"],
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(4, 18, 43, 0.95)",
+      borderColor: "rgba(56, 232, 255, 0.5)",
+      textStyle: { color: "#DDF7FF", fontSize: 12 },
+    },
+    legend: {
+      data: ["新派工单", "闭环工单"],
+      right: 10,
+      top: 0,
+      itemWidth: 12,
+      itemHeight: 6,
+      textStyle: { color: "#A8CFFF", fontSize: 11 },
+    },
+    grid: { left: 32, right: 12, top: 28, bottom: 22, containLabel: false },
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: labels,
+      axisLine: { lineStyle: { color: "rgba(140, 203, 255, 0.4)" } },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { color: "#A8CFFF", fontSize: 11 },
+    },
+    yAxis: {
+      type: "value",
+      minInterval: 1,
+      splitNumber: 3,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { color: "#A8CFFF", fontSize: 11 },
+    },
+    series: [
+      {
+        name: "新派工单",
+        type: "line",
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 6,
+        lineStyle: { width: 2.4 },
+        areaStyle: { color: "rgba(56, 232, 255, 0.22)" },
+        data: trendSeries.value.map((item) => item.created),
+      },
+      {
+        name: "闭环工单",
+        type: "line",
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 6,
+        lineStyle: { width: 2.4 },
+        areaStyle: { color: "rgba(51, 246, 162, 0.16)" },
+        data: trendSeries.value.map((item) => item.finished),
+      },
+    ],
+  })
+}
+
+function updateRiskChart(): void {
+  if (!riskChart) return
+  const data = riskDistribution.value.map((item) => ({
+    name: item.label,
+    value: item.value,
+    itemStyle: { color: item.color },
+  }))
+  riskChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: {
+      trigger: "item",
+      backgroundColor: "rgba(4, 18, 43, 0.95)",
+      borderColor: "rgba(56, 232, 255, 0.5)",
+      textStyle: { color: "#DDF7FF", fontSize: 12 },
+      formatter: "{b}<br/>数量：{c} ({d}%)",
+    },
+    series: [
+      {
+        type: "pie",
+        radius: ["55%", "82%"],
+        center: ["50%", "50%"],
+        avoidLabelOverlap: false,
+        label: {
+          show: true,
+          position: "center",
+          formatter: () => `{v|${kpi.value.totalBuildings}}\n{l|建筑总数}`,
+          rich: {
+            v: { color: "#FFFFFF", fontSize: 22, fontWeight: 700, lineHeight: 26, textShadowColor: "rgba(56,232,255,0.5)", textShadowBlur: 10 },
+            l: { color: "#A8CFFF", fontSize: 12, lineHeight: 14 },
+          },
+        },
+        labelLine: { show: false },
+        itemStyle: {
+          borderColor: "rgba(4,18,43,0.9)",
+          borderWidth: 2,
+        },
+        data,
+      },
+    ],
+  })
+}
+
+function updateHazardTypeChart(): void {
+  if (!hazardTypeChart) return
+  const stats = hazardTypeStats.value
+  hazardTypeChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      backgroundColor: "rgba(4, 18, 43, 0.95)",
+      borderColor: "rgba(56, 232, 255, 0.5)",
+      textStyle: { color: "#DDF7FF", fontSize: 12 },
+      formatter: (params: { name: string; value: number }[]) =>
+        `${params[0].name}<br/>数量：<b>${params[0].value}</b>`,
+    },
+    grid: { left: 70, right: 30, top: 8, bottom: 8, containLabel: false },
+    xAxis: {
+      type: "value",
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { show: false },
+    },
+    yAxis: {
+      type: "category",
+      data: stats.map((item) => item.label),
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: "#C5DEFF", fontSize: 13, fontWeight: 600 },
+      inverse: true,
+    },
+    series: [
+      {
+        type: "bar",
+        barWidth: 12,
+        data: stats.map((item) => item.value),
+        itemStyle: {
+          color: {
+            type: "linear",
+            x: 0, y: 0, x2: 1, y2: 0,
+            colorStops: [
+              { offset: 0, color: "#1B6FE8" },
+              { offset: 1, color: "#38E8FF" },
+            ],
+          },
+          borderRadius: [3, 6, 6, 3],
+          shadowColor: "rgba(56,232,255,0.5)",
+          shadowBlur: 8,
+        },
+        label: {
+          show: true,
+          position: "right",
+          color: "#FFFFFF",
+          fontSize: 13,
+          fontWeight: 700,
+          formatter: "{c}",
+        },
+        showBackground: true,
+        backgroundStyle: { color: "rgba(0,145,255,0.12)", borderRadius: 6 },
+      },
+    ],
+  })
+}
+
+function initTrendChart(): void {
+  if (!trendChartRef.value || trendChart) return
+  trendChart = init(trendChartRef.value)
+  updateTrendChart()
+}
+
+function initRiskChart(): void {
+  if (!riskChartRef.value || riskChart) return
+  riskChart = init(riskChartRef.value)
+  updateRiskChart()
+}
+
+function initHazardTypeChart(): void {
+  if (!hazardTypeChartRef.value || hazardTypeChart) return
+  hazardTypeChart = init(hazardTypeChartRef.value)
+  updateHazardTypeChart()
+}
+
+function resizeAllCharts(): void {
+  trendChart?.resize()
+  riskChart?.resize()
+  hazardTypeChart?.resize()
+}
 
 function formatTime(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0")
@@ -524,14 +943,35 @@ function loadData() {
   currentTime.value = formatTime(new Date())
   loadEmergency()
   iotRefreshTick.value++  // 触发 selectedIotSummary 重计算
+  updateTrendChart()
+  updateRiskChart()
+  updateHazardTypeChart()
 }
 
 let timer: ReturnType<typeof setInterval>
 onMounted(() => {
   loadData()
+  nextTick(() => {
+    initTrendChart()
+    initRiskChart()
+    initHazardTypeChart()
+    window.addEventListener("resize", resizeAllCharts)
+  })
   timer = setInterval(loadData, 5_000)  // 缩短到 5s，确保 H5 结案后大屏及时响应
 })
-onUnmounted(() => clearInterval(timer))
+watch(trendSeries, updateTrendChart, { deep: true })
+watch(riskDistribution, updateRiskChart, { deep: true })
+watch(hazardTypeStats, updateHazardTypeChart, { deep: true })
+onUnmounted(() => {
+  clearInterval(timer)
+  window.removeEventListener("resize", resizeAllCharts)
+  trendChart?.dispose()
+  trendChart = null
+  riskChart?.dispose()
+  riskChart = null
+  hazardTypeChart?.dispose()
+  hazardTypeChart = null
+})
 </script>
 
 <style scoped>
@@ -901,8 +1341,11 @@ onUnmounted(() => clearInterval(timer))
   gap: 6px;
 }
 .screen-quick-link {
-  display: block;
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 4px 12px;
   background: rgba(27,111,232,0.15);
   border: 1px solid rgba(27,111,232,0.30);
   border-radius: 6px;
@@ -1116,12 +1559,13 @@ onUnmounted(() => clearInterval(timer))
   50%       { opacity: 0.4; }
 }
 
-/* ===== 参考图风格覆盖：红色应急响应大屏 ===== */
+/* ===== 参考图风格覆盖：蓝色中控指挥大屏 ===== */
 .screen-root {
   background:
-    radial-gradient(circle at 50% 20%, rgba(18, 92, 202, 0.36), transparent 28%),
-    radial-gradient(circle at 52% 48%, rgba(239, 68, 68, 0.16), transparent 24%),
-    linear-gradient(180deg, #04112A 0%, #061B3E 45%, #031027 100%);
+    radial-gradient(circle at 50% 14%, rgba(54, 170, 255, 0.46), transparent 30%),
+    radial-gradient(circle at 52% 50%, rgba(0, 212, 255, 0.23), transparent 36%),
+    radial-gradient(circle at 50% 66%, rgba(239, 68, 68, 0.14), transparent 26%),
+    linear-gradient(180deg, #061B43 0%, #08306B 44%, #041633 100%);
   color: #B7D6FF;
 }
 .screen-root::before {
@@ -1130,22 +1574,47 @@ onUnmounted(() => clearInterval(timer))
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(rgba(42,136,255,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(42,136,255,0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(circle at center, #000 0%, transparent 78%);
+    linear-gradient(rgba(77,174,255,0.085) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,174,255,0.085) 1px, transparent 1px),
+    radial-gradient(circle at 50% 44%, rgba(91, 161, 255, 0.20), transparent 42%);
+  background-size: 38px 38px, 38px 38px, 100% 100%;
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 82%);
 }
 
 .screen-header {
   height: 72px;
-  padding: 0 24px;
+  justify-content: center;
+  padding: 0 26px;
   background:
-    linear-gradient(180deg, rgba(5,22,55,0.98), rgba(4,18,43,0.88)),
-    radial-gradient(circle at 50% 100%, rgba(24,118,255,0.22), transparent 44%);
-  border-bottom: 1px solid rgba(45,150,255,0.45);
-  box-shadow: 0 0 28px rgba(14,108,255,0.22);
+    linear-gradient(180deg, rgba(5,28,72,0.98), rgba(4,20,52,0.88)),
+    radial-gradient(circle at 50% 100%, rgba(56,232,255,0.18), transparent 46%);
+  border-bottom: 1px solid rgba(72,182,255,0.54);
+  box-shadow: 0 0 32px rgba(14,108,255,0.30);
 }
 .screen-header::before { height: 3px; opacity: 1; }
+.screen-header::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 620px;
+  height: 72px;
+  transform: translateX(-50%);
+  clip-path: polygon(7% 0, 93% 0, 100% 28%, 91% 100%, 9% 100%, 0 28%);
+  border: 1px solid rgba(56, 232, 255, 0.52);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(83, 180, 255, 0.34), transparent 48%),
+    linear-gradient(180deg, rgba(8, 54, 132, 0.72), rgba(3, 19, 52, 0.34));
+  box-shadow: inset 0 0 28px rgba(0, 212, 255, 0.18), 0 0 28px rgba(0, 132, 255, 0.30);
+  pointer-events: none;
+}
+.screen-header__side {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+.screen-header__side--left { justify-content: flex-start; }
+.screen-header__side--right { justify-content: flex-end; }
 .screen-header__logo-text {
   width: 42px;
   height: 42px;
@@ -1153,56 +1622,67 @@ onUnmounted(() => clearInterval(timer))
   background: linear-gradient(145deg, #0D4FE8, #00D4FF);
   box-shadow: 0 0 22px rgba(0,168,255,0.55), inset 0 0 0 2px rgba(255,255,255,0.25);
 }
+.screen-header__clock {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.screen-header__center {
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  z-index: 3;
+  width: 600px;
+  transform: translateX(-50%);
+  text-align: center;
+}
 .screen-header__title {
-  font-size: 23px;
+  font-size: 25px;
   color: #FFFFFF;
   background: none;
   -webkit-text-fill-color: #FFFFFF;
-  text-shadow: 0 0 16px rgba(74,158,255,0.45);
+  text-shadow: 0 0 20px rgba(74,158,255,0.72);
 }
-.screen-header__subtitle {
-  display: block;
-  margin-top: 2px;
-  color: rgba(169,209,255,0.72);
-  font-size: 9px;
-  letter-spacing: 0.04em;
-}
-.screen-emergency-pill {
-  position: absolute;
-  left: 50%;
-  top: 10px;
-  transform: translateX(-50%);
-  height: 52px;
-  min-width: 520px;
+.screen-header__nav {
+  margin-top: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  color: #FFDDD2;
-  border: 1px solid rgba(255,68,68,0.55);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 20% 50%, rgba(255,68,68,0.42), transparent 32%),
-    linear-gradient(90deg, rgba(74,8,14,0.42), rgba(174,28,28,0.48), rgba(74,8,14,0.42));
-  box-shadow: 0 0 28px rgba(239,68,68,0.45), inset 0 0 18px rgba(255,68,68,0.22);
+  gap: 24px;
+  color: #A9D8FF;
+  font-size: 12px;
+  font-weight: 800;
 }
-.screen-emergency-pill__icon {
-  width: 32px;
-  height: 32px;
+.screen-header__nav span {
+  position: relative;
+}
+.screen-header__nav span:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #EF3333;
-  color: #fff;
-  font-weight: 900;
-  box-shadow: 0 0 16px rgba(255,68,68,0.75);
+  background: #38E8FF;
+  box-shadow: 0 0 8px #38E8FF;
+  transform: translateY(-50%);
 }
-.screen-emergency-pill strong { font-size: 24px; color: #FFFFFF; text-shadow: 0 0 12px rgba(255,68,68,0.8); }
-.screen-emergency-pill span:last-child { color: #FF7A5C; font-size: 18px; font-weight: 900; }
-.screen-header__right { flex-direction: column; align-items: flex-end; gap: 3px; }
+.screen-header__right { align-items: center; gap: 14px; }
 .screen-header__time { color: #FFFFFF; font-size: 18px; font-weight: 800; }
 .screen-header__weather { color: #9FC4F7; font-size: 12px; }
+.screen-header__location { color: #A9D8FF; font-size: 13px; font-weight: 700; }
+.screen-header__user {
+  min-width: 70px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 212, 255, 0.42);
+  color: #DDF7FF;
+  background: rgba(0, 132, 255, 0.18);
+  box-shadow: inset 0 0 12px rgba(0, 212, 255, 0.12);
+  font-size: 13px;
+  text-align: center;
+}
 .screen-header__kpi-anchor {
   position: absolute;
   width: 1px;
@@ -1219,10 +1699,12 @@ onUnmounted(() => clearInterval(timer))
   grid-template-columns: repeat(6, 1fr);
   align-items: center;
   gap: 10px;
-  border: 1px solid rgba(0,145,255,0.55);
+  border: 1px solid rgba(44,166,255,0.72);
   border-radius: 8px;
-  background: linear-gradient(180deg, rgba(5,29,72,0.92), rgba(3,18,48,0.86));
-  box-shadow: 0 0 22px rgba(0,132,255,0.22), inset 0 1px 0 rgba(125,211,252,0.18);
+  background:
+    linear-gradient(180deg, rgba(7,45,108,0.94), rgba(3,21,54,0.86)),
+    radial-gradient(circle at 50% 0%, rgba(0,212,255,0.16), transparent 58%);
+  box-shadow: 0 0 28px rgba(0,132,255,0.32), inset 0 1px 0 rgba(160,220,255,0.26), inset 0 -14px 24px rgba(0, 132, 255, 0.08);
 }
 .screen-kpi-ribbon .screen-kpi-divider { display: none; }
 .screen-kpi-ribbon .screen-kpi-item {
@@ -1239,12 +1721,12 @@ onUnmounted(() => clearInterval(timer))
   height: 38px;
   transform: translateY(-50%) rotate(45deg);
   border-radius: 10px;
-  background: linear-gradient(145deg, rgba(0,212,255,0.18), rgba(27,111,232,0.55));
-  border: 1px solid rgba(0,212,255,0.44);
-  box-shadow: 0 0 18px rgba(0,212,255,0.24);
+  background: linear-gradient(145deg, rgba(0,212,255,0.26), rgba(27,111,232,0.68));
+  border: 1px solid rgba(0,212,255,0.58);
+  box-shadow: 0 0 22px rgba(0,212,255,0.34);
 }
 .screen-kpi-item__label { color: #9CC7FF; font-size: 12px; font-weight: 700; }
-.screen-kpi-item__value { color: #FFD976; font-size: 28px; text-shadow: 0 0 14px rgba(255,217,118,0.3); }
+.screen-kpi-item__value { color: #F8FBFF; font-size: 30px; text-shadow: 0 0 18px rgba(95,189,255,0.52); }
 .screen-kpi-item__value--warn { color: #FF625A; }
 .screen-kpi-item__value--red { color: #FF3F37; text-shadow: 0 0 18px rgba(255,63,55,0.65); }
 .screen-kpi-item__value--success { color: #33F6A2; }
@@ -1258,9 +1740,11 @@ onUnmounted(() => clearInterval(timer))
 .screen-panel,
 .screen-glass-card {
   border-radius: 7px;
-  border: 1px solid rgba(0,145,255,0.55);
-  background: linear-gradient(180deg, rgba(5,29,72,0.88), rgba(3,18,48,0.78));
-  box-shadow: 0 0 22px rgba(0,132,255,0.20), inset 0 0 24px rgba(16,92,190,0.12);
+  border: 1px solid rgba(44,166,255,0.66);
+  background:
+    linear-gradient(180deg, rgba(7,42,98,0.9), rgba(4,22,55,0.8)),
+    radial-gradient(circle at 50% 0%, rgba(0,212,255,0.12), transparent 60%);
+  box-shadow: 0 0 28px rgba(0,132,255,0.26), inset 0 0 28px rgba(16,92,190,0.16), inset 0 1px 0 rgba(156,210,255,0.18);
 }
 .screen-panel__title,
 .screen-map__title-bar {
@@ -1275,20 +1759,20 @@ onUnmounted(() => clearInterval(timer))
   padding: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 54%, rgba(239,68,68,0.32), transparent 18%),
-    radial-gradient(circle at 52% 48%, rgba(0,212,255,0.18), transparent 34%),
-    linear-gradient(180deg, rgba(4,18,43,0.2), rgba(4,18,43,0.94));
+    radial-gradient(circle at 50% 54%, rgba(255,78,69,0.34), transparent 18%),
+    radial-gradient(circle at 52% 47%, rgba(0,212,255,0.26), transparent 36%),
+    linear-gradient(180deg, rgba(8,43,96,0.28), rgba(4,18,43,0.92));
 }
 .screen-map__container::before {
   content: '';
   position: absolute;
   inset: 42px 0 0;
   background:
-    linear-gradient(145deg, rgba(60,120,205,0.18) 0 12%, transparent 12% 100%),
-    repeating-linear-gradient(26deg, rgba(88,149,232,0.14) 0 2px, transparent 2px 34px),
-    repeating-linear-gradient(116deg, rgba(88,149,232,0.12) 0 2px, transparent 2px 38px),
-    linear-gradient(180deg, #0B2A58 0%, #041631 100%);
-  filter: saturate(1.2);
+    linear-gradient(145deg, rgba(88,162,255,0.2) 0 12%, transparent 12% 100%),
+    repeating-linear-gradient(26deg, rgba(119,187,255,0.17) 0 2px, transparent 2px 32px),
+    repeating-linear-gradient(116deg, rgba(119,187,255,0.15) 0 2px, transparent 2px 36px),
+    linear-gradient(180deg, #0D3570 0%, #05224B 100%);
+  filter: saturate(1.28) brightness(1.08);
 }
 .screen-map__container::after {
   content: '!';
@@ -1454,6 +1938,246 @@ onUnmounted(() => clearInterval(timer))
 }
 .screen-board-item__count { text-shadow: 0 0 14px currentColor; }
 
+.screen-panel--left,
+.screen-panel--right {
+  gap: 8px;
+}
+
+.screen-side-section,
+.screen-trend-card,
+.screen-resource-card {
+  position: relative;
+  padding: 0;
+}
+
+.screen-side-section--ring {
+  flex-shrink: 0;
+}
+
+.screen-side-section--list {
+  flex-shrink: 0;
+}
+
+.screen-ring-block {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0 4px;
+}
+
+.screen-ring {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 22px rgba(0, 212, 255, 0.22);
+}
+
+.screen-ring::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  background: rgba(4, 18, 43, 0.92);
+  border: 1px solid rgba(0, 145, 255, 0.22);
+}
+
+.screen-ring strong,
+.screen-ring span {
+  position: relative;
+  z-index: 1;
+}
+
+.screen-ring strong {
+  color: #FFFFFF;
+  font-size: 22px;
+  line-height: 1;
+  text-shadow: 0 0 14px rgba(56, 232, 255, 0.44);
+}
+
+.screen-ring span {
+  margin-top: 3px;
+  color: #A8CFFF;
+  font-size: 10px;
+}
+
+.screen-ring-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.screen-ring-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #A8CFFF;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.screen-ring-legend__item em {
+  flex: 1;
+  min-width: 0;
+}
+.screen-ring-legend__item strong {
+  min-width: 20px;
+  text-align: right;
+}
+
+.screen-ring-legend__item i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.screen-ring-legend__item em {
+  font-style: normal;
+}
+
+.screen-ring-legend__item strong {
+  color: #FFFFFF;
+  font-size: 12px;
+}
+
+.screen-type-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.screen-type-bar {
+  display: grid;
+  grid-template-columns: 58px 1fr 32px;
+  gap: 8px;
+  align-items: center;
+  color: #A8CFFF;
+  font-size: 11px;
+}
+
+.screen-type-bar div {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 145, 255, 0.16);
+}
+
+.screen-type-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1B6FE8, #38E8FF);
+  box-shadow: 0 0 10px rgba(56, 232, 255, 0.45);
+}
+
+.screen-type-bar strong {
+  color: #FFFFFF;
+  font-size: 12px;
+  text-align: right;
+}
+
+.screen-hazard-list__items {
+  min-height: 0;
+  max-height: 210px;
+}
+
+.screen-status-strip,
+.screen-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.screen-resource-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.screen-status-item,
+.screen-resource-item {
+  min-height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid rgba(0, 145, 255, 0.22);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(8, 45, 102, 0.68), rgba(4, 24, 62, 0.56));
+}
+
+.screen-status-item span,
+.screen-resource-item span {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #38E8FF;
+  border: 1px solid rgba(56, 232, 255, 0.38);
+  box-shadow: 0 0 12px rgba(56, 232, 255, 0.25);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.screen-status-item strong,
+.screen-resource-item strong {
+  color: #FFFFFF;
+  font-size: 13px;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(56, 232, 255, 0.36);
+}
+
+.screen-status-item em,
+.screen-resource-item em {
+  color: #8CB9EA;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.screen-trend-card {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.screen-trend-chart {
+  height: 72px;
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  padding: 10px 6px 6px;
+  border-bottom: 1px solid rgba(0, 145, 255, 0.22);
+  background:
+    linear-gradient(rgba(56,232,255,0.08) 1px, transparent 1px) 0 0 / 100% 18px,
+    linear-gradient(180deg, rgba(0, 212, 255, 0.05), transparent);
+}
+
+.screen-trend-chart span {
+  flex: 1;
+  min-height: 12px;
+  border-radius: 999px 999px 2px 2px;
+  background: linear-gradient(180deg, #38E8FF, #1B6FE8);
+  box-shadow: 0 0 14px rgba(56, 232, 255, 0.4);
+}
+
+.screen-trend-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #8CB9EA;
+  font-size: 10px;
+  padding-top: 4px;
+}
+
+.screen-resource-card {
+  flex-shrink: 0;
+}
+
 .screen-footer {
   position: relative;
   height: 112px;
@@ -1516,20 +2240,17 @@ onUnmounted(() => clearInterval(timer))
     height: 64px;
     padding: 0 12px;
   }
+  .screen-header::after { width: 420px; height: 64px; }
   .screen-header__left { gap: 8px; max-width: 260px; }
   .screen-header__logo-text { width: 34px; height: 34px; font-size: 13px; }
-  .screen-header__title { font-size: 17px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .screen-header__subtitle { display: none; }
-  .screen-emergency-pill {
-    min-width: 300px;
-    height: 44px;
-    gap: 10px;
-  }
-  .screen-emergency-pill__icon { width: 28px; height: 28px; }
-  .screen-emergency-pill strong { font-size: 18px; }
-  .screen-emergency-pill span:last-child { font-size: 14px; }
+  .screen-header__center { top: 8px; width: 410px; }
+  .screen-header__title { font-size: 17px; max-width: 410px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .screen-header__nav { gap: 12px; font-size: 10px; }
+  .screen-header__nav span:not(:last-child)::after { right: -8px; }
   .screen-header__time { font-size: 14px; }
   .screen-header__weather { font-size: 10px; }
+  .screen-header__location { display: none; }
+  .screen-header__user { min-width: 54px; padding: 5px 8px; font-size: 11px; }
   .screen-kpi-ribbon {
     height: 84px;
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1547,6 +2268,109 @@ onUnmounted(() => clearInterval(timer))
   }
   .screen-command-node strong { font-size: 12px; }
   .screen-command-node small { display: none; }
+}
+
+@media (max-height: 650px) {
+  .screen-header {
+    height: 56px;
+    padding: 0 12px;
+  }
+  .screen-header::after { height: 56px; width: 440px; }
+  .screen-header__logo-text { width: 32px; height: 32px; font-size: 12px; }
+  .screen-header__center { top: 5px; width: 430px; }
+  .screen-header__title { font-size: 17px; }
+  .screen-header__nav { margin-top: 2px; font-size: 10px; gap: 14px; }
+  .screen-header__time { font-size: 14px; }
+  .screen-header__weather { font-size: 10px; }
+  .screen-header__user { min-width: 54px; padding: 4px 8px; font-size: 11px; }
+
+  .screen-kpi-ribbon {
+    height: 68px;
+    margin: 6px 8px 0;
+    padding: 0 10px;
+    gap: 4px;
+  }
+  .screen-kpi-ribbon .screen-kpi-item { padding-left: 34px; }
+  .screen-kpi-ribbon .screen-kpi-item::before { width: 26px; height: 26px; border-radius: 8px; }
+  .screen-kpi-item__label { font-size: 10px; }
+  .screen-kpi-item__value { font-size: 21px; }
+  .screen-kpi-item__unit { font-size: 9px; }
+
+  .screen-main {
+    grid-template-columns: 250px minmax(260px, 1fr) 260px;
+    gap: 8px;
+    padding: 8px;
+  }
+  .screen-panel--left,
+  .screen-panel--right { padding: 9px; gap: 5px; }
+  .screen-panel__title { font-size: 12px; line-height: 16px; padding-bottom: 3px; }
+  .screen-panel__badge { font-size: 10px; padding: 0 5px; }
+
+  .screen-ring-block { grid-template-columns: 60px 1fr; gap: 6px; padding: 4px 0 1px; }
+  .screen-ring { width: 56px; height: 56px; }
+  .screen-ring::before { inset: 8px; }
+  .screen-ring strong { font-size: 16px; }
+  .screen-ring span { font-size: 9px; }
+  .screen-ring-legend { gap: 2px; }
+  .screen-ring-legend__item { font-size: 10px; gap: 5px; }
+  .screen-type-bars { gap: 3px; padding-top: 4px; }
+  .screen-type-bar { grid-template-columns: 50px 1fr 24px; gap: 6px; font-size: 10px; }
+  .screen-type-bar div { height: 4px; }
+  .screen-hazard-list__items { max-height: 24px; gap: 2px; }
+  .screen-hazard-item { padding: 4px 6px; }
+  .screen-hazard-list__empty { padding: 2px 0; font-size: 10px; }
+  .screen-status-strip { gap: 4px; padding-top: 5px; }
+  .screen-status-item { min-height: 26px; }
+  .screen-status-item span,
+  .screen-resource-item span { width: 18px; height: 18px; font-size: 9px; }
+  .screen-status-item strong,
+  .screen-resource-item strong { font-size: 10px; }
+  .screen-status-item em,
+  .screen-resource-item em { font-size: 9px; }
+
+  .screen-map__container::after { width: 56px; height: 56px; font-size: 32px; }
+  .screen-map__decor-node {
+    min-width: 88px;
+    padding: 5px 7px 5px 31px;
+    font-size: 10px;
+    border-radius: 7px;
+  }
+  .screen-map__decor-node::before { left: 8px; width: 16px; height: 16px; }
+  .screen-map__decor-node::after { left: 25px; width: 96px; }
+  .screen-map__decor-node small { font-size: 9px; }
+  .screen-map__decor-node--green { left: 4%; top: 17%; }
+  .screen-map__decor-node--red { right: 5%; top: 17%; }
+  .screen-map__decor-node--yellow { left: 6%; bottom: 18%; }
+  .screen-map__decor-node--cyan { right: 5%; top: 50%; }
+  .screen-map__decor-node--blue { right: 14%; bottom: 18%; }
+
+  .screen-board { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .screen-board-item { padding: 4px; gap: 1px; min-height: 40px; }
+  .screen-board-item__count { font-size: 18px; }
+  .screen-board-item__label { font-size: 10px; }
+  .screen-panel__divider { margin: 2px 0; }
+  .screen-quick-links { display: none; }
+  .screen-trend-chart { height: 32px; gap: 6px; padding: 4px 5px; }
+  .screen-trend-labels { font-size: 9px; }
+  .screen-alarm-entry { flex: 0 0 auto; gap: 3px; padding-top: 4px; }
+  .screen-alarm-entry__list { max-height: 22px; }
+  .screen-alarm-entry__item { padding: 3px 6px; }
+  .screen-alarm-entry__empty { padding: 1px 0; font-size: 10px; }
+  .screen-alarm-entry__link { padding: 4px 8px; font-size: 10px; }
+  .screen-resource-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding-top: 5px; }
+  .screen-resource-item { min-height: 32px; }
+
+  .screen-footer {
+    height: 58px;
+    margin: 0 8px 8px;
+    padding: 0 16px;
+  }
+  .screen-footer__status-text { top: 3px; font-size: 10px; }
+  .screen-command-node { gap: 2px; }
+  .screen-command-node__icon { width: 26px; height: 26px; font-size: 11px; }
+  .screen-command-node strong { font-size: 10px; }
+  .screen-command-node small { display: none; }
+  .screen-command-node:not(:last-child)::after { top: 13px; left: calc(50% + 20px); width: calc(100% - 40px); }
 }
 
 /* ===== 应急指挥弹窗 overlay ===== */
@@ -1779,4 +2603,1122 @@ onUnmounted(() => clearInterval(timer))
   color: var(--screen-text-muted, rgba(255,255,255,0.4));
   padding: 8px 0;
 }
+
+/* ===== 首页专项修正：真实图标 / ECharts / 蓝色网格模拟地图 ===== */
+.screen-header__logo-text img,
+.screen-kpi-item__icon,
+.screen-status-item img,
+.screen-resource-item img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.screen-header__logo-text img {
+  width: 24px;
+  height: 24px;
+}
+
+.screen-kpi-item__icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  filter: drop-shadow(0 0 8px rgba(56, 232, 255, 0.58));
+}
+
+.screen-trend-card {
+  min-height: 144px;
+}
+
+.screen-trend-chart {
+  height: 112px;
+  display: block;
+  padding: 0;
+  border-bottom: 0;
+  background:
+    linear-gradient(rgba(56,232,255,0.07) 1px, transparent 1px) 0 0 / 100% 22px,
+    linear-gradient(180deg, rgba(0, 212, 255, 0.05), transparent);
+}
+
+.screen-trend-echart {
+  width: 100%;
+  height: 112px;
+}
+
+.screen-trend-labels {
+  display: none;
+}
+
+.screen-ring-block {
+  grid-template-columns: 82px 1fr;
+  padding: 7px 0 2px;
+}
+
+.screen-ring {
+  width: 78px;
+  height: 78px;
+}
+
+.screen-ring strong {
+  font-size: 20px;
+}
+
+.screen-type-bars {
+  gap: 4px;
+  padding-top: 6px;
+}
+
+.screen-type-bar {
+  grid-template-columns: 58px 1fr 28px;
+}
+
+.screen-resource-grid,
+.screen-status-strip {
+  gap: 5px;
+  padding-top: 6px;
+}
+
+.screen-resource-item,
+.screen-status-item {
+  min-height: 42px;
+}
+
+.screen-status-item span,
+.screen-resource-item span {
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+}
+
+.screen-status-item strong,
+.screen-resource-item strong {
+  font-size: 12px;
+}
+
+.screen-status-item em,
+.screen-resource-item em {
+  font-size: 9px;
+}
+
+.screen-map__container {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(56, 232, 255, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(6, 37, 88, 0.96), rgba(3, 16, 40, 0.94));
+}
+
+.screen-map__container::before {
+  inset: 44px 0 0;
+  background:
+    linear-gradient(rgba(79, 180, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 180, 255, 0.12) 1px, transparent 1px),
+    repeating-linear-gradient(31deg, rgba(45, 149, 255, 0.12) 0 2px, transparent 2px 34px),
+    linear-gradient(180deg, #0A326B 0%, #041B42 100%);
+  background-size: 34px 34px, 34px 34px, auto, auto;
+  filter: saturate(1.22) brightness(1.06);
+}
+
+.screen-map__container::after {
+  content: '';
+  left: 50%;
+  top: 50%;
+  width: 126px;
+  height: 126px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(56, 232, 255, 0.24);
+  background: radial-gradient(circle, rgba(56, 232, 255, 0.16), rgba(27, 111, 232, 0.04) 58%, transparent 60%);
+  box-shadow: 0 0 0 32px rgba(56, 232, 255, 0.035), 0 0 42px rgba(56, 232, 255, 0.18);
+  color: transparent;
+  z-index: 1;
+}
+
+.screen-map__mock-layer {
+  position: absolute;
+  inset: 46px 18px 18px;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.screen-map__district {
+  position: absolute;
+  border: 1px solid rgba(82, 188, 255, 0.38);
+  background: rgba(27, 111, 232, 0.08);
+  box-shadow: inset 0 0 28px rgba(56, 232, 255, 0.05), 0 0 16px rgba(27, 111, 232, 0.08);
+}
+
+.screen-map__district--a {
+  left: 7%;
+  top: 12%;
+  width: 38%;
+  height: 36%;
+  clip-path: polygon(0 18%, 72% 0, 100% 38%, 78% 100%, 14% 82%);
+}
+
+.screen-map__district--b {
+  right: 7%;
+  top: 10%;
+  width: 39%;
+  height: 40%;
+  clip-path: polygon(18% 0, 100% 12%, 88% 80%, 42% 100%, 0 42%);
+}
+
+.screen-map__district--c {
+  left: 10%;
+  bottom: 10%;
+  width: 42%;
+  height: 38%;
+  clip-path: polygon(6% 14%, 64% 0, 100% 46%, 74% 100%, 0 86%);
+}
+
+.screen-map__district--d {
+  right: 8%;
+  bottom: 11%;
+  width: 38%;
+  height: 36%;
+  clip-path: polygon(24% 0, 100% 24%, 86% 100%, 18% 82%, 0 32%);
+}
+
+.screen-map__road {
+  position: absolute;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(56, 232, 255, 0.56), transparent);
+  box-shadow: 0 0 12px rgba(56, 232, 255, 0.28);
+}
+
+.screen-map__road--main {
+  left: 6%;
+  right: 6%;
+  top: 52%;
+  transform: rotate(-7deg);
+}
+
+.screen-map__road--north {
+  left: 18%;
+  right: 20%;
+  top: 34%;
+  transform: rotate(18deg);
+}
+
+.screen-map__road--south {
+  left: 16%;
+  right: 12%;
+  bottom: 26%;
+  transform: rotate(13deg);
+}
+
+.screen-map__scanline {
+  position: absolute;
+  left: -20%;
+  top: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(56, 232, 255, 0.12), transparent);
+  animation: mapScan 5.5s linear infinite;
+}
+
+.screen-map__fallback-list {
+  z-index: 5;
+}
+
+.screen-map__fallback-list .screen-map__point,
+.screen-map__fallback-list .screen-map__point:nth-child(n) {
+  right: auto;
+  bottom: auto;
+  display: flex;
+  width: 126px;
+  min-height: 34px;
+  padding: 7px 9px 7px 34px;
+  transform: translate(-50%, -50%);
+  border-radius: 8px;
+  background: rgba(3, 16, 40, 0.76);
+}
+
+.screen-map__point::before {
+  left: 10px;
+  width: 16px;
+  height: 16px;
+}
+
+.screen-map__point::after {
+  left: 22px;
+  width: 54px;
+}
+
+.screen-map__point-dot {
+  display: none;
+}
+
+.screen-map__point-name {
+  color: #FFFFFF;
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.screen-map__point-level {
+  display: none;
+}
+
+.screen-building-popup.screen-glass-card {
+  position: absolute;
+  left: auto;
+  right: 14px;
+  top: 58px;
+  width: 238px;
+  transform: none;
+  z-index: 8;
+  border-color: rgba(56, 232, 255, 0.42);
+}
+
+.screen-command-node__icon img {
+  width: 22px;
+  height: 22px;
+  display: block;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.screen-popup-enter-from,
+.screen-popup-leave-to {
+  transform: translateY(-8px) scale(0.98);
+}
+
+.screen-panel--right {
+  min-height: 0;
+}
+
+.screen-panel--right [data-zone="workorder-board"] {
+  flex: 0 0 auto;
+}
+
+.screen-panel--right .screen-board {
+  gap: 6px;
+}
+
+.screen-panel--right .screen-board-item {
+  min-height: 62px;
+  padding: 8px 5px;
+}
+
+.screen-panel--right .screen-quick-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.screen-panel--right .screen-quick-link {
+  padding: 7px 6px;
+  font-size: 12px;
+}
+
+.screen-alarm-entry {
+  flex: 0 0 128px;
+  min-height: 0;
+}
+
+.screen-alarm-entry__list {
+  max-height: 48px;
+}
+
+.screen-iot-panel {
+  flex: 1 1 150px;
+  min-height: 138px;
+  overflow: hidden;
+  padding: 8px 0 0;
+  border-top: 1px solid rgba(0, 145, 255, 0.22);
+}
+
+.screen-iot-panel__name {
+  margin-left: auto;
+  max-width: 118px;
+  overflow: hidden;
+  color: #38E8FF;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.screen-iot-points {
+  max-height: 100px;
+  overflow-y: auto;
+  padding-right: 3px;
+  gap: 4px;
+}
+
+.screen-iot-point {
+  grid-template-columns: 56px 1fr auto;
+  padding: 4px 6px;
+  border: 1px solid rgba(0, 145, 255, 0.16);
+  border-radius: 7px;
+  background: rgba(8, 45, 102, 0.46);
+}
+
+.screen-iot-point__label {
+  min-width: 0;
+  font-size: 10px;
+}
+
+.screen-iot-point__value {
+  font-size: 14px;
+}
+
+.screen-iot-sparkline {
+  height: 7px;
+  margin-top: 1px;
+}
+
+@keyframes mapScan {
+  0% { transform: translateX(0); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateX(460%); opacity: 0; }
+}
+
+@media (max-height: 650px) {
+  .screen-trend-card { min-height: 96px; }
+  .screen-trend-chart,
+  .screen-trend-echart { height: 76px; }
+  .screen-iot-panel { flex-basis: 124px; padding-top: 5px; }
+  .screen-iot-points { max-height: 86px; gap: 4px; }
+  .screen-iot-point { padding: 3px 5px; }
+  .screen-map__fallback-list .screen-map__point,
+  .screen-map__fallback-list .screen-map__point:nth-child(n) {
+    width: 104px;
+    min-height: 28px;
+    padding: 5px 7px 5px 28px;
+  }
+  .screen-map__point-name { font-size: 10px; }
+}
+
+/* ===== 首页空间重排：把空间让给告警和实时数据 ===== */
+.screen-root {
+  background:
+    radial-gradient(ellipse at 50% 58%, rgba(45, 190, 255, 0.34), transparent 46%),
+    radial-gradient(circle at 50% 11%, rgba(80, 178, 255, 0.58), transparent 28%),
+    radial-gradient(circle at 18% 22%, rgba(0, 130, 255, 0.34), transparent 24%),
+    radial-gradient(circle at 82% 20%, rgba(0, 224, 255, 0.28), transparent 24%),
+    linear-gradient(180deg, #041B4C 0%, #063B8B 43%, #041634 100%);
+}
+
+.screen-root::before {
+  background:
+    linear-gradient(rgba(115, 211, 255, 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(115, 211, 255, 0.10) 1px, transparent 1px),
+    radial-gradient(circle at 50% 46%, rgba(53, 162, 255, 0.28), transparent 44%);
+  background-size: 36px 36px, 36px 36px, 100% 100%;
+}
+
+.screen-root::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(0, 212, 255, 0.28), transparent 58%),
+    linear-gradient(180deg, transparent, rgba(0, 81, 196, 0.24));
+  z-index: 0;
+}
+
+.screen-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.screen-main {
+  grid-template-columns: 310px minmax(0, 1fr) 322px;
+  gap: 8px;
+  padding: 8px 10px 8px;
+  min-height: 0;
+}
+
+.screen-panel,
+.screen-glass-card {
+  border-color: rgba(84, 199, 255, 0.78);
+  background:
+    linear-gradient(180deg, rgba(8, 56, 132, 0.9), rgba(3, 24, 67, 0.82)),
+    radial-gradient(circle at 50% 0%, rgba(0, 224, 255, 0.16), transparent 64%);
+  box-shadow:
+    0 0 30px rgba(0, 150, 255, 0.32),
+    inset 0 0 30px rgba(31, 128, 255, 0.18),
+    inset 0 1px 0 rgba(179, 232, 255, 0.24);
+}
+
+.screen-panel__title,
+.screen-map__title-bar {
+  color: #F2FBFF;
+  border-bottom-color: rgba(77, 190, 255, 0.32);
+  text-shadow: 0 0 12px rgba(72, 182, 255, 0.32);
+}
+
+.screen-panel__title-bar {
+  background: linear-gradient(180deg, #65F4FF, #1687FF);
+  box-shadow: 0 0 12px rgba(101, 244, 255, 0.82);
+}
+
+.screen-panel--left {
+  display: grid;
+  grid-template-rows: minmax(90px, 0.92fr) minmax(70px, 0.62fr) minmax(122px, 1.08fr) minmax(66px, 0.56fr) minmax(66px, 0.58fr);
+  gap: 8px;
+  padding: 10px;
+  min-height: 0;
+}
+
+.screen-side-section,
+.screen-trend-card,
+.screen-resource-card {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-side-section .screen-panel__title,
+.screen-resource-card .screen-panel__title,
+.screen-trend-card .screen-panel__title {
+  flex: 0 0 auto;
+}
+
+.screen-ring-block {
+  grid-template-columns: 76px 1fr;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  padding: 5px 0 0;
+}
+
+.screen-ring {
+  width: 72px;
+  height: 72px;
+}
+
+.screen-ring::before {
+  inset: 10px;
+}
+
+.screen-ring strong {
+  font-size: 19px;
+}
+
+.screen-ring span {
+  font-size: 9px;
+}
+
+.screen-ring-legend {
+  justify-content: center;
+  gap: 3px;
+}
+
+.screen-ring-legend__item {
+  font-size: 10px;
+}
+
+.screen-type-bars {
+  flex: 1;
+  justify-content: center;
+  gap: 4px;
+  padding-top: 5px;
+}
+
+.screen-type-bar {
+  grid-template-columns: 56px 1fr 26px;
+  gap: 6px;
+}
+
+.screen-trend-card {
+  min-height: 0;
+}
+
+.screen-trend-chart,
+.screen-trend-echart {
+  flex: 1;
+  height: auto;
+  min-height: 92px;
+}
+
+.screen-resource-grid,
+.screen-status-strip {
+  flex: 1;
+  align-items: stretch;
+  gap: 5px;
+  padding-top: 5px;
+}
+
+.screen-resource-item,
+.screen-status-item {
+  min-height: 0;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(12, 72, 160, 0.68), rgba(4, 30, 82, 0.58));
+}
+
+.screen-status-item span,
+.screen-resource-item span {
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+  border-color: rgba(101, 244, 255, 0.52);
+  box-shadow: 0 0 13px rgba(101, 244, 255, 0.34);
+}
+
+.screen-status-item strong,
+.screen-resource-item strong {
+  font-size: 12px;
+}
+
+.screen-status-item em,
+.screen-resource-item em {
+  font-size: 9px;
+}
+
+.screen-panel--right {
+  display: grid;
+  grid-template-rows: auto minmax(142px, 0.98fr) minmax(172px, 1.22fr);
+  gap: 8px;
+  padding: 10px;
+  min-height: 0;
+}
+
+.screen-panel--right [data-zone="workorder-board"] {
+  min-height: 0;
+}
+
+.screen-panel--right .screen-board {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.screen-panel--right .screen-board-item {
+  min-height: 46px;
+  padding: 5px 4px;
+}
+
+.screen-board-item__count {
+  font-size: 22px;
+}
+
+.screen-board-item__label {
+  font-size: 10px;
+}
+
+.screen-panel--right .screen-quick-links {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.screen-panel--right .screen-quick-link {
+  padding: 5px 4px;
+  font-size: 10px;
+}
+
+.screen-panel__divider {
+  margin: 3px 0;
+}
+
+.screen-alarm-entry {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 6px;
+  border-top-color: rgba(77, 190, 255, 0.26);
+}
+
+.screen-alarm-entry__list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.screen-alarm-entry__item {
+  min-height: 24px;
+  padding: 4px 6px;
+  background: linear-gradient(180deg, rgba(9, 58, 132, 0.70), rgba(4, 29, 78, 0.58));
+}
+
+.screen-alarm-entry__link {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+}
+
+.screen-iot-panel {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 7px 0 0;
+  border-top-color: rgba(77, 190, 255, 0.26);
+}
+
+.screen-iot-points {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  gap: 5px;
+  margin-top: 6px;
+  padding-right: 5px;
+}
+
+.screen-iot-point {
+  grid-template-columns: minmax(52px, 0.72fr) minmax(48px, 0.72fr) auto;
+  padding: 4px 6px;
+  border-color: rgba(77, 190, 255, 0.22);
+  background: linear-gradient(180deg, rgba(10, 68, 150, 0.56), rgba(4, 30, 82, 0.48));
+}
+
+.screen-iot-point__value {
+  font-size: 13px;
+}
+
+.screen-iot-sparkline {
+  height: 8px;
+}
+
+.screen-alarm-entry__list,
+.screen-iot-points,
+.screen-hazard-list__items,
+.screen-map__fallback-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(101, 244, 255, 0.82) rgba(6, 38, 96, 0.42);
+}
+
+.screen-alarm-entry__list::-webkit-scrollbar,
+.screen-iot-points::-webkit-scrollbar,
+.screen-hazard-list__items::-webkit-scrollbar,
+.screen-map__fallback-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.screen-alarm-entry__list::-webkit-scrollbar-track,
+.screen-iot-points::-webkit-scrollbar-track,
+.screen-hazard-list__items::-webkit-scrollbar-track,
+.screen-map__fallback-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(6, 38, 96, 0.38), rgba(3, 20, 58, 0.62));
+  border: 1px solid rgba(77, 190, 255, 0.18);
+}
+
+.screen-alarm-entry__list::-webkit-scrollbar-thumb,
+.screen-iot-points::-webkit-scrollbar-thumb,
+.screen-hazard-list__items::-webkit-scrollbar-thumb,
+.screen-map__fallback-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #65F4FF, #1687FF 62%, #0B5FDB);
+  border: 1px solid rgba(190, 244, 255, 0.38);
+  box-shadow: 0 0 10px rgba(101, 244, 255, 0.55);
+}
+
+.screen-footer {
+  height: 74px;
+  margin: 0 10px 8px;
+  padding: 0 20px;
+  border-color: rgba(84, 199, 255, 0.76);
+  background:
+    linear-gradient(180deg, rgba(8, 56, 132, 0.86), rgba(3, 24, 67, 0.78)),
+    radial-gradient(ellipse at 50% 0%, rgba(0, 224, 255, 0.14), transparent 60%);
+}
+
+.screen-footer__status-text {
+  top: 5px;
+  color: #33F6A2;
+}
+
+.screen-command-node {
+  gap: 3px;
+}
+
+.screen-command-node:not(:last-child)::after {
+  left: calc(50% + 25px);
+  top: 17px;
+  width: calc(100% - 50px);
+  height: 2px;
+  background: linear-gradient(90deg, currentColor, rgba(101, 244, 255, 0.20), transparent);
+}
+
+.screen-command-node__icon {
+  width: 34px;
+  height: 34px;
+  border: 1px solid currentColor;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.32), transparent 34%),
+    linear-gradient(145deg, rgba(19, 104, 240, 0.72), rgba(0, 212, 255, 0.22));
+  box-shadow: 0 0 20px currentColor, inset 0 0 14px rgba(255, 255, 255, 0.10);
+}
+
+.screen-command-node__icon img {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 8px currentColor) brightness(1.18);
+}
+
+.screen-command-node strong {
+  font-size: 12px;
+}
+
+.screen-command-node small {
+  font-size: 10px;
+  color: #A8D7FF;
+}
+
+@media (max-height: 650px) {
+  .screen-main {
+    grid-template-columns: 270px minmax(260px, 1fr) 286px;
+  }
+
+  .screen-panel--left {
+    grid-template-rows: minmax(58px, 0.85fr) minmax(50px, 0.58fr) minmax(82px, 1fr) minmax(42px, 0.5fr) minmax(42px, 0.5fr);
+    gap: 5px;
+  }
+
+  .screen-panel--right {
+    grid-template-rows: auto minmax(104px, 0.9fr) minmax(126px, 1.08fr);
+    gap: 5px;
+  }
+
+  .screen-panel--right .screen-board-item {
+    min-height: 34px;
+  }
+
+  .screen-board-item__count {
+    font-size: 18px;
+  }
+
+  .screen-panel--right .screen-quick-link {
+    padding: 4px 3px;
+    font-size: 9px;
+  }
+
+  .screen-trend-chart,
+  .screen-trend-echart {
+    min-height: 62px;
+    height: auto;
+  }
+
+  .screen-alarm-entry__list,
+  .screen-iot-points {
+    max-height: none;
+  }
+
+  .screen-footer {
+    height: 56px;
+  }
+
+  .screen-command-node__icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .screen-command-node__icon img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .screen-command-node strong {
+    font-size: 10px;
+  }
+
+  .screen-command-node small {
+    display: none;
+  }
+
+  .screen-command-node:not(:last-child)::after {
+    top: 13px;
+    left: calc(50% + 20px);
+    width: calc(100% - 40px);
+  }
+}
+
+/* ===== 最终覆盖：深色背景 + 字号放大 + ECharts 容器 + 右侧布局贴底 ===== */
+/* 1) 深色背景：参考图2深海蓝，纯净无杂色 */
+.screen-root {
+  background: #020D1F !important;
+}
+.screen-root::before {
+  background:
+    linear-gradient(rgba(0, 180, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 180, 255, 0.04) 1px, transparent 1px) !important;
+  background-size: 48px 48px, 48px 48px !important;
+  opacity: 1;
+}
+.screen-root::after { display: none !important; }
+
+.screen-panel,
+.screen-glass-card {
+  background: rgba(5, 22, 55, 0.92) !important;
+  border: 1px solid rgba(0, 180, 255, 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 200, 255, 0.08),
+    0 0 28px rgba(0, 100, 200, 0.22),
+    inset 0 1px 0 rgba(180, 230, 255, 0.10) !important;
+}
+
+/* 2) ECharts 容器尺寸 */
+.screen-ring-echart {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+.screen-hazard-type-echart {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+}
+.screen-side-section--ring .screen-ring-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  padding: 6px 0 4px;
+}
+
+/* 3) 左侧字号统一加大 */
+.screen-panel--left .screen-panel__title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  flex-shrink: 0;
+}
+.screen-ring-legend__item { font-size: 12px !important; }
+.screen-ring-legend__item strong { font-size: 13px !important; min-width: 18px !important; text-align: right !important; }
+.screen-ring-legend__item i { width: 8px !important; height: 8px !important; flex-shrink: 0 !important; }
+.screen-ring-legend { gap: 4px !important; }
+
+/* 资源统计/系统运行状态：确保内容不被截断 */
+.screen-resource-card,
+.screen-side-section--status {
+  overflow: visible !important;
+}
+.screen-resource-grid,
+.screen-status-strip {
+  overflow: visible !important;
+  padding-top: 4px !important;
+  gap: 5px !important;
+}
+.screen-status-item strong,
+.screen-resource-item strong {
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+.screen-status-item em,
+.screen-resource-item em {
+  font-size: 11px !important;
+  margin-top: 1px !important;
+}
+.screen-status-item span,
+.screen-resource-item span {
+  width: 24px !important;
+  height: 24px !important;
+}
+.screen-status-item,
+.screen-resource-item {
+  min-height: 0 !important;
+  padding: 5px 3px !important;
+  gap: 3px !important;
+}
+
+/* KPI 字号 */
+.screen-kpi-item__label { font-size: 12px !important; font-weight: 700 !important; }
+.screen-kpi-item__value { font-size: 30px !important; }
+.screen-kpi-item__unit { font-size: 12px !important; }
+
+/* KPI行均匀分布（解决左侧无间距、右侧大空白） */
+.screen-kpi-ribbon {
+  display: flex !important;
+  justify-content: space-around !important;
+  padding: 0 8px !important;
+}
+.screen-kpi-ribbon .screen-kpi-item {
+  flex: 1 !important;
+  max-width: 200px !important;
+  padding-left: 52px !important;
+  min-width: 0 !important;
+}
+
+/* 工单趋势：去掉所有横线背景，单纯 ECharts */
+.screen-trend-chart {
+  background: none !important;
+  border-bottom: none !important;
+  padding: 0 !important;
+}
+.screen-trend-chart,
+.screen-trend-echart {
+  flex: 1 !important;
+  min-height: 110px !important;
+  height: 100% !important;
+}
+.screen-trend-labels { display: none !important; }
+
+/* 4) 左侧 grid：让 5 个区域均匀分布、确保资源/状态行足够高 */
+.screen-panel--left {
+  grid-template-rows:
+    minmax(108px, 1.0fr)
+    minmax(108px, 1.0fr)
+    minmax(128px, 1.1fr)
+    minmax(88px, 0.82fr)
+    minmax(88px, 0.82fr) !important;
+  gap: 8px !important;
+  padding: 10px !important;
+}
+
+/* 5) 右侧布局：工单看板(auto) + 告警区(1fr填满剩余) + IoT数据(固定高度，3条恰好贴底) */
+.screen-panel--right {
+  display: grid !important;
+  grid-template-rows: auto 1fr 234px !important;
+  gap: 8px !important;
+  padding: 10px !important;
+  overflow: hidden !important;
+}
+.screen-alarm-entry {
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.screen-alarm-entry__list {
+  flex: 1 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+.screen-iot-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+.screen-iot-points {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  gap: 6px !important;
+  overflow: hidden !important;
+  justify-content: space-between !important;
+}
+.screen-iot-point {
+  display: grid !important;
+  grid-template-columns: minmax(60px, auto) 1fr auto !important;
+  align-items: center !important;
+  flex: 1 !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  background: rgba(6, 32, 90, 0.70) !important;
+  border: 1px solid rgba(0, 160, 255, 0.30) !important;
+}
+.screen-iot-sparkline {
+  grid-column: 1 / -1 !important;
+  height: 7px !important;
+  margin-top: 4px !important;
+}
+
+/* 右侧字号 */
+.screen-panel--right .screen-panel__title { font-size: 14px !important; }
+.screen-board-item__count { font-size: 28px !important; }
+.screen-board-item__label { font-size: 12px !important; }
+.screen-quick-link { font-size: 12px !important; padding: 8px 6px !important; }
+.screen-alarm-entry__title { font-size: 12px !important; }
+.screen-alarm-entry__level { font-size: 11px !important; }
+.screen-iot-point__label { font-size: 13px !important; min-width: 60px !important; color: #B8D8FF !important; }
+.screen-iot-point__value { font-size: 18px !important; font-weight: 700 !important; }
+.screen-iot-point__unit { font-size: 12px !important; }
+
+/* 6) 底部时间轴：与主背景同色系，不再显得割裂 */
+.screen-footer {
+  background: rgba(5, 22, 56, 0.88) !important;
+  border-color: rgba(0, 180, 255, 0.40) !important;
+}
+.screen-command-node__icon {
+  background: rgba(8, 40, 100, 0.90) !important;
+  border: 2px solid currentColor !important;
+  box-shadow: 0 0 12px currentColor !important;
+}
+.screen-command-node:not(:last-child)::after {
+  background: currentColor !important;
+  opacity: 0.35 !important;
+}
+.screen-command-node strong {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  text-shadow: none !important;
+}
+.screen-command-node small {
+  font-size: 12px !important;
+  color: #90BFEF !important;
+}
+.screen-command-node--red   { color: #FF6055 !important; }
+.screen-command-node--orange { color: #FFBA30 !important; }
+.screen-command-node--blue  { color: #4DC8FF !important; }
+
+/* ---- 参考图2深度模仿：更高对比、更清晰的面板 ---- */
+/* 标题栏 */
+.screen-panel__title,
+.screen-map__title-bar {
+  color: #FFFFFF !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  text-shadow: 0 0 10px rgba(0, 200, 255, 0.35) !important;
+}
+.screen-panel__title-bar {
+  width: 4px !important;
+  background: #00E5FF !important;
+  box-shadow: 0 0 10px #00E5FF !important;
+}
+/* 面板外框加一条顶部亮线 */
+.screen-panel::before,
+.screen-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 4px; right: 4px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 220, 255, 0.6), transparent);
+  pointer-events: none;
+}
+/* KPI 条整体背景 */
+.screen-kpi-ribbon {
+  background: rgba(4, 20, 54, 0.96) !important;
+  border-color: rgba(0, 180, 255, 0.50) !important;
+}
+/* 工单看板数字 */
+.screen-board-item {
+  background: rgba(6, 26, 66, 0.85) !important;
+  border-color: rgba(0, 150, 255, 0.25) !important;
+}
+/* 告警条目 */
+.screen-alarm-entry__item {
+  background: rgba(6, 24, 60, 0.80) !important;
+  border-left-width: 3px !important;
+}
+/* IoT 面板标题 */
+.screen-iot-panel .screen-panel__title {
+  color: #60DDFF !important;
+}
+/* IoT 数据值高亮 */
+.screen-iot--green  { color: #00F5A0 !important; }
+.screen-iot--orange { color: #FFB520 !important; }
+.screen-iot--red    { color: #FF5050 !important; }
+/* risk dot 辉光 */
+.risk-dot--red    { background: #FF4444 !important; box-shadow: 0 0 8px #FF4444, 0 0 18px rgba(255,68,68,0.4) !important; }
+.risk-dot--orange { background: #FFB030 !important; box-shadow: 0 0 8px #FFB030, 0 0 18px rgba(255,176,48,0.4) !important; }
+.risk-dot--yellow { background: #FFD700 !important; box-shadow: 0 0 8px #FFD700 !important; }
+.risk-dot--green  { background: #00E696 !important; box-shadow: 0 0 8px #00E696, 0 0 18px rgba(0,230,150,0.35) !important; }
+/* KPI 数值颜色更亮 */
+.screen-kpi-item__value { color: #FFFFFF !important; text-shadow: 0 0 14px rgba(0, 200, 255, 0.45) !important; }
+.screen-kpi-item__value--warn { color: #FF8040 !important; text-shadow: 0 0 14px rgba(255,128,64,0.5) !important; }
+.screen-kpi-item__value--red  { color: #FF4040 !important; text-shadow: 0 0 14px rgba(255,64,64,0.6) !important; }
+.screen-kpi-item__value--success { color: #00F5A0 !important; text-shadow: 0 0 14px rgba(0,245,160,0.5) !important; }
+.screen-kpi-item__label { color: #7AB8E8 !important; }
+.screen-kpi-item__unit { color: #6090B8 !important; }
 </style>

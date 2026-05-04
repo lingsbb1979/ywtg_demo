@@ -8,20 +8,29 @@
   -->
   <div class="screen-root screen-bg screen-performance">
     <!-- ===== 顶部标题栏 ===== -->
-    <header class="screen-performance__header">
-      <router-link to="/screen/home" class="screen-back-link">
-        ← 返回大屏首页
-      </router-link>
-      <h1 class="screen-performance__title">绩效看板</h1>
-      <span class="screen-performance__time tabular-nums">{{ currentTime }}</span>
+    <header class="screen-performance__header screen-page-header">
+      <div class="screen-page-header__left">
+        <router-link to="/screen/home" class="screen-back-link">
+          ← 返回大屏首页
+        </router-link>
+        <div class="screen-page-title-group">
+          <span class="screen-page-kicker">PERFORMANCE SUPERVISION</span>
+          <h1 class="screen-performance__title screen-page-title">绩效督办中心</h1>
+        </div>
+      </div>
+      <div class="screen-page-header__right">
+        <span class="screen-metric-pill">督办 {{ supervisionCount }} 件</span>
+        <span class="screen-performance__time screen-page-time tabular-nums">{{ currentTime }}</span>
+      </div>
     </header>
 
     <!-- ===== 主内容区 ===== -->
     <main class="screen-performance__main">
 
       <!-- KPI 主指标行 -->
-      <div class="screen-glass-card screen-performance__kpi-row" data-zone="kpi">
+      <div class="screen-glass-card screen-kpi-ribbon screen-performance__kpi-row" data-zone="kpi">
         <div class="screen-kpi-item">
+          <span class="board-icon board-icon--finished"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>
           <span class="screen-kpi-item__label">工单闭环率</span>
           <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--success">
             {{ closeRate }}%
@@ -30,6 +39,7 @@
         </div>
         <div class="screen-kpi-divider" />
         <div class="screen-kpi-item">
+          <span class="board-icon board-icon--processing"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></span>
           <span class="screen-kpi-item__label">平均响应时间</span>
           <span class="screen-kpi-item__value tabular-nums">
             {{ avgResponseTime }}
@@ -38,6 +48,7 @@
         </div>
         <div class="screen-kpi-divider" />
         <div class="screen-kpi-item">
+          <span class="board-icon board-icon--pending"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm1-13h-2v6h2V7zm0 8h-2v2h2v-2z"/></svg></span>
           <span class="screen-kpi-item__label">超时工单数</span>
           <span
             class="screen-kpi-item__value tabular-nums"
@@ -49,6 +60,7 @@
         </div>
         <div class="screen-kpi-divider" />
         <div class="screen-kpi-item">
+          <span class="board-icon board-icon--checking"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg></span>
           <span class="screen-kpi-item__label">督办数</span>
           <span
             class="screen-kpi-item__value tabular-nums"
@@ -321,5 +333,117 @@ onMounted(() => {
 
 .screen-performance__stat-value--warn {
   color: var(--risk-red, #FF4444);
+}
+
+/* ===== 参考图风格覆盖 ===== */
+.screen-performance {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #020D1F !important;
+}
+/* 与首页完全一致：去掉 screen-bg 的蓝色渐变和光晔 */
+.screen-performance::before {
+  background:
+    linear-gradient(rgba(0, 180, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 180, 255, 0.04) 1px, transparent 1px) !important;
+  background-size: 48px 48px, 48px 48px !important;
+  mask-image: none !important;
+  opacity: 1 !important;
+}
+.screen-performance::after { display: none !important; }
+
+.screen-performance__header {
+  margin: 10px 12px 0;
+  border-color: rgba(44, 166, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(6, 38, 91, 0.96), rgba(4, 23, 58, 0.88)),
+    radial-gradient(circle at 50% 100%, rgba(0, 212, 255, 0.22), transparent 52%);
+  box-shadow: 0 0 30px rgba(0, 132, 255, 0.28), inset 0 1px 0 rgba(156, 210, 255, 0.22);
+}
+
+.screen-performance__main {
+  padding: 12px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.screen-performance__kpi-row {
+  height: 144px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 22px;
+  border-color: rgba(44, 166, 255, 0.64);
+  background:
+    linear-gradient(180deg, rgba(7, 42, 98, 0.9), rgba(4, 22, 55, 0.8)),
+    radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.14), transparent 62%);
+  box-shadow: 0 0 30px rgba(0, 132, 255, 0.28), inset 0 0 28px rgba(16, 92, 190, 0.16);
+}
+
+.screen-performance__kpi-row .screen-kpi-divider {
+  display: none;
+}
+
+.screen-performance__kpi-row .screen-kpi-item {
+  position: relative;
+  align-items: flex-start;
+  justify-content: center;
+  padding-left: 64px;
+  border-right: 1px solid rgba(0, 145, 255, 0.18);
+}
+
+.screen-performance__kpi-row .screen-kpi-item:last-child {
+  border-right: 0;
+}
+
+/* 用 board-icon 替代空菱形 ::before */
+.screen-performance__kpi-row .screen-kpi-item::before {
+  display: none;
+}
+
+.screen-performance__kpi-row .board-icon {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 42px;
+  height: 42px;
+  margin-bottom: 0;
+}
+
+.screen-performance__kpi-row .screen-kpi-item__value {
+  font-size: 36px;
+  color: #F8FBFF;
+  text-shadow: 0 0 18px rgba(95, 189, 255, 0.5);
+}
+
+.screen-performance__detail-row {
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.screen-performance__detail-card {
+  border-color: rgba(44, 166, 255, 0.64);
+  background:
+    linear-gradient(180deg, rgba(7, 42, 98, 0.9), rgba(4, 22, 55, 0.8)),
+    radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.12), transparent 62%);
+  box-shadow: 0 0 28px rgba(0, 132, 255, 0.24), inset 0 0 28px rgba(16, 92, 190, 0.16);
+}
+
+.screen-performance__stat-item {
+  min-height: 58px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 145, 255, 0.18);
+  background: linear-gradient(180deg, rgba(8, 45, 102, 0.68), rgba(4, 24, 62, 0.56));
+}
+
+.screen-performance__stat-value {
+  font-size: 22px;
+  text-shadow: 0 0 14px currentColor;
 }
 </style>

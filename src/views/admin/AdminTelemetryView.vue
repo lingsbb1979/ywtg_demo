@@ -73,27 +73,29 @@
       </div>
 
       <div v-if="rows.length === 0" class="admin-empty admin-empty--inline">
-        暂无采集数据，请先在演示控制台触发 IoT 模拟
+        暂无采集数据，请选择数据点后查询
       </div>
 
-      <table v-else class="admin-table">
-        <thead>
-          <tr>
-            <th>采集时间</th>
-            <th>建筑</th>
-            <th>因子</th>
-            <th>采集值</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, idx) in rows" :key="idx">
-            <td class="tabular-nums">{{ row.ts }}</td>
-            <td class="tabular-nums">{{ pointBuildingLabel(row.pointId) }}</td>
-            <td>{{ pointFactorLabel(row.pointId) }}</td>
-            <td class="tabular-nums">{{ row.valueNum ?? row.valueStr ?? '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else class="admin-table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>采集时间</th>
+              <th>建筑</th>
+              <th>因子</th>
+              <th>采集值</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, idx) in rows" :key="idx">
+              <td class="tabular-nums">{{ row.ts }}</td>
+              <td class="tabular-nums">{{ pointBuildingLabel(row.pointId) }}</td>
+              <td>{{ pointFactorLabel(row.pointId) }}</td>
+              <td class="tabular-nums">{{ row.valueNum ?? row.valueStr ?? '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ③ 新增采集区（zone:add）-->
@@ -305,7 +307,7 @@ function reloadMeta() {
 
 onMounted(() => {
   reloadMeta()
-  loadRows()   // 页面加载时立即显示最近数据
+  // 不自动加载数据，必须选择数据点后才能查询
 })
 
 /**
@@ -335,16 +337,16 @@ function loadRows(buildingId: number | null = selectedBuildingId.value) {
   }
 }
 
-// 监听 selectedPointId 变化时走精确查询
+// 监听 selectedPointId 变化：选中数据点后自动查询，清空时清空列表
 watch(selectedPointId, (val) => {
   if (val) loadData()
-  else loadRows()
+  else rows.value = []
 })
 
-// 选建筑后自动加载该建筑遥测
-watch(selectedBuildingId, (buildingId) => {
+// 选建筑后重置数据点并清空列表，不自动加载（必须选数据点才能查询）
+watch(selectedBuildingId, () => {
   selectedPointId.value = null
-  loadRows(buildingId ?? null)
+  rows.value = []
 })
 </script>
 
@@ -521,4 +523,25 @@ watch(selectedBuildingId, (buildingId) => {
 /* ===== 空状态 ===== */
 .admin-empty { display: flex; align-items: center; gap: 8px; color: var(--pc-text-muted, #94A3B8); }
 .admin-empty--inline { padding: 20px; font-size: 13px; }
+
+/* ===== 采集值列表滚动容器（固定约30行高度） ===== */
+.admin-table-scroll {
+  max-height: 1140px; /* 约30行 × 38px */
+  overflow-y: auto;
+}
+.admin-table-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-table-scroll::-webkit-scrollbar-track {
+  background: #F8FAFC;
+}
+.admin-table-scroll::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+.admin-table-scroll .admin-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
 </style>

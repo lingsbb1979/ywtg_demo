@@ -10,6 +10,7 @@ import AdminWorkOrdersView from "@/views/admin/AdminWorkOrdersView.vue"
 import AdminSupervisionView from "@/views/admin/AdminSupervisionView.vue"
 import WorkOrderDetailView from "@/views/admin/WorkOrderDetailView.vue"
 import H5WorkOrdersView from "@/views/h5/H5WorkOrdersView.vue"
+import H5AlarmsView from "@/views/h5/H5AlarmsView.vue"
 import H5WorkOrderDetailView from "@/views/h5/H5WorkOrderDetailView.vue"
 import H5DisposeView from "@/views/h5/H5DisposeView.vue"
 import H5BuildingMetricsView from "@/views/h5/H5BuildingMetricsView.vue"
@@ -167,8 +168,8 @@ export const routes: RouteRecordRaw[] = [
       {
         path: "alerts",
         name: "h5-alerts",
-        component: H5WorkOrdersView,
-        meta: { title: "预警中心" }
+        component: H5AlarmsView,
+        meta: { title: "告警中心" }
       },
       {
         path: "work-orders",

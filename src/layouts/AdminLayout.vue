@@ -12,7 +12,7 @@
 
       <nav class="admin-layout__topnav" aria-label="管理端主导航">
         <router-link
-          v-for="item in topNav"
+          v-for="item in filteredTopNav"
           :key="item.path"
           class="admin-layout__topnav-item"
           :class="{ 'router-link-active': isPathActive(item.path) }"
@@ -32,7 +32,7 @@
         <!-- 新建演示标签下拉：点击在新标签页以对应角色打开 -->
         <div class="role-picker" ref="pickerRef">
           <button class="role-picker__trigger" @click="toggleDropdown">
-            新建演示标签
+            选择角色
             <svg class="role-picker__arrow" :class="{ 'role-picker__arrow--open': showDropdown }"
               width="10" height="6" viewBox="0 0 10 6" fill="none">
               <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -52,9 +52,9 @@
           </div>
         </div>
 
-        <!-- 演示控制台：独立常驻按钮 -->
+        <!-- 控制台：独立常驻按钮 -->
         <router-link class="admin-layout__demo-btn" to="/admin/demo-console">
-          🎬 演示控制台
+          🎬 控制台
         </router-link>
       </div>
     </header>
@@ -102,11 +102,18 @@ const route = useRoute()
 const topNav = [
   { path: "/admin/dashboard", label: "首页总览" },
   { path: "/admin/alarms", label: "监测预警" },
-  { path: "/admin/buildings", label: "风险防控" },
+  { path: "/admin/buildings", label: "建筑档案" },
   { path: "/screen/emergency", label: "应急指挥" },
   { path: "/admin/work-orders", label: "工单管理" },
   { path: "/admin/analysis", label: "数据分析" },
 ]
+
+/** 按当前角色可见菜单过滤顶部导航项 */
+const filteredTopNav = computed(() =>
+  topNav.filter(item =>
+    demoRoleStore.visibleMenus.some(m => m.path === item.path)
+  )
+)
 
 const sidebarTitle = computed(() => {
   if (route.path.includes("work-orders")) return "工单管理"

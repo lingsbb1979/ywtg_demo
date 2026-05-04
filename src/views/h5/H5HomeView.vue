@@ -9,7 +9,7 @@
           <h1 class="h5-home__brand-title">国家建筑安全监测与应急指挥平台</h1>
           <div class="h5-home__brand-meta">
             <span>多云 22℃</span>
-            <span>北京市</span>
+            <span>佳木斯市</span>
           </div>
         </div>
       </div>
@@ -100,23 +100,11 @@
           <span class="h5-home__nav-label">预警中心</span>
           <span v-if="stats.activeAlarms > 0" class="h5-home__nav-badge">{{ stats.activeAlarms }}</span>
         </div>
-        <div class="h5-home__nav-item" @click="$router.push('/h5/work-orders')">
-          <div class="h5-home__nav-icon h5-home__nav-icon--green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          </div>
-          <span class="h5-home__nav-label">工单管理</span>
-        </div>
         <div class="h5-home__nav-item" @click="$router.push('/h5/buildings')">
           <div class="h5-home__nav-icon h5-home__nav-icon--purple">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <span class="h5-home__nav-label">数据分析</span>
-        </div>
-        <div class="h5-home__nav-item" @click="$router.push('/h5/work-orders')">
-          <div class="h5-home__nav-icon h5-home__nav-icon--red">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <span class="h5-home__nav-label">应急处置</span>
         </div>
         <div class="h5-home__nav-item" @click="$router.push('/h5/mine')">
           <div class="h5-home__nav-icon h5-home__nav-icon--gray">
@@ -196,7 +184,7 @@
       <div class="h5-home__quick-row">
         <button class="h5-home__quick-btn h5-home__quick-btn--blue" type="button" @click="$router.push('/h5/work-orders')">巡检上报</button>
         <button class="h5-home__quick-btn h5-home__quick-btn--orange" type="button" @click="$router.push('/h5/buildings')">隐患上报</button>
-        <button class="h5-home__quick-btn h5-home__quick-btn--purple" type="button" @click="$router.push('/h5/work-orders')">问题反馈</button>
+        <button class="h5-home__quick-btn h5-home__quick-btn--purple" type="button" @click="$router.push('/h5/mine')">问题反馈</button>
         <button class="h5-home__quick-btn h5-home__quick-btn--green" type="button" @click="$router.push('/h5/mine')">通讯录</button>
       </div>
     </div>
@@ -241,7 +229,7 @@ const stats = computed(() => {
   const alarmRows = getTable<{ status: string }>("alarm_record")
   const activeAlarms = alarmRows.filter(a => a.status === "ACTIVE" || a.status === "PENDING").length
 
-  const orders = getTable<{ create_time: string }>("work_order_info")
+  const orders = getTable<{ create_time: string }>("work_order")
   const today = new Date().toISOString().slice(0, 10)
   const todayWorkOrders = orders.filter(o => (o.create_time ?? "").startsWith(today)).length
 
@@ -447,7 +435,7 @@ const activities = computed(() => {
 /* ── 快捷功能入口 ── */
 .h5-home__nav-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 .h5-home__nav-item {

@@ -332,7 +332,7 @@ export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): Con
 
   rows[idx] = {
     ...row,
-    status:      "ACTIVE",
+    status:      "PENDING",
     handle_user: operator,
     handle_time: handleTime,
     update_time: handleTime,
@@ -340,13 +340,13 @@ export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): Con
 
   setTable("alarm_record", rows)
 
-  return { ok: true, id, status: "ACTIVE", handleUser: operator, handleTime }
+  return { ok: true, id, status: "PENDING", handleUser: operator, handleTime }
 }
 
 // ── dispatchAlarm ─────────────────────────────────────────────────────────────
 
-/** 不允许派单的告警状态 */
-const NON_DISPATCHABLE_STATUSES = new Set(["CLOSED", "DISPATCHED"])
+/** 不允许派单的告警状态（必须先确认才能派单：ACTIVE=待确认 不可派单） */
+const NON_DISPATCHABLE_STATUSES = new Set(["CLOSED", "DISPATCHED", "ACTIVE"])
 
 export interface DispatchAlarmOptions {
   /** 派单机构 id */

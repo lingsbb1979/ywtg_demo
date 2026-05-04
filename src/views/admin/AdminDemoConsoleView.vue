@@ -59,7 +59,7 @@
       <div class="admin-status-bar__title">当前 localStorage 数据状态</div>
       <div class="admin-status-grid">
         <div class="admin-status-item">
-          <span class="admin-status-item__label">iot_space 建筑</span>
+          <span class="admin-status-item__label">监测建筑</span>
           <span class="admin-status-item__count tabular-nums">{{ stats.spaces }}</span>
           <span class="admin-status-item__unit">条</span>
         </div>
@@ -93,7 +93,7 @@
           <div class="admin-scenario-card__info">
             <div class="admin-scenario-card__title">全量重置</div>
             <div class="admin-scenario-card__detail">
-              重置后：3 栋建筑 · 活跃告警 0 条 · 在处工单 0 条 · 督办清空（含 2 条已销号历史工单）
+              重置后：23 栋建筑 · 69 个监测点位 · 483 条基线遥测 · 活跃告警 0 条 · 在处工单 0 条
             </div>
             <div class="admin-scenario-card__warning">
               ⚠️ 重置演示数据（全部清空重建），此操作不可撤销
@@ -427,10 +427,11 @@ function clearLog() {
 // ── 辅助：刷新状态统计 ─────────────────────────────────────────────────────────
 
 function loadStats() {
+  const spaceRows = getTable<{ type?: string }>("iot_space")
   const alarmRows = getTable<{ status?: string }>("alarm_record")
   const orderRows = getTable<{ status?: string }>("work_order")
   stats.value = {
-    spaces:       getTable("iot_space").length,
+    spaces:       spaceRows.filter((r) => r.type === "2").length,
     alarms:       alarmRows.filter((r) => r.status === "ACTIVE").length,
     orders:       orderRows.filter((r) => r.status !== "CLOSED").length,
     supervisions: getTable("supervision_order").length,

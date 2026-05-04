@@ -36,7 +36,7 @@
         <span class="h5-layout__tabbar-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         </span>
-        <span class="h5-layout__tabbar-label">预警</span>
+        <span class="h5-layout__tabbar-label">告警</span>
       </router-link>
       <!-- 工单 -->
       <router-link class="h5-layout__tabbar-item" :class="{ 'is-active': isActive('/h5/work-orders') || isActive('/h5/dispose') }" to="/h5/work-orders">
@@ -64,7 +64,8 @@ const route = useRoute()
 const router = useRouter()
 
 const ROOT_PATHS = ['/h5/home', '/h5/alerts', '/h5/work-orders', '/h5/buildings', '/h5/mine']
-const isHomePage = computed(() => route.path === '/h5/home' || route.path === '/h5')
+// alerts 页面有自己的自定义顶栏（含搜索按钮），不使用 layout 提供的通用 header
+const isHomePage = computed(() => route.path === '/h5/home' || route.path === '/h5' || route.path.startsWith('/h5/alerts'))
 const showBack = computed(() => !ROOT_PATHS.includes(route.path))
 const pageTitle = computed(() => (route.meta?.title as string) ?? "历史建筑安全监测")
 
@@ -194,7 +195,7 @@ function goBack(): void {
 }
 
 .h5-layout__tabbar-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.01em;
 }

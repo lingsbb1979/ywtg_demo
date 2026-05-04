@@ -210,13 +210,13 @@
         <!-- 演示控制台入口（zone:demo-control） -->
         <div class="admin-card" data-testid="admin-demo-control" data-zone="demo-control">
         <div class="admin-card__header">
-          <span class="admin-card__title">演示控制台</span>
+          <span class="admin-card__title">控制台</span>
         </div>
         <div class="admin-demo-control-list">
           <router-link class="admin-demo-btn" to="/admin/demo-console">
             <span class="admin-demo-btn__icon">⚙️</span>
             <div>
-              <div class="admin-demo-btn__label">演示控制台</div>
+              <div class="admin-demo-btn__label">控制台</div>
               <div class="admin-demo-btn__desc">重置数据 · 触发场景 · 一键演示</div>
             </div>
           </router-link>
@@ -266,7 +266,7 @@ import {
   type WorkOrderBoard,
 } from "@/services/screenKpiService"
 
-const kpi         = ref({ totalBuildings: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 } as ScreenKpi)
+const kpi         = ref({ totalBuildings: 0, monitoringPoints: 0, openHazards: 0, activeAlarms: 0, closeRate: 0 } as ScreenKpi)
 const board       = ref({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0, overdueCount: 0 } as WorkOrderBoard)
 const hazardList  = ref([] as HazardListItem[])
 

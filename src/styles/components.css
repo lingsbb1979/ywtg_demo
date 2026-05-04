@@ -416,6 +416,343 @@
 }
 
 /* ============================================================
+   §6.5 大屏端 — 参考图高亮视觉统一层
+   ============================================================ */
+
+.screen-bg {
+  background:
+    radial-gradient(circle at 50% 15%, rgba(44, 150, 255, 0.42), transparent 28%),
+    radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.18), transparent 38%),
+    radial-gradient(circle at 50% 74%, rgba(0, 88, 210, 0.26), transparent 36%),
+    linear-gradient(180deg, #061D48 0%, #082B62 42%, #041632 100%);
+}
+
+.screen-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(70, 166, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70, 166, 255, 0.075) 1px, transparent 1px),
+    radial-gradient(circle at 50% 42%, rgba(59, 142, 255, 0.22), transparent 42%);
+  background-size: 38px 38px, 38px 38px, 100% 100%;
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 82%);
+  z-index: 0;
+}
+
+.screen-bg::after {
+  content: '';
+  position: fixed;
+  inset: auto 0 0;
+  height: 36%;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(0, 125, 255, 0.18));
+  z-index: 0;
+}
+
+.screen-root > *,
+.alarm-dispatch-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.screen-root .screen-page-header,
+.alarm-dispatch-root .screen-page-header {
+  height: 72px;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 10px 12px 0;
+  padding: 0 22px;
+  border: 1px solid rgba(43, 157, 255, 0.68);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(6, 38, 91, 0.96), rgba(4, 23, 58, 0.88)),
+    radial-gradient(circle at 50% 100%, rgba(0, 212, 255, 0.24), transparent 52%);
+  box-shadow:
+    0 0 28px rgba(0, 132, 255, 0.28),
+    inset 0 1px 0 rgba(156, 210, 255, 0.24),
+    inset 0 -16px 28px rgba(0, 110, 255, 0.11);
+  backdrop-filter: blur(14px);
+}
+
+.screen-root .screen-page-header::before,
+.alarm-dispatch-root .screen-page-header::before {
+  content: '';
+  position: absolute;
+  left: 28%;
+  right: 28%;
+  top: -1px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #38E8FF, #3B8EFF, #38E8FF, transparent);
+  box-shadow: 0 0 18px rgba(56, 232, 255, 0.65);
+}
+
+.screen-page-header__left,
+.screen-page-header__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.screen-page-header__right {
+  justify-content: flex-end;
+}
+
+.screen-page-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.screen-page-kicker {
+  color: #7EC8FF;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.screen-page-title {
+  margin: 0;
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 16px rgba(74, 158, 255, 0.62);
+}
+
+.screen-page-time {
+  color: #E6F3FF;
+  font-size: 16px;
+  font-weight: 800;
+  text-shadow: 0 0 12px rgba(0, 212, 255, 0.28);
+}
+
+.screen-back-link,
+.screen-back-btn,
+.alarm-dispatch-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 212, 255, 0.48);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(11, 68, 146, 0.62), rgba(6, 37, 88, 0.44));
+  color: #A7E8FF;
+  text-decoration: none;
+  box-shadow: inset 0 0 12px rgba(0, 212, 255, 0.12), 0 0 14px rgba(0, 145, 255, 0.18);
+}
+
+.screen-metric-pill,
+.alarm-stat,
+.screen-wo-stat {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(0, 145, 255, 0.38);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(8, 50, 112, 0.74), rgba(4, 23, 58, 0.52));
+  color: #BBD9FF;
+  box-shadow: inset 0 0 14px rgba(0, 212, 255, 0.08);
+}
+
+.screen-metric-pill::before,
+.alarm-stat::before,
+.screen-wo-stat::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38E8FF;
+  box-shadow: 0 0 12px #38E8FF;
+  flex-shrink: 0;
+}
+
+.screen-root .screen-glass-card,
+.alarm-dispatch-root .screen-glass-card,
+.screen-root .screen-panel,
+.alarm-dispatch-root .alarm-dispatch-panel,
+.screen-root .screen-workorders__board,
+.screen-root .screen-workorders__list-panel,
+.screen-root .screen-performance__kpi-row,
+.screen-root .screen-performance__detail-card {
+  position: relative;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 145, 255, 0.64);
+  background:
+    linear-gradient(180deg, rgba(7, 42, 98, 0.9), rgba(4, 22, 55, 0.8)),
+    radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.13), transparent 62%);
+  box-shadow:
+    0 0 26px rgba(0, 132, 255, 0.24),
+    inset 0 0 28px rgba(16, 92, 190, 0.16),
+    inset 0 1px 0 rgba(156, 210, 255, 0.18);
+  backdrop-filter: blur(14px);
+}
+
+.screen-root .screen-glass-card::before,
+.alarm-dispatch-root .screen-glass-card::before,
+.screen-root .screen-panel::before,
+.alarm-dispatch-root .alarm-dispatch-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, #18E9FF 0 18px, transparent 18px calc(100% - 18px), #18E9FF calc(100% - 18px)) top left / 100% 1px no-repeat,
+    linear-gradient(90deg, #18E9FF 0 18px, transparent 18px calc(100% - 18px), #18E9FF calc(100% - 18px)) bottom left / 100% 1px no-repeat;
+  opacity: 0.72;
+}
+
+.screen-root .screen-section-title,
+.alarm-dispatch-root .screen-section-title,
+.screen-root .screen-panel__title,
+.screen-root .screen-map__title-bar {
+  color: #EAF6FF;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  border-bottom-color: rgba(0, 145, 255, 0.28);
+}
+
+.screen-section-title__bar,
+.screen-section-title__icon,
+.screen-panel__title-bar {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #38E8FF, #1B6FE8);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.72);
+  flex-shrink: 0;
+}
+
+.screen-section-title__text {
+  color: #EAF6FF;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.screen-section-badge,
+.screen-section-title__badge {
+  margin-left: auto;
+  color: #8CCBFF;
+  font-size: 12px;
+}
+
+.screen-root .screen-board-card,
+.screen-root .dispatch-stat-item,
+.alarm-dispatch-root .dispatch-stat-item {
+  position: relative;
+  overflow: visible;
+  border-color: rgba(0, 145, 255, 0.36);
+  background: linear-gradient(180deg, rgba(12, 62, 134, 0.72), rgba(4, 25, 63, 0.62));
+  box-shadow: inset 0 0 18px rgba(0, 212, 255, 0.08);
+}
+
+/* 旧版空心菱形 ::before 已废弃，图标由 .board-icon 元素承担 */
+.screen-root .screen-board-card::before,
+.screen-root .dispatch-stat-item::before,
+.alarm-dispatch-root .dispatch-stat-item::before {
+  display: none !important;
+}
+
+/* ===== 菱形图标（带实心 SVG 图标）===== */
+.board-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0, 212, 255, 0.45);
+  background: linear-gradient(145deg, rgba(0, 145, 255, 0.22), rgba(0, 60, 160, 0.52));
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.26);
+  transform: rotate(45deg);
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.board-icon svg {
+  transform: rotate(-45deg);
+  width: 18px;
+  height: 18px;
+  color: #5CE8FF;
+  flex-shrink: 0;
+}
+/* 待处理/待接单 - 橙色 */
+.board-icon--pending {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.18), rgba(130, 70, 0, 0.45));
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.22);
+}
+.board-icon--pending svg { color: #FBB740; }
+/* 处理中 - 蓝色 */
+.board-icon--processing {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.18), rgba(20, 55, 130, 0.45));
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.22);
+}
+.board-icon--processing svg { color: #60A5FA; }
+/* 待核查 - 紫色 */
+.board-icon--checking {
+  border-color: rgba(139, 92, 246, 0.55);
+  background: linear-gradient(145deg, rgba(139, 92, 246, 0.18), rgba(70, 35, 130, 0.45));
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.22);
+}
+.board-icon--checking svg { color: #A78BFA; }
+/* 已销号 - 绿色 */
+.board-icon--finished {
+  border-color: rgba(16, 185, 129, 0.55);
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.18), rgba(8, 80, 50, 0.45));
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.22);
+}
+.board-icon--finished svg { color: #34D399; }
+
+.screen-root .screen-board-card__count,
+.screen-root .dispatch-stat-num,
+.alarm-dispatch-root .dispatch-stat-num,
+.screen-root .screen-performance__stat-value {
+  text-shadow: 0 0 16px currentColor;
+}
+
+.screen-root .screen-board-card__label,
+.screen-root .dispatch-stat-label,
+.alarm-dispatch-root .dispatch-stat-label,
+.screen-root .screen-performance__stat-label {
+  color: #9FC4F7;
+  font-weight: 700;
+}
+
+.screen-root .screen-wo-filter-btn,
+.alarm-dispatch-root .alarm-filter-btn {
+  border-radius: 999px;
+  border-color: rgba(0, 145, 255, 0.34);
+  background: rgba(5, 37, 88, 0.58);
+}
+
+.screen-root .screen-wo-filter-btn--active,
+.alarm-dispatch-root .alarm-filter-btn--active {
+  border-color: #38E8FF;
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.22), rgba(27, 111, 232, 0.22));
+  color: #EAFBFF;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.22);
+}
+
+.screen-root .screen-wo-item,
+.alarm-dispatch-root .alarm-list-item,
+.screen-root .screen-em-archive__item,
+.screen-root .screen-em-step {
+  border-color: rgba(0, 145, 255, 0.22);
+  background: linear-gradient(180deg, rgba(8, 45, 102, 0.7), rgba(4, 24, 62, 0.58));
+}
+
+/* ============================================================
    §7 PC 管理端 — 根布局
    ============================================================ */
 
@@ -1298,4 +1635,32 @@
 .admin-badge {
   border-radius: 4px;
   font-weight: 800;
+}
+
+/* ===== 大屏子页面：统一背景与首页一致（#020D1F 深海黑）===== */
+/* 覆盖 .screen-bg 的蓝色 radial-gradient 以及 ::before ::after 光晕 */
+.screen-workorders,
+.screen-emergency,
+.screen-performance,
+.alarm-dispatch-root {
+  background: #020D1F !important;
+}
+
+.screen-workorders::before,
+.screen-emergency::before,
+.screen-performance::before,
+.alarm-dispatch-root::before {
+  background:
+    linear-gradient(rgba(0, 180, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 180, 255, 0.04) 1px, transparent 1px) !important;
+  background-size: 48px 48px, 48px 48px !important;
+  /* 去掉 radial-gradient 光晕，只保留极淡网格 */
+  mask-image: none !important;
+}
+
+.screen-workorders::after,
+.screen-emergency::after,
+.screen-performance::after,
+.alarm-dispatch-root::after {
+  display: none !important;
 }

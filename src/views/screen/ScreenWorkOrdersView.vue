@@ -20,29 +20,32 @@
   -->
   <div class="screen-root screen-bg screen-workorders">
     <!-- ===== 顶部标题栏 ===== -->
-    <header class="screen-header screen-workorders__header">
-      <div class="screen-header__left">
+    <header class="screen-header screen-page-header screen-workorders__header">
+      <div class="screen-header__left screen-page-header__left">
         <router-link to="/screen/home" class="btn-screen-secondary screen-back-btn">
           ← 返回大屏
         </router-link>
-        <h1 class="screen-header__title">工单看板中心</h1>
+        <div class="screen-page-title-group">
+          <span class="screen-page-kicker">WORK ORDER COMMAND</span>
+          <h1 class="screen-header__title screen-page-title">工单看板中心</h1>
+        </div>
       </div>
       <div class="screen-workorders__stats tabular-nums">
-        <span class="screen-wo-stat">
+        <span class="screen-wo-stat screen-metric-pill">
           待接单 <strong style="color:var(--wo-pending,#F59E0B)">{{ board.pending }}</strong>
         </span>
-        <span class="screen-wo-stat">
+        <span class="screen-wo-stat screen-metric-pill">
           处理中 <strong style="color:var(--wo-processing,#3B82F6)">{{ board.processing }}</strong>
         </span>
-        <span class="screen-wo-stat">
+        <span class="screen-wo-stat screen-metric-pill">
           待核查 <strong style="color:var(--wo-checking,#8B5CF6)">{{ board.checking }}</strong>
         </span>
-        <span class="screen-wo-stat">
+        <span class="screen-wo-stat screen-metric-pill">
           已销号 <strong style="color:var(--wo-finished,#10B981)">{{ board.finished }}</strong>
         </span>
       </div>
-      <div class="screen-header__right">
-        <span class="screen-workorders__time tabular-nums">{{ currentTime }}</span>
+      <div class="screen-header__right screen-page-header__right">
+        <span class="screen-workorders__time screen-page-time tabular-nums">{{ currentTime }}</span>
       </div>
     </header>
 
@@ -58,21 +61,25 @@
         </div>
         <div class="screen-board-row">
           <div class="screen-board-card screen-board-card--pending">
+            <span class="board-icon board-icon--pending"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg></span>
             <span class="screen-board-card__count tabular-nums">{{ board.pending }}</span>
             <span class="screen-board-card__label">待接单</span>
             <span class="screen-board-card__status">PENDING</span>
           </div>
           <div class="screen-board-card screen-board-card--processing">
+            <span class="board-icon board-icon--processing"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></span>
             <span class="screen-board-card__count tabular-nums">{{ board.processing }}</span>
             <span class="screen-board-card__label">处理中</span>
             <span class="screen-board-card__status">PROCESSING</span>
           </div>
           <div class="screen-board-card screen-board-card--checking">
+            <span class="board-icon board-icon--checking"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span>
             <span class="screen-board-card__count tabular-nums">{{ board.checking }}</span>
             <span class="screen-board-card__label">待核查</span>
             <span class="screen-board-card__status">CHECKING</span>
           </div>
           <div class="screen-board-card screen-board-card--finished">
+            <span class="board-icon board-icon--finished"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>
             <span class="screen-board-card__count tabular-nums">{{ board.finished }}</span>
             <span class="screen-board-card__label">已销号</span>
             <span class="screen-board-card__status">FINISHED</span>
@@ -524,4 +531,81 @@ onMounted(() => {
   color: var(--screen-text-muted, rgba(255,255,255,0.4));
   font-size: 13px;
 }
+
+/* ===== 参考图风格覆盖 ===== */
+.screen-workorders {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #020D1F !important;
+}
+/* 与首页完全一致：去掉 screen-bg 的蓝色渐变和光晔 */
+.screen-workorders::before {
+  background:
+    linear-gradient(rgba(0, 180, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 180, 255, 0.04) 1px, transparent 1px) !important;
+  background-size: 48px 48px, 48px 48px !important;
+  mask-image: none !important;
+  opacity: 1 !important;
+}
+.screen-workorders::after { display: none !important; }
+
+.screen-workorders__header {
+  margin: 10px 12px 0;
+  border-color: rgba(44, 166, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(6, 38, 91, 0.96), rgba(4, 23, 58, 0.88)),
+    radial-gradient(circle at 50% 100%, rgba(0, 212, 255, 0.22), transparent 52%);
+  box-shadow: 0 0 30px rgba(0, 132, 255, 0.28), inset 0 1px 0 rgba(156, 210, 255, 0.22);
+}
+
+.screen-workorders__main {
+  padding: 12px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.screen-workorders__board,
+.screen-workorders__list-panel {
+  border-color: rgba(44, 166, 255, 0.64);
+  background:
+    linear-gradient(180deg, rgba(7, 42, 98, 0.9), rgba(4, 22, 55, 0.8)),
+    radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.12), transparent 62%);
+  box-shadow: 0 0 28px rgba(0, 132, 255, 0.24), inset 0 0 28px rgba(16, 92, 190, 0.16);
+}
+
+.screen-workorders__board {
+  min-height: 188px;
+}
+
+.screen-board-row {
+  gap: 14px;
+}
+
+.screen-board-card {
+  min-height: 106px;
+  justify-content: center;
+}
+
+.screen-board-card__count {
+  font-size: 34px;
+  text-shadow: 0 0 16px currentColor;
+}
+
+.screen-wo-list-scroll {
+  max-height: none;
+  flex: 1;
+  padding-right: 4px;
+}
+
+.screen-wo-item {
+  border-color: rgba(0, 145, 255, 0.2);
+  background: linear-gradient(180deg, rgba(8, 45, 102, 0.68), rgba(4, 24, 62, 0.56));
+}
+
+.screen-wo-stat:nth-child(1)::before { background: var(--wo-pending, #F59E0B); box-shadow: 0 0 12px var(--wo-pending, #F59E0B); }
+.screen-wo-stat:nth-child(2)::before { background: var(--wo-processing, #3B82F6); box-shadow: 0 0 12px var(--wo-processing, #3B82F6); }
+.screen-wo-stat:nth-child(3)::before { background: var(--wo-checking, #8B5CF6); box-shadow: 0 0 12px var(--wo-checking, #8B5CF6); }
+.screen-wo-stat:nth-child(4)::before { background: var(--wo-finished, #10B981); box-shadow: 0 0 12px var(--wo-finished, #10B981); }
 </style>

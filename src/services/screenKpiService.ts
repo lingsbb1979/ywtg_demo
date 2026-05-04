@@ -3,10 +3,11 @@ import { getTable } from "./sqliteMirrorRepository"
 // ── T15.59 selectScreenKpi ────────────────────────────────────────────────────
 
 export interface ScreenKpi {
-  totalBuildings: number  // iot_space type="2" 建筑总数
-  openHazards:    number  // alarm_record status ≠ CLOSED/CANCELLED
-  activeAlarms:   number  // alarm_record status = ACTIVE/PENDING
-  closeRate:      number  // FINISHED 工单 / 总工单 × 100，保留 1 位小数
+  totalBuildings:   number  // iot_space type="2" 建筑总数
+  monitoringPoints: number  // iot_data_point 实时监测点位数
+  openHazards:      number  // alarm_record status ≠ CLOSED/CANCELLED
+  activeAlarms:     number  // alarm_record status = ACTIVE/PENDING
+  closeRate:        number  // FINISHED 工单 / 总工单 × 100，保留 1 位小数
 }
 
 /**
@@ -17,6 +18,7 @@ export function selectScreenKpi(): ScreenKpi {
   // ── 总建筑数 ──────────────────────────────────────────────────────────────
   const spaces         = getTable<{ type: string }>("iot_space")
   const totalBuildings = spaces.filter((s) => s.type === "2").length
+  const monitoringPoints = getTable<Record<string, unknown>>("iot_data_point").length
 
   // ── 隐患 / 告警 ───────────────────────────────────────────────────────────
   const alarms      = getTable<{ status: string }>("alarm_record")
@@ -33,7 +35,7 @@ export function selectScreenKpi(): ScreenKpi {
     ? 0
     : Math.round((finished / total) * 1000) / 10  // 保留 1 位小数
 
-  return { totalBuildings, openHazards, activeAlarms, closeRate }
+  return { totalBuildings, monitoringPoints, openHazards, activeAlarms, closeRate }
 }
 
 // ── T15.60 selectMapPoints ────────────────────────────────────────────────────

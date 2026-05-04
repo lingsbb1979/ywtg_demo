@@ -315,7 +315,7 @@
             </button>
             <button
               class="btn-pc-primary"
-              :disabled="!currentAlarm || (currentAlarm.status !== 'ACTIVE' && currentAlarm.status !== 'PENDING')"
+              :disabled="!currentAlarm || currentAlarm.status !== 'PENDING'"
               @click="dispatchAlarm"
             >
               立即派单

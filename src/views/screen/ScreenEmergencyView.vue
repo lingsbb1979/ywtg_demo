@@ -9,10 +9,17 @@
   -->
   <div class="screen-root screen-bg screen-emergency">
     <!-- 顶部标题栏 -->
-    <header class="screen-emergency__header">
-      <router-link to="/screen/home" class="screen-back-link">← 返回大屏首页</router-link>
-      <h1 class="screen-emergency__title">应急管理中心</h1>
-      <span class="screen-emergency__time">{{ currentTime }}</span>
+    <header class="screen-emergency__header screen-page-header">
+      <div class="screen-page-header__left">
+        <router-link to="/screen/home" class="screen-back-link">← 返回大屏首页</router-link>
+        <div class="screen-page-title-group">
+          <span class="screen-page-kicker">EMERGENCY COMMAND</span>
+          <h1 class="screen-emergency__title screen-page-title">应急管理中心</h1>
+        </div>
+      </div>
+      <div class="screen-page-header__right">
+        <span class="screen-emergency__time screen-page-time">{{ currentTime }}</span>
+      </div>
     </header>
 
     <!-- ① 有活跃事件：5 步应急指挥面板 -->
@@ -20,7 +27,7 @@
       <div class="screen-glass-card screen-em-panel">
         <!-- 面板标题 -->
         <div class="screen-em-panel__header">
-          <span class="screen-em-panel__icon">🚨</span>
+          <span class="screen-em-panel__icon">!</span>
           <div>
             <h2 class="screen-em-panel__title">红色预警 — 应急指挥流程</h2>
             <p class="screen-em-panel__sub">
@@ -83,7 +90,7 @@
     <main v-else class="screen-emergency__main">
       <!-- 无事件提示 -->
       <div class="screen-glass-card screen-em-no-incident">
-        <span style="font-size:40px">🟢</span>
+          <span class="screen-em-no-incident__icon">OK</span>
         <p class="screen-em-no-incident__text">当前无活跃应急事件</p>
         <p class="screen-em-no-incident__hint">系统持续监测中，红色告警触发后将自动启动应急预案流程</p>
       </div>
@@ -118,10 +125,10 @@
               </div>
               <div class="screen-em-archive__item-right">
                 <span v-if="inc.close_type === 'REPAIR_ORDER'" class="badge-screen badge-screen--orange">
-                  🔧 转修缮工单
+                  转修缮工单
                 </span>
                 <span v-else-if="inc.close_type === 'REPORT_GOV'" class="badge-screen badge-screen--red">
-                  🏛️ 上报市政府·已归档
+                  上报市政府·已归档
                 </span>
                 <span v-else class="badge-screen" style="border:1px solid rgba(255,255,255,0.2)">
                   进行中（步骤 {{ inc.current_step }}/{{ planNodesCount }}）
@@ -150,8 +157,8 @@
                 <div class="screen-em-tl-item__dot screen-em-tl-item__dot--close" />
                 <div class="screen-em-tl-item__body">
                   <span class="screen-em-tl-item__name">
-                    <template v-if="inc.close_type === 'REPAIR_ORDER'">🔧 结案：转修缮工单处置</template>
-                    <template v-else-if="inc.close_type === 'REPORT_GOV'">🏛️ 结案：上报市政府，申请整体拆除</template>
+                    <template v-if="inc.close_type === 'REPAIR_ORDER'">结案：转修缮工单处置</template>
+                    <template v-else-if="inc.close_type === 'REPORT_GOV'">结案：上报市政府，申请整体拆除</template>
                     <template v-else>结案</template>
                   </span>
                 </div>
@@ -368,4 +375,132 @@ onUnmounted(() => clearInterval(timer))
 .screen-em-tl-item--close  .screen-em-tl-item__name  { color: #60AEFF; }
 .screen-em-tl-item__time { font-size: 12px; color: rgba(255,255,255,0.45); font-variant-numeric: tabular-nums; }
 .screen-em-tl-item__time--none { color: rgba(255,255,255,0.2); }
+
+/* ===== 参考图风格覆盖 ===== */
+.screen-emergency {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #020D1F !important;
+}
+/* 与首页完全一致：去掉 screen-bg 的蓝色渐变和光晔 */
+.screen-emergency::before {
+  background:
+    linear-gradient(rgba(0, 180, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 180, 255, 0.04) 1px, transparent 1px) !important;
+  background-size: 48px 48px, 48px 48px !important;
+  mask-image: none !important;
+  opacity: 1 !important;
+}
+.screen-emergency::after { display: none !important; }
+
+.screen-emergency__header {
+  margin: 10px 12px 0;
+  border-color: rgba(44, 166, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(6, 38, 91, 0.96), rgba(4, 23, 58, 0.88)),
+    radial-gradient(circle at 50% 100%, rgba(0, 212, 255, 0.22), transparent 52%);
+  box-shadow: 0 0 30px rgba(0, 132, 255, 0.28), inset 0 1px 0 rgba(156, 210, 255, 0.22);
+}
+
+.screen-emergency__main {
+  padding: 12px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.screen-emergency__main--active {
+  align-items: stretch;
+  justify-content: center;
+}
+
+.screen-em-panel {
+  width: min(1180px, calc(100vw - 48px));
+  max-width: none;
+  margin: 0 auto;
+  padding: 32px 40px;
+  border-color: rgba(255, 68, 68, 0.58);
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 68, 68, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(8, 42, 98, 0.9), rgba(4, 22, 55, 0.82));
+  box-shadow: 0 0 34px rgba(255, 68, 68, 0.18), inset 0 0 30px rgba(0, 132, 255, 0.12);
+}
+
+.screen-em-panel__icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FF4E45 0 44%, rgba(255,78,69,0.32) 45% 100%);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  box-shadow: 0 0 0 18px rgba(239,68,68,0.12), 0 0 32px rgba(239,68,68,0.7);
+}
+
+.screen-em-panel__title {
+  font-size: 26px;
+  color: #FF6A5F;
+  text-shadow: 0 0 16px rgba(255, 68, 68, 0.54);
+}
+
+.screen-em-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.screen-em-step {
+  min-height: 150px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-color: rgba(0, 145, 255, 0.22);
+  background: linear-gradient(180deg, rgba(8, 45, 102, 0.68), rgba(4, 24, 62, 0.56));
+}
+
+.screen-em-step__no {
+  width: 38px;
+  height: 38px;
+  box-shadow: 0 0 16px currentColor;
+}
+
+.screen-em-no-incident {
+  min-height: 190px;
+  justify-content: center;
+  border-color: rgba(51, 246, 162, 0.44);
+}
+
+.screen-em-no-incident__icon {
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(51, 246, 162, 0.55);
+  color: #33F6A2;
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow: 0 0 24px rgba(51, 246, 162, 0.34), inset 0 0 18px rgba(51, 246, 162, 0.12);
+}
+
+.screen-em-archive {
+  flex: 1;
+  overflow: hidden;
+}
+
+.screen-em-archive__list {
+  max-height: calc(100vh - 390px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.screen-em-archive__item {
+  border-color: rgba(0, 145, 255, 0.22);
+  background: linear-gradient(180deg, rgba(8, 45, 102, 0.68), rgba(4, 24, 62, 0.56));
+}
 </style>

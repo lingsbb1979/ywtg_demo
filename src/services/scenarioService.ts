@@ -6,6 +6,9 @@ import { getTable, resetTables, setTable } from "./sqliteMirrorRepository"
 import { ANALYSIS_LINK_ROWS } from "../mock/seeds/seedAnalysisLink"
 import { DATA_POINT_ROWS, FACTOR_TYPE_ROWS } from "../mock/seeds/seedDataPoints"
 import { GATEWAY_ROWS, DRIVER_ROWS, LINK_ROWS, DEVICE_ROWS, MEASURE_POINT_ROWS } from "../mock/seeds/seedIotHierarchy"
+import { seedBuildings } from "../mock/seeds/seedBuildings"
+import { seedSpaceRelation } from "../mock/seeds/seedSpaceRelation"
+import { seedTelemetry } from "../mock/seeds/seedTelemetry"
 
 // ── 时间辅助函数（置顶避免前向引用问题）─────────────────────────────────────────
 
@@ -23,21 +26,6 @@ function _fmtTs(ms: number): string {
 }
 
 // ── 种子数据 ──────────────────────────────────────────────────────────────────
-
-const SEED_SPACES = [
-  { id: 1001, parent_id: null, space_code: "B001", name: "历史建筑A", short_name: "A栋",
-    type: "2", latitude: 46.8, longitude: 130.3, address_desc: "佳木斯市向阳区A路1号",
-    is_outdoor: 0, create_time: "2024-01-01 00:00:00" },
-  { id: 1002, parent_id: null, space_code: "B002", name: "历史建筑B", short_name: "B栋",
-    type: "2", latitude: 46.81, longitude: 130.31, address_desc: "佳木斯市向阳区B路2号",
-    is_outdoor: 0, create_time: "2024-01-01 00:00:00" },
-  { id: 1003, parent_id: null, space_code: "B003", name: "历史建筑C", short_name: "C栋",
-    type: "2", latitude: 46.82, longitude: 130.32, address_desc: "佳木斯市向阳区C路3号",
-    is_outdoor: 0, create_time: "2024-01-01 00:00:00" },
-  { id: 1012, parent_id: null, space_code: "B012", name: "前进路俄式民居", short_name: "L栋",
-    type: "2", latitude: 46.83, longitude: 130.33, address_desc: "佳木斯市前进区前进路12号",
-    is_outdoor: 0, create_time: "2024-01-01 00:00:00" },
-]
 
 // 种子告警全部设为 CLOSED，重置后大屏呈全绿干净状态，演示者手动触发场景后才出现活跃告警
 const SEED_ALARMS = [
@@ -121,7 +109,8 @@ const SEED_EMERGENCY_NODES = [
  */
 export function resetDemo(): void {
   resetTables()
-  setTable("iot_space",                  SEED_SPACES)
+  seedBuildings()
+  seedSpaceRelation()
   setTable("alarm_record",               SEED_ALARMS)
   setTable("work_order",                 SEED_WORK_ORDERS)
   setTable("emergency_plan_config",      SEED_EMERGENCY_PLANS)
@@ -140,8 +129,9 @@ export function resetDemo(): void {
   // 数据点定义（用于遥测页展示因子名称/单位/阈值）
   setTable("iot_data_point",  DATA_POINT_ROWS)
   setTable("iot_factor_type", FACTOR_TYPE_ROWS)
-  // 清空历史遥测和分析档案，确保演示数据干净
-  setTable("iot_telemetry",          [])
+  // 写入正常状态基线遥测，保证大屏点位点击后能展示实时数据
+  seedTelemetry()
+  // 分析档案仍保持空表，风险色由演示触发流程实时计算
   setTable("space_analysis_archive", [])
 }
 
@@ -159,7 +149,7 @@ let _crackSeq = 0
 export function triggerOrangeCrack(options: CrackOptions = {}): void {
   const { nowStr = "2024-03-08 10:00:00" } = options
   _crackSeq++
-  const rows = getTable<object>("alarm_record")
+  const rows = getTable<Record<string, unknown>>("alarm_record")
   const nextId = rows.length > 0
     ? Math.max(...(rows as { id?: number }[]).map((r) => r.id ?? 0)) + 1
     : 1

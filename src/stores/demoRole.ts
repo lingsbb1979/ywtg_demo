@@ -54,19 +54,19 @@ const ROLE_CONFIG: Record<
     defaultPath: "/admin/dashboard",
     visibleMenus: [
       { path: "/admin/dashboard",    label: "工作台" },
+      { path: "/admin/telemetry",    label: "IoT采集数据" },
+      { path: "/admin/analysis",     label: "数据分析" },
       { path: "/admin/alarms",       label: "告警中心" },
       { path: "/admin/work-orders",  label: "工单中心" },
       { path: "/screen/emergency",   label: "应急处置" },
       { path: "/admin/supervision",  label: "督办管理" },
-      { path: "/admin/telemetry",    label: "IoT采集数据" },
-      { path: "/admin/analysis",     label: "数据分析" },
-      { path: "/admin/demo-console", label: "演示控制台" },
+      { path: "/admin/demo-console", label: "控制台" },
     ],
   },
   FIELD_WORKER: {
     defaultPath: "/h5/work-orders",
     visibleMenus: [
-      { path: "/admin/demo-console", label: "演示控制台" },
+      { path: "/admin/demo-console", label: "控制台" },
       { path: "/h5/work-orders",     label: "H5 待办工单" },
       { path: "/h5/mine",            label: "H5 我的" },
     ],
@@ -78,7 +78,7 @@ const ROLE_CONFIG: Record<
       { path: "/admin/dashboard",    label: "工作台" },
       { path: "/admin/supervision",  label: "督办管理" },
       { path: "/admin/buildings",    label: "建筑档案" },
-      { path: "/admin/demo-console", label: "演示控制台" },
+      { path: "/admin/demo-console", label: "控制台" },
     ],
   },
   PROVINCIAL: {
@@ -86,7 +86,7 @@ const ROLE_CONFIG: Record<
     visibleMenus: [
       { path: "/screen/home",        label: "大屏首页" },
       { path: "/admin/buildings",    label: "建筑档案" },
-      { path: "/admin/demo-console", label: "演示控制台" },
+      { path: "/admin/demo-console", label: "控制台" },
     ],
   },
   PROVINCIAL_SUPERVISION: {
@@ -95,14 +95,14 @@ const ROLE_CONFIG: Record<
       { path: "/admin/supervision",  label: "督办管理" },
       { path: "/admin/buildings",    label: "建筑档案" },
       { path: "/screen/home",        label: "大屏首页" },
-      { path: "/admin/demo-console", label: "演示控制台" },
+      { path: "/admin/demo-console", label: "控制台" },
     ],
   },
   NATIONAL: {
     defaultPath: "/screen/home",
     visibleMenus: [
       { path: "/screen/home",        label: "大屏首页" },
-      { path: "/admin/demo-console", label: "演示控制台" },
+      { path: "/admin/demo-console", label: "控制台" },
     ],
   },
 }

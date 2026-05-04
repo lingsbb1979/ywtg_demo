@@ -47,7 +47,7 @@
           <span class="h5-em__event-no">{{ incident.incident_no }}</span>
         </div>
         <div class="h5-em__building">{{ buildingName }}</div>
-        <div class="h5-em__sub">倾斜超限 · 触发时间 {{ incident.trigger_time }}</div>
+        <div class="h5-em__sub">{{ incidentDesc }} · 触发时间 {{ incident.trigger_time }}</div>
         <div class="h5-em__steps-done">
           大屏已完成全部确认步骤，请选择最终处置方式
         </div>
@@ -108,6 +108,18 @@ const buildingName = computed(() => {
   const spaces = getTable<{ id: number; name: string }>("iot_space")
   const space = spaces.find((s) => Number(s.id) === Number(incident.value!.building_id))
   return space?.name ?? `建筑 #${incident.value.building_id}`
+})
+
+/** 从关联告警记录读取触发原因，决有则用，否则显示安全风险事件 */
+const incidentDesc = computed(() => {
+  if (!incident.value) return ''
+  const alarmId = incident.value.alarm_record_id
+  if (alarmId != null) {
+    const alarms = getTable<{ id: number; alarm_title: string | null }>("alarm_record")
+    const alarm = alarms.find((a) => Number(a.id) === Number(alarmId))
+    if (alarm?.alarm_title) return alarm.alarm_title
+  }
+  return '建筑安全风险事件'
 })
 
 onMounted(() => {
