@@ -190,10 +190,11 @@
           </button>
           <button
             class="btn-screen-primary dispatch-btn-dispatch"
+            :class="{ 'dispatch-btn-emergency': selectedAlarm?.alarmLevel === 'RED' }"
             :disabled="!selectedAlarm || selectedAlarm.status !== 'PENDING'"
             @click="dispatchAlarm"
           >
-            自动派单
+            {{ selectedAlarm?.alarmLevel === 'RED' ? '大屏应急' : '自动派单' }}
           </button>
         </div>
 
@@ -240,6 +241,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
+import { useRouter } from "vue-router"
 import {
   listAlarms,
   confirmAlarm as serviceConfirmAlarm,
@@ -255,6 +257,7 @@ const selectedAlarm = ref(null as AlarmListItem | null)
 const activeFilter  = ref("ALL")
 const actionMsg     = ref("")
 const currentTime   = ref("")
+const router        = useRouter()
 
 // ── 筛选选项 ──────────────────────────────────────────────────────────────────
 
@@ -327,6 +330,11 @@ function confirmAlarm() {
 function dispatchAlarm() {
   if (!selectedAlarm.value) return
   const alarm = selectedAlarm.value
+  // RED 级别告警走应急流程，不直接创建工单
+  if (alarm.alarmLevel === "RED") {
+    router.push("/screen/emergency")
+    return
+  }
   const result = serviceDispatchAlarm(alarm.id)
   if (result.ok) {
     loadAlarms()
@@ -628,6 +636,17 @@ const rootStyle = {
 .dispatch-btn-dispatch {
   background: linear-gradient(135deg, #1B6FE8, var(--risk-orange, #FF8A3D)) !important;
   border-color: rgba(255, 138, 61, 0.5) !important;
+}
+
+/* RED 告警时"大屏应急"按钮：红色高亮 */
+.dispatch-btn-emergency {
+  background: linear-gradient(135deg, #C0392B, #E74C3C) !important;
+  border-color: rgba(231, 76, 60, 0.8) !important;
+  animation: pulse-red 1.5s ease-in-out infinite;
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 8px rgba(231,76,60,0.5); }
+  50%       { box-shadow: 0 0 18px rgba(231,76,60,0.9); }
 }
 
 .dispatch-hint {
