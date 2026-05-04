@@ -384,7 +384,7 @@ onMounted(loadData)
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 .admin-card {
   background: var(--pc-bg-card, #fff);
