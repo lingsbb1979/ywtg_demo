@@ -221,10 +221,11 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
     update_time:   nowStr,
   }])
 
-  // ─ emergency_incident（若已有活跃事件则跳过，防止重复触发）─
-  const incidents = getTable<{ id?: number; status?: number }>("emergency_incident")
-  const hasActive = incidents.some((r) => Number(r.status) !== 40)
-  if (!hasActive) {
+  // ─ emergency_incident（每条 RED 告警各自创建一条应急事件）─
+  const incidents = getTable<{ id?: number; status?: number; alarm_record_id?: number }>("emergency_incident")
+  // 幂等：同一条告警已关联应急事件则跳过
+  const alreadyLinked = incidents.some((r) => Number(r.alarm_record_id) === Number(alarmId))
+  if (!alreadyLinked) {
     // 查找红色预案 id（EP-RED-TILT），降级为 1
     const plans = getTable<{ id?: number; level_code?: string }>("emergency_plan_config")
     const plan = plans.find((p) => p.level_code === "RED")
@@ -235,7 +236,7 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
       : 1
     setTable("emergency_incident", [...incidents, {
       id:                  nextIncidentId,
-      incident_no:         `EM-${nowStr.replace(/[-: ]/g, "").slice(0, 14)}`,
+      incident_no:         `EM-${nowStr.replace(/[-: ]/g, "").slice(0, 14)}-${nextIncidentId}`,
       source_type:         1,        // 系统预警自动触发
       building_id:         1012,
       level:               3,        // II级（重大）

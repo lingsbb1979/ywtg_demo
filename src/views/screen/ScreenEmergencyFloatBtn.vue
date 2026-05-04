@@ -120,13 +120,11 @@
                 </div>
               </template>
 
-              <!-- 尚未派遣应急 → 提示入口 -->
+              <!-- 尚未派遣应急 → 直接在大屏弹框内启动 -->
               <template v-else>
                 <div class="em-no-incident">
-                  <p class="em-no-incident__tip">此告警尚未创建应急事件，请前往告警派遣中心进行应急派遣。</p>
-                  <router-link to="/screen/alarm-dispatch" class="em-no-incident__btn" @click="open = false">
-                    前往告警派遣中心 →
-                  </router-link>
+                  <p class="em-no-incident__tip">此告警尚未创建应急事件，可立即在此启动应急流程。</p>
+                  <button class="em-no-incident__btn" @click="doStartEmergency">❤️ 立即启动应急</button>
                 </div>
               </template>
 
@@ -145,6 +143,7 @@ import {
   getAllActiveIncidents,
   getPlanNodes,
   confirmStep,
+  createIncidentFromAlarm,
   type EmergencyIncident,
   type EmergencyFlowNode,
 } from "@/services/emergencyService"
@@ -215,6 +214,14 @@ function doConfirm(node: EmergencyFlowNode) {
   if (!currentIncident.value) return
   confirmStep(currentIncident.value.id, node.node_code)
   loadData()
+}
+
+function doStartEmergency() {
+  if (!currentEntry.value) return
+  const result = createIncidentFromAlarm(currentEntry.value.alarm.id)
+  if (result.ok) {
+    loadData()
+  }
 }
 
 // ── 数据加载 ──────────────────────────────────────────────────────────────────
