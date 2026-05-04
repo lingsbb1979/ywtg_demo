@@ -13,15 +13,15 @@
   <!-- 红灯悬浮按钮（仅有活跃事件时显示） -->
   <Teleport to="body">
     <button
-      v-if="allActiveIncidents.length > 0"
+      v-if="activeRedAlarmCount > 0"
       class="em-float-btn"
-      :title="`${allActiveIncidents.length} 个活跃应急事件`"
+      :title="`${activeRedAlarmCount} 条红色告警未处理`"
       @click="open = true"
     >
       <span class="em-float-btn__ring" />
       <span class="em-float-btn__ring em-float-btn__ring--delay" />
       <span class="em-float-btn__icon">🚨</span>
-      <span class="em-float-btn__badge">{{ allActiveIncidents.length }}</span>
+      <span class="em-float-btn__badge">{{ activeRedAlarmCount }}</span>
     </button>
 
     <!-- 弹框遮罩 -->
@@ -34,7 +34,7 @@
             <div>
               <h2 class="em-modal__title">应急指挥中心</h2>
               <p class="em-modal__sub">
-                {{ allActiveIncidents.length }} 个活跃应急事件
+                {{ activeRedAlarmCount }} 条红色告警 · {{ allActiveIncidents.length }} 个应急事件处置中
               </p>
             </div>
             <button class="em-modal__close" @click="open = false">✕</button>
@@ -144,10 +144,11 @@ import {
 import { getTable } from "@/services/sqliteMirrorRepository"
 
 // ── 状态 ──────────────────────────────────────────────────────────────────────
-const open               = ref(false)
-const allActiveIncidents = ref<EmergencyIncident[]>([])
-const selectedId         = ref<number | null>(null)
-const spaces             = ref<{ id: number; name: string }[]>([])
+const open                = ref(false)
+const allActiveIncidents  = ref<EmergencyIncident[]>([])
+const activeRedAlarmCount = ref(0)
+const selectedId          = ref<number | null>(null)
+const spaces              = ref<{ id: number; name: string }[]>([])
 
 // ── 当前处置事件 ──────────────────────────────────────────────────────────────
 const currentIncident = computed<EmergencyIncident | null>(() => {
@@ -184,13 +185,18 @@ function doConfirm(node: EmergencyFlowNode) {
 function loadData() {
   spaces.value             = getTable<{ id: number; name: string }>("iot_space")
   allActiveIncidents.value = getAllActiveIncidents()
+  // 未关闭的 RED 告警数（alarm_level=RED 且 status != CLOSED）
+  const alarms = getTable<{ alarm_level: string | null; status: string | null }>("alarm_record")
+  activeRedAlarmCount.value = alarms.filter(
+    r => r.alarm_level === "RED" && r.status !== "CLOSED"
+  ).length
   // 若已选事件已结案，重置选择
   if (selectedId.value !== null) {
     const still = allActiveIncidents.value.find(i => Number(i.id) === selectedId.value)
     if (!still) {
       selectedId.value = null
       // 若所有事件均已结案，关闭弹框
-      if (allActiveIncidents.value.length === 0) open.value = false
+      if (activeRedAlarmCount.value === 0) open.value = false
     }
   }
 }
