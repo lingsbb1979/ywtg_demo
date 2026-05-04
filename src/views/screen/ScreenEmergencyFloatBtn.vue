@@ -1,16 +1,10 @@
 <template>
   <!--
     大屏通用组件：应急红灯悬浮按钮 + 弹框
-    ────────────────────────────────────────
-    · 有活跃应急事件（未 H5 结案）时，右上角显示红色闪烁灯 + 数量徽章
-    · 点击红灯 → 弹出应急指挥弹框（可关闭）
-    · 弹框内容与 /screen/emergency 相同（多事件先选择，单事件直接打勾）
-    · 全部 H5 结案后（status=40）红灯自动消失
-    ────────────────────────────────────────
-    用法：在任意大屏页面根节点末尾插入 <ScreenEmergencyFloatBtn />
+    · badge = 未关闭的 RED 告警数
+    · 弹框以告警为单位展示，已派遣应急的显示5步流程，未派遣的提示去派遣
   -->
 
-  <!-- 红灯悬浮按钮（仅有活跃事件时显示） -->
   <Teleport to="body">
     <button
       v-if="activeRedAlarmCount > 0"
@@ -24,109 +18,122 @@
       <span class="em-float-btn__badge">{{ activeRedAlarmCount }}</span>
     </button>
 
-    <!-- 弹框遮罩 -->
     <Transition name="em-modal">
       <div v-if="open" class="em-modal-overlay" @click.self="open = false">
         <div class="em-modal screen-bg">
-          <!-- 弹框顶栏 -->
+          <!-- 顶栏 -->
           <div class="em-modal__header">
             <span class="em-modal__header-icon">🚨</span>
             <div>
               <h2 class="em-modal__title">应急指挥中心</h2>
-              <p class="em-modal__sub">
-                {{ activeRedAlarmCount }} 条红色告警 · {{ allActiveIncidents.length }} 个应急事件处置中
-              </p>
+              <p class="em-modal__sub">{{ activeRedAlarmCount }} 条红色告警待处置</p>
             </div>
             <button class="em-modal__close" @click="open = false">✕</button>
           </div>
 
-          <!-- 弹框正文 -->
           <div class="em-modal__body">
 
-            <!-- A. 多个事件 → 选择列表 -->
-            <template v-if="allActiveIncidents.length > 1 && selectedId === null">
-              <p class="em-modal__hint">检测到 {{ allActiveIncidents.length }} 个红色应急事件，请选择处置：</p>
+            <!-- A. 多条告警 → 选择列表 -->
+            <template v-if="alarmEntries.length > 1 && selectedAlarmId === null">
+              <p class="em-modal__hint">检测到 {{ alarmEntries.length }} 条红色告警，请选择处置：</p>
               <div class="em-selector-list">
                 <div
-                  v-for="inc in allActiveIncidents"
-                  :key="inc.id"
+                  v-for="entry in alarmEntries"
+                  :key="entry.alarm.id"
                   class="em-selector-item screen-glass-card"
-                  @click="selectedId = inc.id"
+                  @click="selectedAlarmId = entry.alarm.id"
                 >
                   <span class="em-selector-item__badge">RED</span>
                   <div class="em-selector-item__info">
-                    <span class="em-selector-item__building">{{ buildingName(inc.building_id) }}</span>
-                    <span class="em-selector-item__no">{{ inc.incident_no }} · {{ inc.trigger_time }}</span>
-                    <span class="em-selector-item__prog">已完成 {{ inc.current_step }} / {{ getPlanNodes(inc.plan_id).length }} 步</span>
+                    <span class="em-selector-item__building">{{ buildingName(entry.alarm.building_id) }}</span>
+                    <span class="em-selector-item__no">{{ entry.alarm.alarm_id }} · {{ entry.alarm.trigger_time }}</span>
+                    <span class="em-selector-item__prog" :style="entry.incident ? 'color:#FCD34D' : 'color:rgba(255,255,255,0.4)'">
+                      {{ entry.incident
+                        ? `应急进行中 ${entry.incident.current_step}/${getPlanNodes(entry.incident.plan_id).length} 步`
+                        : '尚未派遣应急' }}
+                    </span>
                   </div>
-                  <span class="em-selector-item__arrow">开始处置 →</span>
+                  <span class="em-selector-item__arrow">处置 →</span>
                 </div>
               </div>
             </template>
 
-            <!-- B. 单个事件 or 已选 → 步骤面板 -->
-            <template v-else-if="currentIncident">
-              <!-- 多事件时返回按钮 -->
-              <button v-if="allActiveIncidents.length > 1" class="em-back-btn" @click="selectedId = null">← 返回事件列表</button>
+            <!-- B. 单条 or 已选 → 详情 -->
+            <template v-else-if="currentEntry">
+              <!-- 返回按钮 -->
+              <button v-if="alarmEntries.length > 1" class="em-back-btn" @click="selectedAlarmId = null">← 返回告警列表</button>
 
-              <!-- 事件信息 -->
+              <!-- 告警头部 -->
               <div class="em-incident-header">
                 <span class="em-incident-header__icon">!</span>
                 <div>
-                  <div class="em-incident-header__title">红色预警 — 应急指挥流程</div>
+                  <div class="em-incident-header__title">红色预警 — {{ currentEntry.alarm.alarm_title ?? currentEntry.alarm.alarm_id }}</div>
                   <div class="em-incident-header__sub">
-                    {{ buildingName(currentIncident.building_id) }} · 事件编号 {{ currentIncident.incident_no }}
-                    · 触发时间 {{ currentIncident.trigger_time }}
+                    {{ buildingName(currentEntry.alarm.building_id) }} · {{ currentEntry.alarm.alarm_id }}
+                    · 触发 {{ currentEntry.alarm.trigger_time }}
                   </div>
                 </div>
               </div>
 
-              <!-- 步骤列表 -->
-              <div class="em-steps">
-                <div
-                  v-for="(node, idx) in planNodes"
-                  :key="node.id"
-                  class="em-step"
-                  :class="{
-                    'em-step--done':    idx < currentIncident.current_step,
-                    'em-step--current': idx === currentIncident.current_step,
-                    'em-step--locked':  idx > currentIncident.current_step,
-                  }"
-                >
-                  <div class="em-step__no">
-                    <template v-if="idx < currentIncident.current_step">✓</template>
-                    <template v-else>{{ idx + 1 }}</template>
-                  </div>
-                  <div class="em-step__body">
-                    <span class="em-step__name">{{ node.node_name }}</span>
-                    <span v-if="node.limit_minutes" class="em-step__limit">时限 {{ node.limit_minutes }} 分钟</span>
-                    <!-- 最后步骤完成 → H5 结案链接 -->
-                    <template v-if="idx === planNodes.length - 1 && idx < currentIncident.current_step">
-                      <div class="em-step__h5">
-                        <span style="color:rgba(255,255,255,0.55);font-size:12px">请外勤打开手机：</span>
-                        <a :href="h5Url" target="_blank" class="em-step__h5-btn">打开 H5 结案页 →</a>
-                      </div>
-                    </template>
-                  </div>
-                  <div class="em-step__action">
-                    <button
-                      v-if="idx === currentIncident.current_step"
-                      class="em-step__confirm"
-                      @click="doConfirm(node)"
-                    >✓ 确认</button>
-                    <span v-else-if="idx < currentIncident.current_step" class="em-step__done-tag">已完成</span>
+              <!-- 已有应急事件 → 5步流程 -->
+              <template v-if="currentIncident">
+                <div class="em-incident-header__sub" style="margin-bottom:12px;color:rgba(255,200,0,0.8)">
+                  事件编号 {{ currentIncident.incident_no }}
+                </div>
+                <div class="em-steps">
+                  <div
+                    v-for="(node, idx) in planNodes"
+                    :key="node.id"
+                    class="em-step"
+                    :class="{
+                      'em-step--done':    idx < currentIncident.current_step,
+                      'em-step--current': idx === currentIncident.current_step,
+                      'em-step--locked':  idx > currentIncident.current_step,
+                    }"
+                  >
+                    <div class="em-step__no">
+                      <template v-if="idx < currentIncident.current_step">✓</template>
+                      <template v-else>{{ idx + 1 }}</template>
+                    </div>
+                    <div class="em-step__body">
+                      <span class="em-step__name">{{ node.node_name }}</span>
+                      <span v-if="node.limit_minutes" class="em-step__limit">时限 {{ node.limit_minutes }} 分钟</span>
+                      <template v-if="idx === planNodes.length - 1 && idx < currentIncident.current_step">
+                        <div class="em-step__h5">
+                          <span style="color:rgba(255,255,255,0.55);font-size:12px">请外勤打开手机：</span>
+                          <a :href="h5Url" target="_blank" class="em-step__h5-btn">打开 H5 结案页 →</a>
+                        </div>
+                      </template>
+                    </div>
+                    <div class="em-step__action">
+                      <button
+                        v-if="idx === currentIncident.current_step"
+                        class="em-step__confirm"
+                        @click="doConfirm(node)"
+                      >✓ 确认</button>
+                      <span v-else-if="idx < currentIncident.current_step" class="em-step__done-tag">已完成</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+                <div v-if="currentIncident.current_step >= planNodes.length" class="em-done-footer">
+                  ✅ 所有步骤已完成，等待外勤 H5 端选择结案方式…
+                </div>
+              </template>
 
-              <!-- 全部完成提示 -->
-              <div v-if="currentIncident.current_step >= planNodes.length" class="em-done-footer">
-                ✅ 所有步骤已完成，等待外勤 H5 端选择结案方式…
-              </div>
+              <!-- 尚未派遣应急 → 提示入口 -->
+              <template v-else>
+                <div class="em-no-incident">
+                  <p class="em-no-incident__tip">此告警尚未创建应急事件，请前往告警派遣中心进行应急派遣。</p>
+                  <router-link to="/screen/alarm-dispatch" class="em-no-incident__btn" @click="open = false">
+                    前往告警派遣中心 →
+                  </router-link>
+                </div>
+              </template>
+
             </template>
 
           </div><!-- /body -->
-        </div><!-- /modal -->
+        </div>
       </div>
     </Transition>
   </Teleport>
@@ -143,20 +150,49 @@ import {
 } from "@/services/emergencyService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 
+interface RawAlarm {
+  id: number
+  alarm_id: string | null
+  building_id: number | null
+  alarm_title: string | null
+  alarm_level: string | null
+  status: string | null
+  trigger_time: string | null
+}
+
+interface AlarmEntry {
+  alarm: RawAlarm
+  incident: EmergencyIncident | null
+}
+
 // ── 状态 ──────────────────────────────────────────────────────────────────────
 const open                = ref(false)
 const allActiveIncidents  = ref<EmergencyIncident[]>([])
 const activeRedAlarmCount = ref(0)
-const selectedId          = ref<number | null>(null)
+const rawRedAlarms        = ref<RawAlarm[]>([])
+const selectedAlarmId     = ref<number | null>(null)
 const spaces              = ref<{ id: number; name: string }[]>([])
 
-// ── 当前处置事件 ──────────────────────────────────────────────────────────────
-const currentIncident = computed<EmergencyIncident | null>(() => {
-  if (allActiveIncidents.value.length === 1) return allActiveIncidents.value[0]
-  if (selectedId.value !== null)
-    return allActiveIncidents.value.find(i => Number(i.id) === selectedId.value) ?? null
+// ── 以告警为单位，合并关联的应急事件 ─────────────────────────────────────────
+const alarmEntries = computed<AlarmEntry[]>(() =>
+  rawRedAlarms.value.map(alarm => ({
+    alarm,
+    incident: allActiveIncidents.value.find(
+      inc => Number(inc.alarm_record_id) === Number(alarm.id)
+    ) ?? null,
+  }))
+)
+
+const currentEntry = computed<AlarmEntry | null>(() => {
+  if (alarmEntries.value.length === 1) return alarmEntries.value[0]
+  if (selectedAlarmId.value !== null)
+    return alarmEntries.value.find(e => e.alarm.id === selectedAlarmId.value) ?? null
   return null
 })
+
+const currentIncident = computed<EmergencyIncident | null>(
+  () => currentEntry.value?.incident ?? null
+)
 
 const planNodes = computed<EmergencyFlowNode[]>(() =>
   currentIncident.value ? getPlanNodes(currentIncident.value.plan_id) : []
@@ -181,21 +217,21 @@ function doConfirm(node: EmergencyFlowNode) {
   loadData()
 }
 
-// ── 数据加载（每 5 秒刷新） ────────────────────────────────────────────────────
+// ── 数据加载 ──────────────────────────────────────────────────────────────────
 function loadData() {
-  spaces.value             = getTable<{ id: number; name: string }>("iot_space")
+  spaces.value            = getTable<{ id: number; name: string }>("iot_space")
   allActiveIncidents.value = getAllActiveIncidents()
-  // 未关闭的 RED 告警数（alarm_level=RED 且 status != CLOSED）
-  const alarms = getTable<{ alarm_level: string | null; status: string | null }>("alarm_record")
-  activeRedAlarmCount.value = alarms.filter(
+  const allAlarms = getTable<RawAlarm>("alarm_record")
+  // 未关闭的 RED 告警
+  rawRedAlarms.value = allAlarms.filter(
     r => r.alarm_level === "RED" && r.status !== "CLOSED"
-  ).length
-  // 若已选事件已结案，重置选择
-  if (selectedId.value !== null) {
-    const still = allActiveIncidents.value.find(i => Number(i.id) === selectedId.value)
+  )
+  activeRedAlarmCount.value = rawRedAlarms.value.length
+  // 若所选告警已关闭，重置
+  if (selectedAlarmId.value !== null) {
+    const still = rawRedAlarms.value.find(a => a.id === selectedAlarmId.value)
     if (!still) {
-      selectedId.value = null
-      // 若所有事件均已结案，关闭弹框
+      selectedAlarmId.value = null
       if (activeRedAlarmCount.value === 0) open.value = false
     }
   }
@@ -432,6 +468,33 @@ onUnmounted(() => clearInterval(timer))
   color: #10B981;
   text-align: center;
 }
+
+/* ===== 未派遣提示 ===== */
+.em-no-incident {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 16px;
+}
+.em-no-incident__tip {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  margin: 0;
+}
+.em-no-incident__btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 6px;
+  background: rgba(239,68,68,0.18);
+  border: 1px solid rgba(239,68,68,0.45);
+  color: #FCA5A5;
+  font-size: 13px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.em-no-incident__btn:hover { background: rgba(239,68,68,0.35); }
 
 /* ===== 弹框动画 ===== */
 .em-modal-enter-active, .em-modal-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
