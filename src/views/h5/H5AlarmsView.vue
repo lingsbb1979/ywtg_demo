@@ -366,17 +366,16 @@ function onConfirmAlarm() {
 function onDispatchAlarm() {
   if (!currentAlarm.value) return
   const alarm = currentAlarm.value
+  // RED 级别告警→显示提示，不跳转（手机端无法操作大屏）
+  if (alarm.alarmLevel === "RED") {
+    showMsg("请去大屏打开应急页面处理", "success")
+    return
+  }
   const result = serviceDispatchAlarm(alarm.id)
   if (result.ok) {
     dispatchedOrderNo.value = result.orderNo ?? ""
     loadData()
-    // RED 级别告警→关闭弹层并跳转大屏应急指挥页
-    if (alarm.alarmLevel === "RED") {
-      closeSheet()
-      router.push("/screen/emergency")
-    } else {
-      showMsg(`✓ 派单成功，工单号：${result.orderNo}`, "success")
-    }
+    showMsg(`✓ 派单成功，工单号：${result.orderNo}`, "success")
   } else {
     showMsg(`✗ ${result.error}`, "error")
   }
