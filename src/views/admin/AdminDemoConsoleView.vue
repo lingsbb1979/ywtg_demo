@@ -93,7 +93,7 @@
           <div class="admin-scenario-card__info">
             <div class="admin-scenario-card__title">全量重置</div>
             <div class="admin-scenario-card__detail">
-              重置后：23 栋建筑 · 69 个监测点位 · 483 条基线遥测 · 活跃告警 0 条 · 在处工单 0 条
+              重置后：23 栋建筑（佳木斯真实坐标）· 69 个监测点位 · 483 条基线遥测 · 活跃告警 0 条 · 在处工单 0 条
             </div>
             <div class="admin-scenario-card__warning">
               ⚠️ 重置演示数据（全部清空重建），此操作不可撤销
@@ -106,6 +106,48 @@
           >
             {{ loading === 'reset' ? '重置中...' : '⚠ 重置演示数据' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 高德地图 Key 配置（zone:map-key）-->
+    <div class="pc-card admin-card admin-console-section" data-zone="map-key">
+      <div class="admin-console-section__header">
+        <span class="admin-console-section__title">🗺️ 高德地图 Key 配置</span>
+        <span class="admin-console-section__desc">配置后刷新大屏页面即可显示真实高德地图（保存至 localStorage）</span>
+      </div>
+      <div class="admin-console-section__body admin-map-key-form">
+        <div class="admin-map-key-row">
+          <label class="admin-map-key-label">JS API Key</label>
+          <input
+            v-model="amapKeyInput"
+            class="admin-map-key-input"
+            type="text"
+            placeholder="请输入高德地图 JavaScript API Key（lbs.amap.com 申请）"
+            autocomplete="off"
+          />
+        </div>
+        <div class="admin-map-key-row">
+          <label class="admin-map-key-label">安全密钥<small>（可选）</small></label>
+          <input
+            v-model="amapSecurityInput"
+            class="admin-map-key-input"
+            type="text"
+            placeholder="2021年12月后创建的 Key 需填写安全密钥"
+            autocomplete="off"
+          />
+        </div>
+        <div class="admin-map-key-actions">
+          <div class="admin-map-key-hint">
+            <span v-if="amapKeyStored" class="admin-map-key-status admin-map-key-status--ok">✓ 已配置 Key</span>
+            <span v-else class="admin-map-key-status admin-map-key-status--empty">⚠ 未配置，大屏将显示建筑列表兜底模式</span>
+          </div>
+          <button class="btn-pc-primary btn-sm" @click="saveAmapKey">保存并生效（需刷新大屏）</button>
+          <button class="btn-pc-secondary btn-sm" @click="clearAmapKey" :disabled="!amapKeyStored">清除 Key</button>
+        </div>
+        <div class="admin-map-key-tip">
+          注册地址：<a href="https://lbs.amap.com" target="_blank" rel="noopener">lbs.amap.com</a>
+          · 创建「Web端(JS API)」类型 Key · 域名白名单填写 <code>localhost</code>（开发）或实际部署域名
         </div>
       </div>
     </div>
@@ -410,6 +452,33 @@ interface LogEntry {
   type: "info" | "success" | "error"
 }
 const actionLog = ref([] as LogEntry[])
+
+// ── 高德地图 Key 配置 ──────────────────────────────────────────────────────────
+const AMAP_KEY_LS           = "AMAP_KEY"
+const AMAP_SECURITY_LS      = "AMAP_SECURITY_CODE"
+const amapKeyInput          = ref(localStorage.getItem(AMAP_KEY_LS) ?? "")
+const amapSecurityInput     = ref(localStorage.getItem(AMAP_SECURITY_LS) ?? "")
+const amapKeyStored         = ref(!!(localStorage.getItem(AMAP_KEY_LS)))
+
+function saveAmapKey() {
+  const key = amapKeyInput.value.trim()
+  const sec  = amapSecurityInput.value.trim()
+  if (!key) { log("⚠ 请输入高德地图 Key", "error"); return }
+  localStorage.setItem(AMAP_KEY_LS, key)
+  if (sec) localStorage.setItem(AMAP_SECURITY_LS, sec)
+  else localStorage.removeItem(AMAP_SECURITY_LS)
+  amapKeyStored.value = true
+  log("✓ 高德地图 Key 已保存，请刷新大屏页面（/screen/home）即可显示真实地图", "success")
+}
+
+function clearAmapKey() {
+  localStorage.removeItem(AMAP_KEY_LS)
+  localStorage.removeItem(AMAP_SECURITY_LS)
+  amapKeyInput.value = ""
+  amapSecurityInput.value = ""
+  amapKeyStored.value = false
+  log("✓ 高德地图 Key 已清除，大屏将恢复建筑列表模式", "info")
+}
 
 // ── 辅助：追加日志 ─────────────────────────────────────────────────────────────
 
@@ -788,6 +857,81 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* ===== 高德地图 Key 配置 ===== */
+.admin-map-key-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-map-key-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-map-key-label {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pc-text-h1, #1C2B4A);
+}
+.admin-map-key-label small {
+  font-weight: 400;
+  color: var(--pc-text-muted, #64748B);
+  margin-left: 2px;
+}
+.admin-map-key-input {
+  flex: 1;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--pc-border, #E2E8F0);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 13px;
+  font-family: monospace;
+  color: var(--pc-text-body, #374151);
+  background: #fff;
+  outline: none;
+  transition: border-color 150ms;
+}
+.admin-map-key-input:focus {
+  border-color: var(--pc-primary, #1B6FE8);
+  box-shadow: 0 0 0 2px rgba(27,111,232,0.1);
+}
+.admin-map-key-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+.admin-map-key-hint {
+  flex: 1;
+}
+.admin-map-key-status {
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-map-key-status--ok    { color: #059669; }
+.admin-map-key-status--empty { color: #D97706; }
+.admin-map-key-tip {
+  font-size: 12px;
+  color: var(--pc-text-muted, #64748B);
+  padding: 8px 12px;
+  background: #F8FAFC;
+  border-radius: 6px;
+  border-left: 3px solid var(--pc-primary, #1B6FE8);
+}
+.admin-map-key-tip a {
+  color: var(--pc-primary, #1B6FE8);
+  text-decoration: none;
+}
+.admin-map-key-tip code {
+  font-family: monospace;
+  background: #E2E8F0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
 }
 
 /* ===== 快捷跳转 ===== */

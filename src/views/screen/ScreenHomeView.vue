@@ -162,25 +162,32 @@
           <div class="screen-map__title-bar">
             <span class="screen-panel__title-bar" />
             佳木斯市历史建筑分布图
+            <span class="screen-map__title-sub">高德地图 · 佳木斯市区</span>
             <span
               v-if="mapError"
               class="screen-map__fallback-badge"
               data-testid="map-fallback-toggle"
               title="地图加载失败，已切换到建筑列表模式"
             >列表模式</span>
+            <span v-if="!mapError && amapLoaded" class="screen-map__live-badge">实时</span>
           </div>
-          <div class="screen-map__mock-layer" aria-hidden="true">
-            <span class="screen-map__district screen-map__district--a" />
-            <span class="screen-map__district screen-map__district--b" />
-            <span class="screen-map__district screen-map__district--c" />
-            <span class="screen-map__district screen-map__district--d" />
-            <span class="screen-map__road screen-map__road--main" />
-            <span class="screen-map__road screen-map__road--north" />
-            <span class="screen-map__road screen-map__road--south" />
-            <span class="screen-map__scanline" />
+
+          <!-- 高德地图真实地图容器 -->
+          <div
+            ref="amapContainerRef"
+            class="screen-map__amap-layer"
+            :class="{ 'screen-map__amap-layer--hidden': mapError }"
+            aria-label="高德地图 — 佳木斯历史建筑分布"
+          />
+
+          <!-- 地图 Key 未配置提示（仅在 !mapError 但地图无法初始化时显示） -->
+          <div v-if="!mapError && !amapLoaded" class="screen-map__loading">
+            <span class="screen-map__loading-dot" />
+            正在加载高德地图…
           </div>
+
           <!-- 地图失败降级：建筑列表模式 -->
-          <div class="screen-map__fallback-list">
+          <div v-show="mapError" class="screen-map__fallback-list">
             <div
               v-for="(pt, index) in mapPoints"
               :key="pt.id"
@@ -195,7 +202,7 @@
               <span class="screen-map__point-level">{{ pt.summary }}</span>
             </div>
           </div>
-          <div v-if="mapPoints.length === 0" class="screen-map__empty">
+          <div v-if="mapPoints.length === 0 && mapError" class="screen-map__empty">
             暂无建筑点位数据，请先初始化演示数据
           </div>
 
@@ -495,6 +502,53 @@ import { getBuildingIotSummary, type BuildingIotSummary } from "@/services/iotDe
 
 use([LineChart, PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
+// ── 高德地图 Key 配置 ──────────────────────────────────────────────────────────
+// 优先级：管理控制台 localStorage 设置 > .env.local 环境变量
+// 注册地址：https://lbs.amap.com（创建「Web端(JS API)」类型 Key）
+const AMAP_KEY           = (localStorage.getItem("AMAP_KEY")           || import.meta.env.VITE_AMAP_KEY           || "") as string
+const AMAP_SECURITY_CODE = (localStorage.getItem("AMAP_SECURITY_CODE") || import.meta.env.VITE_AMAP_SECURITY_CODE || "") as string
+
+// 高德地图风险颜色映射（与大屏风险色系保持一致）
+const AMAP_FILL_COLORS: Record<string, string> = {
+  red:    "#FF4E45",
+  orange: "#FFB03A",
+  yellow: "#FCD34D",
+  green:  "#20E6A4",
+}
+const AMAP_STROKE_COLORS: Record<string, string> = {
+  red:    "#FF8A85",
+  orange: "#FFD080",
+  yellow: "#FDE68A",
+  green:  "#6BEACC",
+}
+
+declare global {
+  interface Window {
+    AMap?: Record<string, unknown> & {
+      Map: new (container: HTMLElement, opts: Record<string, unknown>) => AMapInstance
+      CircleMarker: new (opts: Record<string, unknown>) => AMapMarker
+      LngLat: new (lng: number, lat: number) => unknown
+      InfoWindow: new (opts: Record<string, unknown>) => AMapInfoWindow
+      Scale: new (opts?: Record<string, unknown>) => void
+      plugin: (plugins: string[], callback: () => void) => void
+    }
+    _AMapSecurityConfig?: { securityJsCode: string }
+    __AMapAPIBootstrap?: () => void
+  }
+}
+interface AMapInstance {
+  setFitView: (markers: AMapMarker[]) => void
+  destroy: () => void
+}
+interface AMapMarker {
+  setMap: (map: AMapInstance | null) => void
+  on: (event: string, handler: () => void) => void
+}
+interface AMapInfoWindow {
+  open: (map: AMapInstance, position: unknown) => void
+  close: () => void
+}
+
 const screenIcons = {
   shield: "/static/images/screen-icons/shield-check.svg",
   building: "/static/images/screen-icons/building-2.svg",
@@ -560,10 +614,103 @@ function screenDotClass(pt: IotPointSummary, v: number | null): string {
 
 /**
  * T15.118 — 地图失败列表兜底模式。
- * Demo 中无真实地图组件，始终使用建筑列表展示；
- * 若未来接入真实地图且加载失败，可将 mapError 置 true 切换兜底。
+ * 高德地图 Key 未配置或加载失败时，切换到建筑列表展示。
  */
 const mapError = ref(false)
+
+// ── 高德地图实例 ──────────────────────────────────────────────────────────────
+const amapContainerRef = ref<HTMLElement | null>(null)
+const amapLoaded       = ref(false)
+let   amapInstance: AMapInstance | null = null
+let   amapMarkers: AMapMarker[]         = []
+let   amapInfoWindow: AMapInfoWindow | null = null
+
+/** 动态加载高德地图 JS API 脚本 */
+function loadAmapScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.AMap) { resolve(); return }
+    if (AMAP_SECURITY_CODE) {
+      window._AMapSecurityConfig = { securityJsCode: AMAP_SECURITY_CODE }
+    }
+    window.__AMapAPIBootstrap = resolve
+    const script = document.createElement("script")
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}&callback=__AMapAPIBootstrap`
+    script.onerror = () => reject(new Error("高德地图脚本加载失败"))
+    document.head.appendChild(script)
+  })
+}
+
+/** 初始化高德地图 */
+async function initAmapMap(): Promise<void> {
+  if (!AMAP_KEY) {
+    // 未配置 Key → 列表兜底
+    mapError.value = true
+    return
+  }
+  try {
+    await loadAmapScript()
+    if (!amapContainerRef.value || !window.AMap) return
+
+    amapInstance = new window.AMap.Map(amapContainerRef.value, {
+      zoom:         14,
+      center:       [130.3620, 46.8221],   // 佳木斯市中心
+      mapStyle:     "amap://styles/dark",  // 深色风格，适配大屏 UI
+      features:     ["bg", "road", "point"],
+      viewMode:     "2D",
+      resizeEnable: true,
+      showLabel:    true,
+    })
+
+    amapLoaded.value = true
+    addAmapMarkers()
+
+    // 自适应显示所有建筑点位
+    const validMarkers = amapMarkers.filter(Boolean)
+    if (validMarkers.length > 0) {
+      amapInstance.setFitView(validMarkers)
+    }
+  } catch (err) {
+    console.warn("[ScreenHome] 高德地图初始化失败，已切换到列表模式", err)
+    mapError.value = true
+  }
+}
+
+/** 添加/刷新建筑点位标记 */
+function addAmapMarkers(): void {
+  if (!amapInstance || !window.AMap) return
+
+  // 清除旧标记
+  for (const m of amapMarkers) m.setMap(null)
+  amapMarkers = []
+  if (amapInfoWindow) { amapInfoWindow.close(); amapInfoWindow = null }
+
+  for (const pt of mapPoints.value) {
+    if (pt.longitude === null || pt.latitude === null) continue
+
+    const fillColor   = AMAP_FILL_COLORS[pt.color]   ?? "#20E6A4"
+    const strokeColor = AMAP_STROKE_COLORS[pt.color] ?? "#6BEACC"
+    const zIndex      = pt.color === "red" ? 200 : pt.color === "orange" ? 150 : pt.color === "yellow" ? 100 : 50
+
+    const marker = new window.AMap.CircleMarker({
+      center:        new window.AMap.LngLat(pt.longitude, pt.latitude),
+      radius:        11,
+      strokeColor,
+      strokeWeight:  2,
+      strokeOpacity: 0.95,
+      fillColor,
+      fillOpacity:   0.88,
+      zIndex,
+      cursor:        "pointer",
+    })
+
+    marker.on("click", () => {
+      selectedPoint.value = pt
+    })
+
+    marker.setMap(amapInstance)
+    amapMarkers.push(marker)
+  }
+}
 
 // ── 应急指挥状态 ─────────────────────────────────────────────────────────────
 const activeIncident  = ref<EmergencyIncident | null>(null)
@@ -946,6 +1093,8 @@ function loadData() {
   updateTrendChart()
   updateRiskChart()
   updateHazardTypeChart()
+  // 高德地图标记同步刷新（数据更新后更新点位颜色）
+  if (amapLoaded.value) addAmapMarkers()
 }
 
 let timer: ReturnType<typeof setInterval>
@@ -956,6 +1105,8 @@ onMounted(() => {
     initRiskChart()
     initHazardTypeChart()
     window.addEventListener("resize", resizeAllCharts)
+    // 初始化高德地图（异步，失败时自动降级）
+    initAmapMap()
   })
   timer = setInterval(loadData, 5_000)  // 缩短到 5s，确保 H5 结案后大屏及时响应
 })
@@ -971,6 +1122,11 @@ onUnmounted(() => {
   riskChart = null
   hazardTypeChart?.dispose()
   hazardTypeChart = null
+  // 销毁高德地图实例
+  if (amapInstance) {
+    amapInstance.destroy()
+    amapInstance = null
+  }
 })
 </script>
 
@@ -1232,7 +1388,63 @@ onUnmounted(() => {
   margin-bottom: 8px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--screen-border-line, rgba(255,255,255,0.08));
+  flex-shrink: 0;
 }
+.screen-map__title-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--screen-text-muted, rgba(255,255,255,0.45));
+  margin-left: 4px;
+}
+.screen-map__live-badge {
+  margin-left: auto;
+  font-size: 11px;
+  color: #20E6A4;
+  padding: 1px 6px;
+  border: 1px solid rgba(32,230,164,0.4);
+  border-radius: 10px;
+  animation: live-blink 2s ease-in-out infinite;
+}
+@keyframes live-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+/* 高德地图真实容器 */
+.screen-map__amap-layer {
+  flex: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+.screen-map__amap-layer--hidden {
+  display: none;
+}
+/* 加载中提示 */
+.screen-map__loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--screen-text-muted, rgba(255,255,255,0.45));
+  font-size: 13px;
+}
+.screen-map__loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--screen-cyan, #00D4FF);
+  animation: loading-pulse 1.2s ease-in-out infinite;
+}
+@keyframes loading-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+/* 高德地图 logo 和版权区域样式覆盖（使其适配深色大屏）*/
+:deep(.amap-logo) { opacity: 0.5 !important; }
+:deep(.amap-copyright) { opacity: 0.5 !important; color: rgba(255,255,255,0.4) !important; }
+:deep(.amap-controls) { opacity: 0.7; }
 .screen-map__fallback-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
