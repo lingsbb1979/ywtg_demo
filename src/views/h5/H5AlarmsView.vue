@@ -5,7 +5,7 @@
     流程完整复用 PC AdminAlarmsView 的接口逻辑：
       listAlarms()   → 列表
       getAlarm(id)   → 详情 + 处置建议
-      confirmAlarm() → 确认告警（ACTIVE → PENDING）
+      confirmAlarm() → 确认告警（PENDING → CONFIRMED）
       dispatchAlarm() → 派单（生成工单，状态→DISPATCHED）
     ─────────────────────────────────────────────────────────
     布局：

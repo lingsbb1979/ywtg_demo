@@ -308,7 +308,7 @@
           <div v-if="currentAlarm" class="admin-drawer__footer">
             <button
               class="btn-pc-secondary"
-              :disabled="!currentAlarm || currentAlarm.status !== 'ACTIVE'"
+              :disabled="!currentAlarm || currentAlarm.status !== 'PENDING'"
               @click="confirmAlarm"
             >
               确认告警
