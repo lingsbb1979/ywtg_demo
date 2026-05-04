@@ -22,17 +22,48 @@
       </div>
     </header>
 
-    <!-- ① 有活跃事件：5 步应急指挥面板 -->
-    <main v-if="activeIncident" class="screen-emergency__main screen-emergency__main--active">
+    <!-- ① 多个活跃事件：先选择处置哪一个 -->
+    <main v-if="allActiveIncidents.length > 1 && currentIncident === null" class="screen-emergency__main screen-emergency__main--selector">
+      <div class="screen-glass-card screen-em-selector">
+        <div class="screen-em-selector__header">
+          <span class="screen-em-panel__icon" style="font-size:26px;width:40px;height:40px">!</span>
+          <div>
+            <h2 class="screen-em-panel__title" style="font-size:20px">红色预警 — 请选择处置事件</h2>
+            <p class="screen-em-panel__sub">检测到 {{ allActiveIncidents.length }} 个活跃应急事件，请选择进行指挥处置：</p>
+          </div>
+        </div>
+        <div class="screen-em-selector__list">
+          <div
+            v-for="inc in allActiveIncidents"
+            :key="inc.id"
+            class="screen-glass-card screen-em-selector__item"
+            @click="selectedIncidentId = inc.id"
+          >
+            <span class="screen-em-selector__badge">RED</span>
+            <div class="screen-em-selector__info">
+              <span class="screen-em-selector__building">{{ getBuilding(inc.building_id) }}</span>
+              <span class="screen-em-selector__no">事件编号 {{ inc.incident_no }} · 触发 {{ inc.trigger_time }}</span>
+              <span class="screen-em-selector__progress">已完成 {{ inc.current_step }} / {{ planNodesCount }} 步</span>
+            </div>
+            <span class="screen-em-selector__arrow">开始处置 →</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ② 单个或已选事件：5 步应急指挥面板 -->
+    <main v-else-if="currentIncident" class="screen-emergency__main screen-emergency__main--active">
       <div class="screen-glass-card screen-em-panel">
+        <!-- 多事件时显示返回选择按钮 -->
+        <button v-if="allActiveIncidents.length > 1" class="screen-em-back-btn" @click="selectedIncidentId = null">← 返回事件选择</button>
         <!-- 面板标题 -->
         <div class="screen-em-panel__header">
           <span class="screen-em-panel__icon">!</span>
           <div>
             <h2 class="screen-em-panel__title">红色预警 — 应急指挥流程</h2>
             <p class="screen-em-panel__sub">
-              {{ incidentBuilding }} · 倾斜超限 · 事件编号 {{ activeIncident.incident_no }}
-              · 触发时间 {{ activeIncident.trigger_time }}
+              {{ incidentBuilding }} · 倾斜超限 · 事件编号 {{ currentIncident.incident_no }}
+              · 触发时间 {{ currentIncident.trigger_time }}
             </p>
           </div>
         </div>
@@ -44,13 +75,13 @@
             :key="node.id"
             class="screen-em-step"
             :class="{
-              'screen-em-step--done':    idx < activeIncident.current_step,
-              'screen-em-step--current': idx === activeIncident.current_step,
-              'screen-em-step--locked':  idx > activeIncident.current_step,
+              'screen-em-step--done':    idx < currentIncident.current_step,
+              'screen-em-step--current': idx === currentIncident.current_step,
+              'screen-em-step--locked':  idx > currentIncident.current_step,
             }"
           >
             <div class="screen-em-step__no">
-              <template v-if="idx < activeIncident.current_step">✓</template>
+              <template v-if="idx < currentIncident.current_step">✓</template>
               <template v-else>{{ idx + 1 }}</template>
             </div>
             <div class="screen-em-step__body">
@@ -59,7 +90,7 @@
                 时限 {{ node.limit_minutes }} 分钟
               </span>
               <!-- 最后步骤完成后显示 H5 结案链接 -->
-              <template v-if="idx === planNodes.length - 1 && idx < activeIncident.current_step">
+              <template v-if="idx === planNodes.length - 1 && idx < currentIncident.current_step">
                 <div class="screen-em-step__h5">
                   <span style="color:rgba(255,255,255,0.6);font-size:12px">请外勤人员打开手机访问：</span>
                   <a :href="h5EmergencyUrl" target="_blank" class="screen-em-step__h5-btn">
@@ -70,23 +101,23 @@
             </div>
             <div class="screen-em-step__action">
               <button
-                v-if="idx === activeIncident.current_step"
+                v-if="idx === currentIncident.current_step"
                 class="screen-em-step__confirm"
                 @click="handleConfirm(node)"
               >✓ 确认</button>
-              <span v-else-if="idx < activeIncident.current_step" class="screen-em-step__done-tag">已完成</span>
+              <span v-else-if="idx < currentIncident.current_step" class="screen-em-step__done-tag">已完成</span>
             </div>
           </div>
         </div>
 
         <!-- 全部步骤完成提示 -->
-        <div v-if="activeIncident.current_step >= planNodes.length" class="screen-em-panel__footer">
+        <div v-if="currentIncident.current_step >= planNodes.length" class="screen-em-panel__footer">
           <span style="color:#10B981">✅ 所有步骤已完成，等待外勤 H5 端选择结案方式…</span>
         </div>
       </div>
     </main>
 
-    <!-- ② 无活跃事件：系统正常 + 归档列表 -->
+    <!-- ③ 无活跃事件：系统正常 + 归档列表 -->
     <main v-else class="screen-emergency__main">
       <!-- 无事件提示 -->
       <div class="screen-glass-card screen-em-no-incident">
@@ -184,7 +215,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue"
 import {
-  getActiveIncident,
+  getAllActiveIncidents,
   getAllIncidents,
   getPlanNodes,
   getIncidentOrders,
@@ -195,11 +226,23 @@ import {
 } from "@/services/emergencyService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 
-const currentTime    = ref("")
-const activeIncident = ref<EmergencyIncident | null>(null)
-const planNodes      = ref<EmergencyFlowNode[]>([])
-const allIncidents   = ref<EmergencyIncident[]>([])
-const spaces         = ref<{ id: number; name: string }[]>([])
+const currentTime        = ref("")
+const allActiveIncidents = ref<EmergencyIncident[]>([])
+const selectedIncidentId = ref<number | null>(null)
+const allIncidents       = ref<EmergencyIncident[]>([])
+const spaces             = ref<{ id: number; name: string }[]>([])
+
+/** 当前处置的事件：只有1个时自动选中，多个时需手动选择 */
+const currentIncident = computed<EmergencyIncident | null>(() => {
+  if (allActiveIncidents.value.length === 1) return allActiveIncidents.value[0]
+  if (selectedIncidentId.value !== null)
+    return allActiveIncidents.value.find(i => Number(i.id) === selectedIncidentId.value) ?? null
+  return null
+})
+
+const planNodes = computed<EmergencyFlowNode[]>(() =>
+  currentIncident.value ? getPlanNodes(currentIncident.value.plan_id) : getPlanNodes(1)
+)
 
 // 展开状态：归档事件 id 集合
 const expandedIds = ref(new Set<number>())
@@ -231,15 +274,15 @@ function getBuilding(id: number | null): string {
 const planNodesCount = computed(() => planNodes.value.length || 5)
 
 const h5EmergencyUrl = computed(() => {
-  if (!activeIncident.value) return ""
-  return `${window.location.origin}/h5/emergency/${activeIncident.value.id}?_role=FIELD_WORKER`
+  if (!currentIncident.value) return ""
+  return `${window.location.origin}/h5/emergency/${currentIncident.value.id}?_role=FIELD_WORKER`
 })
 
-const incidentBuilding = computed(() => getBuilding(activeIncident.value?.building_id ?? null))
+const incidentBuilding = computed(() => getBuilding(currentIncident.value?.building_id ?? null))
 
 function handleConfirm(node: EmergencyFlowNode): void {
-  if (!activeIncident.value) return
-  confirmStep(activeIncident.value.id, node.node_code)
+  if (!currentIncident.value) return
+  confirmStep(currentIncident.value.id, node.node_code)
   loadData()
 }
 
@@ -249,12 +292,15 @@ function formatTime(d: Date): string {
 }
 
 function loadData() {
-  spaces.value         = getTable<{ id: number; name: string }>("iot_space")
-  const incident       = getActiveIncident()
-  activeIncident.value = incident
-  planNodes.value      = incident ? getPlanNodes(incident.plan_id) : getPlanNodes(1)
-  allIncidents.value   = getAllIncidents()
-  currentTime.value    = formatTime(new Date())
+  spaces.value             = getTable<{ id: number; name: string }>("iot_space")
+  allActiveIncidents.value = getAllActiveIncidents()
+  // 若已选事件已结案则重置选择
+  if (selectedIncidentId.value !== null) {
+    const still = allActiveIncidents.value.find(i => Number(i.id) === selectedIncidentId.value)
+    if (!still) selectedIncidentId.value = null
+  }
+  allIncidents.value = getAllIncidents()
+  currentTime.value  = formatTime(new Date())
 }
 
 let timer: ReturnType<typeof setInterval>
@@ -292,7 +338,23 @@ onUnmounted(() => clearInterval(timer))
   flex: 1; overflow-y: auto; padding: 24px;
   display: flex; flex-direction: column; gap: 16px;
 }
-.screen-emergency__main--active { align-items: center; justify-content: center; }
+.screen-emergency__main--active   { align-items: center; justify-content: center; }
+.screen-emergency__main--selector { align-items: center; justify-content: flex-start; padding-top: 40px; }
+
+/* 事件选择面板 */
+.screen-em-selector { width: min(680px, calc(100vw - 48px)); padding: 28px 32px; display: flex; flex-direction: column; gap: 16px; border-color: rgba(239,68,68,0.45); }
+.screen-em-selector__header { display: flex; align-items: flex-start; gap: 16px; }
+.screen-em-selector__list   { display: flex; flex-direction: column; gap: 10px; }
+.screen-em-selector__item   { display: flex; align-items: center; gap: 16px; padding: 16px 20px; cursor: pointer; border-color: rgba(239,68,68,0.3); transition: border-color 0.15s, background 0.15s; }
+.screen-em-selector__item:hover { border-color: rgba(239,68,68,0.7); background: rgba(239,68,68,0.1) !important; }
+.screen-em-selector__badge    { padding: 3px 10px; border-radius: 4px; background: #EF4444; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.screen-em-selector__info     { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.screen-em-selector__building { font-size: 16px; font-weight: 700; color: #fff; }
+.screen-em-selector__no       { font-size: 12px; color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums; }
+.screen-em-selector__progress { font-size: 12px; color: rgba(255,200,0,0.8); }
+.screen-em-selector__arrow    { font-size: 14px; font-weight: 700; color: var(--screen-cyan, #00D4FF); flex-shrink: 0; }
+.screen-em-back-btn { align-self: flex-start; padding: 6px 14px; border-radius: 6px; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.35); color: var(--screen-cyan, #00D4FF); font-size: 13px; cursor: pointer; }
+.screen-em-back-btn:hover { background: rgba(0,212,255,0.18); }
 
 /* 活跃事件面板 */
 .screen-em-panel { width: 100%; max-width: 760px; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; }

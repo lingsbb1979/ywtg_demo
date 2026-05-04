@@ -79,6 +79,14 @@ export function getActiveIncident(): EmergencyIncident | null {
   return active.reduce((a, b) => (Number(a.id) >= Number(b.id) ? a : b))
 }
 
+/** 获取所有活跃（未关闭）的应急事件，按 id 降序 */
+export function getAllActiveIncidents(): EmergencyIncident[] {
+  const rows = getTable<EmergencyIncident>("emergency_incident")
+  return rows
+    .filter((r) => Number(r.status) !== 40)
+    .sort((a, b) => Number(b.id) - Number(a.id))
+}
+
 /** 获取所有应急事件（含归档），按 id 降序 */
 export function getAllIncidents(): EmergencyIncident[] {
   const rows = getTable<EmergencyIncident>("emergency_incident")
