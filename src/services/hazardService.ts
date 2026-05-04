@@ -32,7 +32,7 @@ export interface HazardItem {
   /** 该建筑各 metric 中最高风险等级 */
   riskLevel:    string
   metrics:      HazardMetric[]
-  /** 活跃告警数（alarm_record status = ACTIVE | PENDING） */
+  /** 活跃告警数（alarm_record status = PENDING | CONFIRMED） */
   alarmCount:   number
   /** 未完结工单数（work_order status ≠ FINISHED | CLOSED） */
   orderCount:   number
@@ -46,7 +46,7 @@ export interface HazardListQuery {
 // ── 内部辅助 ──────────────────────────────────────────────────────────────────
 
 /** 告警活跃状态白名单 */
-const ACTIVE_ALARM_STATUSES = new Set(["ACTIVE", "PENDING"])
+const ACTIVE_ALARM_STATUSES = new Set(["PENDING", "CONFIRMED"])
 
 /** 工单已完结状态黑名单 */
 const DONE_ORDER_STATUSES = new Set(["FINISHED", "CLOSED"])

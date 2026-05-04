@@ -316,10 +316,10 @@
             <button
               class="btn-pc-primary"
               :class="{ 'btn-pc-danger': currentAlarm?.alarmLevel === 'RED' }"
-              :disabled="!currentAlarm || currentAlarm.status !== 'PENDING'"
+              :disabled="!currentAlarm || currentAlarm.status !== 'CONFIRMED'"
               @click="dispatchAlarm"
             >
-              {{ currentAlarm?.alarmLevel === 'RED' ? '大屏处置' : '立即派单' }}
+              {{ currentAlarm?.alarmLevel === 'RED' ? '大屏应急' : '立即派单' }}
             </button>
           </div>
         </div>
@@ -343,8 +343,8 @@ import {
 // ── 常量 ──────────────────────────────────────────────────────────────────────
 
 const STATUS_LABEL: Record<string, string> = {
-  ACTIVE:     "待确认",
-  PENDING:    "已确认",
+  PENDING:    "待确认",
+  CONFIRMED:  "已确认",
   DISPATCHED: "已派单",
   CLOSED:     "已关闭",
 }
@@ -367,8 +367,8 @@ const router = useRouter()
 
 const statusTabs = computed(() => [
   { label: "全部",   value: "ALL",        count: alarms.value.length },
-  { label: "活跃",   value: "ACTIVE",     count: alarms.value.filter(a => a.status === "ACTIVE").length },
-  { label: "已确认", value: "PENDING",    count: alarms.value.filter(a => a.status === "PENDING").length },
+  { label: "活跃",   value: "PENDING",    count: alarms.value.filter(a => a.status === "PENDING").length },
+  { label: "已确认", value: "CONFIRMED",  count: alarms.value.filter(a => a.status === "CONFIRMED").length },
   { label: "已派单", value: "DISPATCHED", count: alarms.value.filter(a => a.status === "DISPATCHED").length },
   { label: "已关闭", value: "CLOSED",     count: alarms.value.filter(a => a.status === "CLOSED").length },
 ])
@@ -376,8 +376,8 @@ const statusTabs = computed(() => [
 // ── KPI 统计 ──────────────────────────────────────────────────────────────────
 
 const kpi = computed(() => ({
-  active:     alarms.value.filter(a => a.status === "ACTIVE").length,
-  confirmed:  alarms.value.filter(a => a.status === "PENDING").length,
+  active:     alarms.value.filter(a => a.status === "PENDING").length,
+  confirmed:  alarms.value.filter(a => a.status === "CONFIRMED").length,
   dispatched: alarms.value.filter(a => a.status === "DISPATCHED").length,
   closed:     alarms.value.filter(a => a.status === "CLOSED").length,
 }))
@@ -415,8 +415,8 @@ function riskDotClass(level: string | null) {
 
 function statusBadgeClass(status: string | null) {
   const map: Record<string, string> = {
-    ACTIVE:     "admin-badge--danger",
-    PENDING:    "admin-badge--warning",
+    PENDING:    "admin-badge--danger",
+    CONFIRMED:  "admin-badge--warning",
     DISPATCHED: "admin-badge--primary",
     CLOSED:     "admin-badge--success",
   }

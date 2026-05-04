@@ -97,7 +97,7 @@ function ensureAlarm(params: {
     (r) =>
       r.building_id === params.buildingId &&
       r.alarm_type === params.alarmType &&
-      r.status === "ACTIVE"
+      r.status === "PENDING"
   )
   if (exists) return false
 
@@ -121,7 +121,7 @@ function ensureAlarm(params: {
       root_cause:    null,
       aggregate_flag: 0,
       raw_data:      null,
-      status:        "ACTIVE",
+      status:        "PENDING",
       trigger_time:  ts,
       handle_time:   null,
       handle_user:   null,

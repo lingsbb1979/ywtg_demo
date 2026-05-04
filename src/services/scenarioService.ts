@@ -167,7 +167,7 @@ export function triggerOrangeCrack(options: CrackOptions = {}): void {
     root_cause:   null,
     aggregate_flag: 0,
     raw_data:     null,
-    status:       "ACTIVE",
+    status:       "PENDING",
     trigger_time: nowStr,
     handle_time:  null,
     handle_user:  null,
@@ -213,7 +213,7 @@ export function triggerRedAlert(options: RedAlertOptions = {}): void {
     root_cause:    null,
     aggregate_flag: 0,
     raw_data:      null,
-    status:        "ACTIVE",
+    status:        "PENDING",
     trigger_time:  nowStr,
     handle_time:   null,
     handle_user:   null,
@@ -343,7 +343,7 @@ export interface RecoveryOptions {
 
 /**
  * 将 B003 裂缝活跃告警状态改为 CLOSED（模拟数据恢复）。
- * 只修改 building_id=1003 && alarm_type=CRACK && status=ACTIVE 的告警。
+ * 只修改 building_id=1003 && alarm_type=CRACK && status=PENDING 的告警。
  */
 export function simulateDataRecovery(options: RecoveryOptions = {}): void {
   const { nowStr = "2024-03-08 12:00:00" } = options
@@ -357,7 +357,7 @@ export function simulateDataRecovery(options: RecoveryOptions = {}): void {
     if (
       a.building_id === 1003 &&
       a.alarm_type  === "CRACK" &&
-      a.status      === "ACTIVE"
+      a.status      === "PENDING"
     ) {
       return { ...a, status: "CLOSED", handle_time: nowStr }
     }

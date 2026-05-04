@@ -183,7 +183,7 @@
                   </div>
                 </li>
                 <li
-                  v-if="currentAlarm.status === 'PENDING' || currentAlarm.status === 'DISPATCHED' || currentAlarm.status === 'CLOSED'"
+                  v-if="currentAlarm.status === 'CONFIRMED' || currentAlarm.status === 'DISPATCHED' || currentAlarm.status === 'CLOSED'"
                   class="h5-timeline__item"
                 >
                   <div class="h5-timeline__dot h5-timeline__dot--primary" />
@@ -229,15 +229,15 @@
           <div v-if="currentAlarm" class="h5-alarm-sheet__footer">
             <button
               class="h5-btn h5-btn--secondary"
-              :disabled="currentAlarm.status !== 'ACTIVE'"
+              :disabled="currentAlarm.status !== 'PENDING'"
               @click="onConfirmAlarm"
             >确认告警</button>
             <button
               class="h5-btn h5-btn--primary"
               :class="{ 'h5-btn--danger': currentAlarm.alarmLevel === 'RED' }"
-              :disabled="currentAlarm.status !== 'PENDING'"
+              :disabled="currentAlarm.status !== 'CONFIRMED'"
               @click="onDispatchAlarm"
-            >{{ currentAlarm.alarmLevel === 'RED' ? '大屏处置' : '立即派单' }}</button>
+            >{{ currentAlarm.alarmLevel === 'RED' ? '大屏应急' : '立即派单' }}</button>
           </div>
         </div>
       </Transition>
@@ -260,8 +260,8 @@ import {
 // ── 常量 ─────────────────────────────────────────────────────────────────────
 
 const STATUS_LABEL: Record<string, string> = {
-  ACTIVE:     "待确认",
-  PENDING:    "已确认",
+  PENDING:    "待确认",
+  CONFIRMED:  "已确认",
   DISPATCHED: "已派单",
   CLOSED:     "已关闭",
 }
@@ -283,8 +283,8 @@ const router = useRouter()
 // ── KPI 统计 ─────────────────────────────────────────────────────────────────
 
 const kpi = computed(() => ({
-  active:     alarms.value.filter(a => a.status === "ACTIVE").length,
-  confirmed:  alarms.value.filter(a => a.status === "PENDING").length,
+  active:     alarms.value.filter(a => a.status === "PENDING").length,
+  confirmed:  alarms.value.filter(a => a.status === "CONFIRMED").length,
   dispatched: alarms.value.filter(a => a.status === "DISPATCHED").length,
   closed:     alarms.value.filter(a => a.status === "CLOSED").length,
 }))
@@ -293,8 +293,8 @@ const kpi = computed(() => ({
 
 const statusTabs = computed(() => [
   { label: "全部",   value: "ALL",        count: alarms.value.length },
-  { label: "活跃",   value: "ACTIVE",     count: kpi.value.active },
-  { label: "已确认", value: "PENDING",    count: kpi.value.confirmed },
+  { label: "活跃",   value: "PENDING",    count: kpi.value.active },
+  { label: "已确认", value: "CONFIRMED",  count: kpi.value.confirmed },
   { label: "已派单", value: "DISPATCHED", count: kpi.value.dispatched },
   { label: "已关闭", value: "CLOSED",     count: kpi.value.closed },
 ])
@@ -321,8 +321,8 @@ const filteredAlarms = computed(() => {
 
 function statusTagClass(status: string | null) {
   const map: Record<string, string> = {
-    ACTIVE:     "h5-alarm-status-tag--active",
-    PENDING:    "h5-alarm-status-tag--pending",
+    PENDING:    "h5-alarm-status-tag--active",
+    CONFIRMED:  "h5-alarm-status-tag--pending",
     DISPATCHED: "h5-alarm-status-tag--dispatched",
     CLOSED:     "h5-alarm-status-tag--closed",
   }

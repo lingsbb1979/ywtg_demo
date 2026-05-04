@@ -23,7 +23,7 @@ export function selectScreenKpi(): ScreenKpi {
   // ── 隐患 / 告警 ───────────────────────────────────────────────────────────
   const alarms      = getTable<{ status: string }>("alarm_record")
   const CLOSED_SET  = new Set(["CLOSED", "CANCELLED"])
-  const ACTIVE_SET  = new Set(["ACTIVE", "PENDING"])
+  const ACTIVE_SET  = new Set(["PENDING", "CONFIRMED"])
   const openHazards = alarms.filter((a) => !CLOSED_SET.has(a.status)).length
   const activeAlarms = alarms.filter((a) => ACTIVE_SET.has(a.status)).length
 
