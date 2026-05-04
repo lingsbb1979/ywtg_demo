@@ -95,6 +95,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue"
 import { useRoute } from "vue-router"
 import { useDemoRoleStore, ROLE_ACCOUNT, getDefaultPathForRole, DEMO_ROLE_OPTIONS } from "@/stores/demoRole"
 import type { DemoRole } from "@/stores/demoRole"
+import { getTable } from "@/services/sqliteMirrorRepository"
 
 const demoRoleStore = useDemoRoleStore()
 const route = useRoute()
@@ -161,8 +162,25 @@ function menuIcon(label: string): string {
 }
 
 function menuBadge(label: string): string {
-  if (label.includes("待处理")) return "32"
-  if (label.includes("工单中心")) return "8"
+  const cap = (n: number) => n > 99 ? "99+" : n > 0 ? String(n) : ""
+  if (label.includes("工单")) {
+    const closed = new Set(["CLOSED", "CANCELLED", "COMPLETED"])
+    const orders = getTable<{ status: string }>("work_order")
+    const n = orders.filter(o => !closed.has(o.status ?? "")).length
+    return cap(n)
+  }
+  if (label.includes("应急")) {
+    const active = new Set(["ACTIVE", "PENDING", "IN_PROGRESS", "OPEN"])
+    const incidents = getTable<{ status: string }>("emergency_incident")
+    const n = incidents.filter(i => active.has(i.status ?? "")).length
+    return cap(n)
+  }
+  if (label.includes("告警")) {
+    const closed = new Set(["CLOSED", "CANCELLED", "RESOLVED"])
+    const alarms = getTable<{ status: string }>("alarm_record")
+    const n = alarms.filter(a => !closed.has(a.status ?? "")).length
+    return cap(n)
+  }
   return ""
 }
 

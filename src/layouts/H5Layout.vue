@@ -19,8 +19,11 @@
     <nav class="h5-layout__tabbar">
       <!-- 首页 -->
       <router-link class="h5-layout__tabbar-item" :class="{ 'is-active': isActive('/h5/home') }" to="/h5/home">
-        <span class="h5-layout__tabbar-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+        <span class="h5-layout__tabbar-icon-wrap">
+          <span class="h5-layout__tabbar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+          </span>
+          <span v-if="pendingOrderCount > 0" class="h5-layout__tabbar-badge">{{ pendingOrderCount > 99 ? '99+' : pendingOrderCount }}</span>
         </span>
         <span class="h5-layout__tabbar-label">首页</span>
       </router-link>
@@ -59,9 +62,17 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { getTable } from "@/services/sqliteMirrorRepository"
 
 const route = useRoute()
 const router = useRouter()
+
+/** 未处置工单数（橙色/红色预警，状态非 CLOSED/CANCELLED） */
+const pendingOrderCount = computed(() => {
+  const orders = getTable<{ status: string }>("work_order")
+  const closed = new Set(["CLOSED", "CANCELLED", "COMPLETED"])
+  return orders.filter(o => !closed.has(o.status ?? "")).length
+})
 
 const ROOT_PATHS = ['/h5/home', '/h5/alerts', '/h5/work-orders', '/h5/buildings', '/h5/mine']
 // alerts 页面有自己的自定义顶栏（含搜索按钮），不使用 layout 提供的通用 header
@@ -198,6 +209,31 @@ function goBack(): void {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.01em;
+}
+
+/* tabbar icon with badge wrapper */
+.h5-layout__tabbar-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.h5-layout__tabbar-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #F43F5E;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
 }
 
 @media (max-width: 375px) {

@@ -643,10 +643,10 @@ async function initAmapMap(): Promise<void> {
     if (!amapContainerRef.value || !window.AMap) return
 
     amapInstance = new window.AMap.Map(amapContainerRef.value, {
-      zoom:         16,
+      zoom:         19,
       center:       [130.3620, 46.8221],    // 佳木斯市中心
       mapStyle:     "amap://styles/darkblue",  // 深蓝商务科技风格，与大屏 UI 色调一致
-      features:     ["bg", "road"],          // 去掉 "point"：消除地图上自带的圆形 POI 图标
+      features:     ["bg", "road", "point"],  // "point" 显示街道/地标/景点名称
       viewMode:     "2D",
       resizeEnable: true,
       showLabel:    true,
@@ -2112,10 +2112,7 @@ onUnmounted(() => {
   position: relative;
   padding: 0;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 54%, rgba(255,78,69,0.34), transparent 18%),
-    radial-gradient(circle at 52% 47%, rgba(0,212,255,0.26), transparent 36%),
-    linear-gradient(180deg, rgba(8,43,96,0.28), rgba(4,18,43,0.92));
+  background: linear-gradient(180deg, rgba(8,43,96,0.28), rgba(4,18,43,0.92));
 }
 .screen-map__container::before {
   content: '';
@@ -2129,23 +2126,7 @@ onUnmounted(() => {
   filter: saturate(1.28) brightness(1.08);
 }
 .screen-map__container::after {
-  content: '!';
-  position: absolute;
-  left: 50%;
-  top: 53%;
-  width: 74px;
-  height: 74px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle, #FF4E45 0 38%, rgba(255,78,69,0.32) 39% 100%);
-  color: #fff;
-  font-size: 42px;
-  font-weight: 900;
-  box-shadow: 0 0 0 26px rgba(239,68,68,0.18), 0 0 0 58px rgba(239,68,68,0.08), 0 0 46px rgba(239,68,68,0.75);
-  z-index: 3;
+  display: none !important;
 }
 .screen-map__title-bar {
   position: relative;
