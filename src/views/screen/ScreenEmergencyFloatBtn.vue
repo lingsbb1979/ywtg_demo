@@ -222,9 +222,9 @@ function loadData() {
   spaces.value            = getTable<{ id: number; name: string }>("iot_space")
   allActiveIncidents.value = getAllActiveIncidents()
   const allAlarms = getTable<RawAlarm>("alarm_record")
-  // 未关闭的 RED 告警
+  // 已确认/已派单的 RED 告警才触发大屏应急红灯（PENDING=待确认，属于告警中心处理，不进入应急调度）
   rawRedAlarms.value = allAlarms.filter(
-    r => r.alarm_level === "RED" && r.status !== "CLOSED"
+    r => r.alarm_level === "RED" && (r.status === "CONFIRMED" || r.status === "DISPATCHED")
   )
   activeRedAlarmCount.value = rawRedAlarms.value.length
   // 若所选告警已关闭，重置
