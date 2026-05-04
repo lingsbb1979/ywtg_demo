@@ -56,8 +56,10 @@
             class="h5-em-incident-item"
             @click.stop="router.push(`/h5/emergency/${inc.id}`)"
           >
-            <span class="h5-em-incident-item__building">{{ incidentBuilding(inc) }}</span>
-            <span class="h5-em-incident-item__no">· {{ inc.incident_no }}</span>
+            <span class="h5-em-incident-item__info">
+              <span class="h5-em-incident-item__building">{{ incidentBuilding(inc) }}</span>
+              <span class="h5-em-incident-item__no"> · {{ inc.incident_no }}</span>
+            </span>
             <span class="h5-em-incident-item__arrow">进入结案 ›</span>
           </div>
         </div>
@@ -322,6 +324,9 @@ function onCardClick(item: H5TodoItem) {
 .h5-emergency-banner__sub {
   font-size: 12px;
   color: rgba(255,255,255,0.82);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .h5-emergency-banner__arrow {
   font-size: 13px;
@@ -347,12 +352,21 @@ function onCardClick(item: H5TodoItem) {
   border-radius: 6px;
   padding: 7px 10px;
   cursor: pointer;
-  active { opacity: 0.8; }
+  min-width: 0;
 }
 .h5-em-incident-item:active { opacity: 0.78; }
-.h5-em-incident-item__building { font-size: 13px; font-weight: 600; color: #fff; }
-.h5-em-incident-item__no       { font-size: 12px; color: rgba(255,255,255,0.75); flex: 1; }
-.h5-em-incident-item__arrow    { font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.h5-em-incident-item__info  {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: #fff;
+}
+.h5-em-incident-item__building { font-weight: 600; }
+.h5-em-incident-item__no       { color: rgba(255,255,255,0.75); }
+.h5-em-incident-item__arrow    { font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; white-space: nowrap; }
 
 /* zone:header — sticky 顶部渐变横幅（移动端 banner 规范）*/
 .h5-workorders__header {
