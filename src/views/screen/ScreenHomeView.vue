@@ -437,6 +437,8 @@ declare global {
 interface AMapInstance {
   setFitView: (markers: AMapMarker[]) => void
   destroy: () => void
+  getZoom: () => number
+  setZoom: (zoom: number) => void
 }
 interface AMapMarker {
   setMap: (map: AMapInstance | null) => void
@@ -553,7 +555,7 @@ async function initAmapMap(): Promise<void> {
       zoom:         19,
       center:       [130.3620, 46.8221],    // 佳木斯市中心
       mapStyle:     "amap://styles/darkblue",  // 深蓝商务科技风格，与大屏 UI 色调一致
-      features:     ["bg", "road", "point"],  // "point" 显示街道/地标/景点名称
+      features:     ["bg", "road"],  // "bg" 包含河流/水系名称，"road" 包含街道名称；去掉 "point" 不显示景区等兴趣点
       viewMode:     "2D",
       resizeEnable: true,
       showLabel:    true,
@@ -562,10 +564,15 @@ async function initAmapMap(): Promise<void> {
     amapLoaded.value = true
     addAmapMarkers()
 
-    // 自适应显示所有建筑点位
+    // 自适应显示所有建筑点位，然后再放大 3 级使街道/河流名称更清晰
     const validMarkers = amapMarkers.filter(Boolean)
     if (validMarkers.length > 0) {
       amapInstance.setFitView(validMarkers)
+      setTimeout(() => {
+        if (amapInstance) {
+          amapInstance.setZoom(Math.min(amapInstance.getZoom() + 3, 18))
+        }
+      }, 600)
     }
   } catch (err) {
     console.warn("[ScreenHome] 高德地图初始化失败，已切换到列表模式", err)
