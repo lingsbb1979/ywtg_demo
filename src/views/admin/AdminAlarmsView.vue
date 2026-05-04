@@ -315,10 +315,11 @@
             </button>
             <button
               class="btn-pc-primary"
+              :class="{ 'btn-pc-danger': currentAlarm?.alarmLevel === 'RED' }"
               :disabled="!currentAlarm || currentAlarm.status !== 'PENDING'"
               @click="dispatchAlarm"
             >
-              立即派单
+              {{ currentAlarm?.alarmLevel === 'RED' ? '大屏处置' : '立即派单' }}
             </button>
           </div>
         </div>
@@ -871,6 +872,8 @@ onMounted(() => {
 }
 .btn-pc-primary:hover:not(:disabled) { background: #1462d4; }
 .btn-pc-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-pc-danger { background: #E53935 !important; }
+.btn-pc-danger:hover:not(:disabled) { background: #C62828 !important; }
 
 .btn-pc-secondary {
   height: 36px;

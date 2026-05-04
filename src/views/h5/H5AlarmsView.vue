@@ -234,9 +234,10 @@
             >确认告警</button>
             <button
               class="h5-btn h5-btn--primary"
+              :class="{ 'h5-btn--danger': currentAlarm.alarmLevel === 'RED' }"
               :disabled="currentAlarm.status !== 'PENDING'"
               @click="onDispatchAlarm"
-            >立即派单</button>
+            >{{ currentAlarm.alarmLevel === 'RED' ? '大屏处置' : '立即派单' }}</button>
           </div>
         </div>
       </Transition>
@@ -812,6 +813,11 @@ onMounted(() => {
 .h5-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 .h5-btn:not(:disabled):active { transform: scale(0.97); }
 .h5-btn--primary   { background: var(--h5-primary, #1B6FE8); color: #fff; }
+.h5-btn--danger    { background: #E53935 !important; color: #fff; animation: h5-btn-pulse 1.4s ease-in-out infinite; }
+@keyframes h5-btn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(229,57,53,0); }
+}
 .h5-btn--secondary { background: #EFF6FF; color: var(--h5-primary, #1B6FE8); border: 1px solid #BFDBFE; }
 
 /* ===== Transition 动画 ===== */
