@@ -165,7 +165,7 @@ function menuBadge(label: string): string {
   const cap = (n: number) => n > 99 ? "99+" : n > 0 ? String(n) : ""
   if (label.includes("工单")) {
     // 只有 RED 级别未关闭工单才计入
-    const closed = new Set(["CLOSED", "CANCELLED", "COMPLETED"])
+    const closed = new Set(["CLOSED", "CANCELLED", "COMPLETED", "FINISHED"])
     const orders = getTable<{ status: string; alarm_level: string }>("work_order")
     const n = orders.filter(o => o.alarm_level === "RED" && !closed.has(o.status ?? "")).length
     return cap(n)

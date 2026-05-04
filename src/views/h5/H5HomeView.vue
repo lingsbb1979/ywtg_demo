@@ -269,7 +269,7 @@ const healthScore = computed(() => {
 })
 
 const metricCards = computed(() => {
-  const closedSet = new Set(["CLOSED", "CANCELLED", "COMPLETED"])
+  const closedSet = new Set(["CLOSED", "CANCELLED", "COMPLETED", "FINISHED"])
   const allOrders = getTable<{ status: string }>("work_order")
   const openOrders = allOrders.filter(o => !closedSet.has(o.status ?? "")).length
   return [
