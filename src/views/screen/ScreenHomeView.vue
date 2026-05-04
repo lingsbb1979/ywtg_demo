@@ -570,7 +570,7 @@ async function initAmapMap(): Promise<void> {
       amapInstance.setFitView(validMarkers)
       setTimeout(() => {
         if (amapInstance) {
-          amapInstance.setZoom(Math.min(Math.round((amapInstance.getZoom() + 3) * 0.6), 18))
+          amapInstance.setZoom(Math.min(Math.round((amapInstance.getZoom() + 3) * 1.3), 18))
         }
       }, 600)
     }
