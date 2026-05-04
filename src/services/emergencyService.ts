@@ -93,6 +93,19 @@ export function getPlanNodes(planId: number): EmergencyFlowNode[] {
     .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
 }
 
+/**
+ * 返回"大屏所有步骤已全部确认、等待 H5 外勤结案"的应急事件列表。
+ * 条件：status !== 40（未结案）且 current_step >= 该预案节点总数。
+ */
+export function getH5ReadyIncidents(): EmergencyIncident[] {
+  const rows = getTable<EmergencyIncident>("emergency_incident")
+  const active = rows.filter((r) => Number(r.status) !== 40)
+  return active.filter((inc) => {
+    const nodes = getPlanNodes(Number(inc.plan_id))
+    return Number(inc.current_step) >= nodes.length
+  })
+}
+
 /** 获取指定事件已确认的步骤记录 */
 export function getIncidentOrders(incidentId: number): EmergencyOrder[] {
   const rows = getTable<EmergencyOrder>("emergency_order")

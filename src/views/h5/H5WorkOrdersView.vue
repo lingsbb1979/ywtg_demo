@@ -23,20 +23,45 @@
       <span class="h5-workorders__count">共 {{ filteredList.length }} 条</span>
     </div>
 
-    <!-- zone:emergency-banner — 活跃应急事件提醒（有活跃应急时显示在工单列表顶部）
-         激活状态主色 var(--h5-primary, #1B6FE8) / 应急红色覆盖 -->
+    <!-- zone:emergency-banner — 大屏全部步骤已勾选完毕、等待 H5 外勤结案（单个事件直接跳转；多个事件展开选择列表）-->
+
+    <!-- 单个事件 -->
     <div
-      v-if="activeIncident"
+      v-if="readyIncidents.length === 1"
       class="h5-emergency-banner"
       role="alert"
-      @click="router.push(`/h5/emergency/${activeIncident.id}`)"
+      @click="router.push(`/h5/emergency/${readyIncidents[0].id}`)"
     >
       <span class="h5-emergency-banner__icon">🚨</span>
       <div class="h5-emergency-banner__text">
-        <span class="h5-emergency-banner__title">红色应急事件待处置</span>
-        <span class="h5-emergency-banner__sub">{{ activeIncidentBuilding }} · {{ activeIncident.incident_no }}</span>
+        <span class="h5-emergency-banner__title">红色应急事件待结案</span>
+        <span class="h5-emergency-banner__sub">{{ incidentBuilding(readyIncidents[0]) }} · {{ readyIncidents[0].incident_no }}</span>
       </div>
       <span class="h5-emergency-banner__arrow">进入结案 ›</span>
+    </div>
+
+    <!-- 多个事件：可选择列表 -->
+    <div
+      v-else-if="readyIncidents.length > 1"
+      class="h5-emergency-banner h5-emergency-banner--multi"
+      role="alert"
+    >
+      <span class="h5-emergency-banner__icon">🚨</span>
+      <div class="h5-emergency-banner__text">
+        <span class="h5-emergency-banner__title">共 {{ readyIncidents.length }} 个应急事件待结案，请选择：</span>
+        <div class="h5-em-incident-list">
+          <div
+            v-for="inc in readyIncidents"
+            :key="inc.id"
+            class="h5-em-incident-item"
+            @click.stop="router.push(`/h5/emergency/${inc.id}`)"
+          >
+            <span class="h5-em-incident-item__building">{{ incidentBuilding(inc) }}</span>
+            <span class="h5-em-incident-item__no">· {{ inc.incident_no }}</span>
+            <span class="h5-em-incident-item__arrow">进入结案 ›</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- zone:filter-tabs — 状态筛选标签（active 主色 var(--h5-primary, #1B6FE8)）-->
@@ -150,22 +175,20 @@ import {
   selectH5TodoList,
   type H5TodoItem,
 } from "@/services/screenKpiService"
-import { getActiveIncident } from "@/services/emergencyService"
+import { getH5ReadyIncidents, type EmergencyIncident } from "@/services/emergencyService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 
 const router   = useRouter()
 const todoList = ref([] as H5TodoItem[])
 
-// ── 活跃应急事件（有事件时在列表顶部显示红色横幅）──────────────────────────────────
-type IncidentRow = { id: number; incident_no: string; building_id: number | null; status: number }
-const activeIncident = ref<IncidentRow | null>(null)
+// ── 就绪应急事件（大屏全部步骤已勾选→等待 H5 外勤结案）───────────────────────
+const readyIncidents = ref<EmergencyIncident[]>([])
 
-const activeIncidentBuilding = computed(() => {
-  if (!activeIncident.value) return ""
+function incidentBuilding(inc: EmergencyIncident): string {
   const spaces = getTable<{ id: number; name: string }>("iot_space")
-  const space = spaces.find((s) => Number(s.id) === Number(activeIncident.value!.building_id))
-  return space?.name ?? `建筑 #${activeIncident.value.building_id}`
-})
+  const space = spaces.find((s) => Number(s.id) === Number(inc.building_id))
+  return space?.name ?? `建筑 #${inc.building_id}`
+}
 
 /** 状态筛选 'ALL' | 'PENDING' | 'PROCESSING' | 'CHECKING' | 'FINISHED' */
 const activeFilter = ref('ALL')
@@ -225,7 +248,7 @@ function loadData() {
       currentNode:  o.current_node,
     }))
   todoList.value = [...base, ...checking]
-  activeIncident.value = getActiveIncident() as IncidentRow | null
+  readyIncidents.value = getH5ReadyIncidents()
 }
 
 onMounted(loadData)
@@ -307,6 +330,29 @@ function onCardClick(item: H5TodoItem) {
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* 多个事件横幅 — 展开列表 */
+.h5-emergency-banner--multi { align-items: flex-start; cursor: default; }
+.h5-em-incident-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.h5-em-incident-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.18);
+  border-radius: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+  active { opacity: 0.8; }
+}
+.h5-em-incident-item:active { opacity: 0.78; }
+.h5-em-incident-item__building { font-size: 13px; font-weight: 600; color: #fff; }
+.h5-em-incident-item__no       { font-size: 12px; color: rgba(255,255,255,0.75); flex: 1; }
+.h5-em-incident-item__arrow    { font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
 
 /* zone:header — sticky 顶部渐变横幅（移动端 banner 规范）*/
 .h5-workorders__header {
