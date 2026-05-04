@@ -306,9 +306,9 @@ export type ConfirmAlarmResult =
   | { ok: false; error: string }
 
 /**
- * 确认告警：将 alarm_record.status 变更为 ACTIVE，记录确认人和确认时间。
+ * 确认告警：将 alarm_record.status 变更为 CONFIRMED，记录确认人和确认时间。
  *
- * 允许状态：PENDING、ACTIVE（幂等）。
+ * 允许状态：PENDING、CONFIRMED（幂等）。
  * 不允许状态：CLOSED（已关闭告警不可再确认）。
  *
  * @param id          alarm_record.id
@@ -332,7 +332,7 @@ export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): Con
 
   rows[idx] = {
     ...row,
-    status:      "PENDING",
+    status:      "CONFIRMED",
     handle_user: operator,
     handle_time: handleTime,
     update_time: handleTime,
@@ -340,13 +340,13 @@ export function confirmAlarm(id: number, options: ConfirmAlarmOptions = {}): Con
 
   setTable("alarm_record", rows)
 
-  return { ok: true, id, status: "PENDING", handleUser: operator, handleTime }
+  return { ok: true, id, status: "CONFIRMED", handleUser: operator, handleTime }
 }
 
 // ── dispatchAlarm ─────────────────────────────────────────────────────────────
 
-/** 不允许派单的告警状态（必须先确认才能派单：ACTIVE=待确认 不可派单） */
-const NON_DISPATCHABLE_STATUSES = new Set(["CLOSED", "DISPATCHED", "ACTIVE"])
+/** 不允许派单的告警状态（必须先确认才能派单：PENDING=待确认 不可派单） */
+const NON_DISPATCHABLE_STATUSES = new Set(["CLOSED", "DISPATCHED", "PENDING"])
 
 export interface DispatchAlarmOptions {
   /** 派单机构 id */
