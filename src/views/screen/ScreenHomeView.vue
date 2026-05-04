@@ -385,7 +385,8 @@
       </div>
     </footer>
 
-    <!-- ④ 应急指挥弹窗（大屏叠加层，有活跃应急事件时显示）-->
+    <!-- ④ 应急指挥弹窗（Teleport 到 body，避免被 screen-root overflow:hidden 裁切）-->
+    <Teleport to="body">
     <Transition name="emergency-fade">
       <div
         v-if="activeIncident"
@@ -471,6 +472,7 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -641,9 +643,9 @@ async function initAmapMap(): Promise<void> {
     if (!amapContainerRef.value || !window.AMap) return
 
     amapInstance = new window.AMap.Map(amapContainerRef.value, {
-      zoom:         14,
+      zoom:         16,
       center:       [130.3620, 46.8221],    // 佳木斯市中心
-      mapStyle:     "amap://styles/blue",   // 蓝色深色风格，与大屏 UI 色调一致
+      mapStyle:     "amap://styles/darkblue",  // 深蓝商务科技风格，与大屏 UI 色调一致
       features:     ["bg", "road"],          // 去掉 "point"：消除地图上自带的圆形 POI 图标
       viewMode:     "2D",
       resizeEnable: true,
@@ -1411,6 +1413,8 @@ onUnmounted(() => {
   overflow: hidden;
   position: relative;
   min-height: 0;
+  /* 商务科技蓝 CSS 过滤：增强饱和度与亮度，让深蓝地图更鲜明透亮 */
+  filter: brightness(1.35) saturate(1.6) hue-rotate(-8deg);
 }
 .screen-map__amap-layer--hidden {
   display: none;
@@ -1556,6 +1560,32 @@ onUnmounted(() => {
 @keyframes bldg-red-pulse {
   0%, 100% { box-shadow: 0 0 6px #FF4E45, 0 0 16px rgba(255,78,69,0.7), 0 0 28px rgba(255,78,69,0.3); }
   50%       { box-shadow: 0 0 12px #FF4E45, 0 0 28px rgba(255,78,69,0.9), 0 0 48px rgba(255,78,69,0.5); }
+}
+
+/* 红色闪烁（最高级别：S>95 / 应急事件激活） */
+:deep(.bldg-pin--red-blink .bldg-pin__core) {
+  background: #FF2020;
+  box-shadow: 0 0 8px #FF2020, 0 0 20px rgba(255,32,32,0.9), 0 0 40px rgba(255,32,32,0.5);
+  animation: bldg-redblink-core 0.8s ease-in-out infinite;
+}
+:deep(.bldg-pin--red-blink .bldg-pin__ring) {
+  border-color: #FF2020;
+  animation: bldg-ring-expand 1.2s ease-out infinite;
+}
+:deep(.bldg-pin--red-blink .bldg-pin__lbl) {
+  color: #FF5050;
+  background: rgba(40,0,0,0.90);
+  border: 1px solid rgba(255,32,32,0.6);
+  text-shadow: 0 0 8px rgba(255,50,50,1);
+  animation: bldg-redblink-lbl 0.8s ease-in-out infinite;
+}
+@keyframes bldg-redblink-core {
+  0%, 100% { box-shadow: 0 0 8px #FF2020, 0 0 20px rgba(255,32,32,0.9), 0 0 40px rgba(255,32,32,0.5); opacity: 1; }
+  50%       { box-shadow: 0 0 18px #FF2020, 0 0 40px rgba(255,32,32,1),   0 0 70px rgba(255,32,32,0.7); opacity: 0.7; }
+}
+@keyframes bldg-redblink-lbl {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
 }
 .screen-map__fallback-list {
   display: grid;

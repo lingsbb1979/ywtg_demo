@@ -41,7 +41,7 @@ export function selectScreenKpi(): ScreenKpi {
 // ── T15.60 selectMapPoints ────────────────────────────────────────────────────
 
 export type RiskLevel = "RED" | "ORANGE" | "YELLOW" | "GREEN"
-export type RiskColor = "red" | "orange" | "yellow" | "green"
+export type RiskColor = "red" | "red-blink" | "orange" | "yellow" | "green"
 
 export interface MapPoint {
   id:         number
@@ -61,6 +61,8 @@ const COLOR_MAP:   Record<RiskLevel, RiskColor> = {
   RED: "red", ORANGE: "orange", YELLOW: "yellow", GREEN: "green",
 }
 
+const ACTIVE_INCIDENT_STATUSES = new Set(["ACTIVE", "PENDING", "IN_PROGRESS", "CONFIRMED"])
+
 /**
  * 大屏中央地图建筑点位选择器：
  * 返回每栋建筑的坐标、最高风险等级和弹窗摘要。
@@ -78,6 +80,13 @@ export function selectMapPoints(): MapPoint[] {
   const alarms     = getTable<{
     building_id: number; alarm_level: string; status: string
   }>("alarm_record")
+  // 有活跃应急事件的建筑显示红色闪烁（最高级别）
+  const incidents  = getTable<{ building_id: number; status: string }>("emergency_incident")
+  const blinkSet   = new Set(
+    incidents
+      .filter((i) => ACTIVE_INCIDENT_STATUSES.has(i.status))
+      .map((i) => Number(i.building_id))
+  )
 
   return buildings.map((b) => {
     const open = alarms.filter(
@@ -94,6 +103,10 @@ export function selectMapPoints(): MapPoint[] {
     const openCount = open.length
     const summary   = openCount > 0 ? `${openCount} 条未销号告警` : "安全"
 
+    const color: RiskColor = riskLevel === "RED" && blinkSet.has(b.id)
+      ? "red-blink"
+      : COLOR_MAP[riskLevel]
+
     return {
       id:        b.id,
       spaceCode: b.space_code,
@@ -102,7 +115,7 @@ export function selectMapPoints(): MapPoint[] {
       latitude:  b.latitude  ?? null,
       longitude: b.longitude ?? null,
       riskLevel,
-      color:     COLOR_MAP[riskLevel],
+      color,
       openCount,
       summary,
     }
