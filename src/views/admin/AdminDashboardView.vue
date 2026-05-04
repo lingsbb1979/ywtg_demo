@@ -4,7 +4,7 @@
     ┌── zone:kpi-stats ──────────────────────────────────────────────────┐
     │  活跃告警 │ 待处理工单 │ 重点隐患 │ 工单闭环率 │ 逢期工单                     │
     ├── zone:quick-actions ───────────────────────────────────────────────┤
-    │  快捷操作：告警确认/派单 │ 工单核查销号 │ 建筑档案 │ 实时采集       │
+    │  快捷操作：告警确认/派单 │ 工单核查销号 │ 实时采集                 │
     ├───────────────────────────┬──────────────────────────┤
     │ zone:alarm-list [左]            │ zone:workorder-board [右上]         │
     │ 告警与活跃隐患清单                 │ 工单看板：待处理/处理中/待核查/已销 │
@@ -97,10 +97,6 @@
       <router-link class="admin-quick-btn" to="/admin/work-orders">
         <span class="admin-quick-btn__icon">📋</span>
         <span class="admin-quick-btn__label">工单核查销号</span>
-      </router-link>
-      <router-link class="admin-quick-btn" to="/admin/buildings">
-        <span class="admin-quick-btn__icon">🏗️</span>
-        <span class="admin-quick-btn__label">建筑档案</span>
       </router-link>
       <router-link class="admin-quick-btn" to="/admin/telemetry">
         <span class="admin-quick-btn__icon">📶</span>
