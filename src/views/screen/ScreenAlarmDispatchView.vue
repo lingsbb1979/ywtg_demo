@@ -236,11 +236,13 @@
         </div>
       </section>
     </main>
+    <ScreenEmergencyFloatBtn />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
+import ScreenEmergencyFloatBtn from "./ScreenEmergencyFloatBtn.vue"
 import { useRouter } from "vue-router"
 import {
   listAlarms,

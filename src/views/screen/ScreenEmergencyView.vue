@@ -209,10 +209,12 @@
         告警派遣中心 →
       </router-link>
     </footer>
+    <ScreenEmergencyFloatBtn />
   </div>
 </template>
 
 <script setup lang="ts">
+import ScreenEmergencyFloatBtn from "./ScreenEmergencyFloatBtn.vue"
 import { ref, computed, onMounted, onUnmounted } from "vue"
 import {
   getAllActiveIncidents,

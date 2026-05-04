@@ -473,11 +473,13 @@
       </div>
     </Transition>
     </Teleport>
+    <ScreenEmergencyFloatBtn />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from "vue"
+import ScreenEmergencyFloatBtn from "./ScreenEmergencyFloatBtn.vue"
 import { LineChart, PieChart, BarChart } from "echarts/charts"
 import { GridComponent, TooltipComponent, LegendComponent } from "echarts/components"
 import { init, use, type ECharts } from "echarts/core"

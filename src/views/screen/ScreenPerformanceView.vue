@@ -143,11 +143,13 @@
       </div>
 
     </main>
+    <ScreenEmergencyFloatBtn />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
+import ScreenEmergencyFloatBtn from "./ScreenEmergencyFloatBtn.vue"
 import { getTable } from "@/services/sqliteMirrorRepository"
 import { selectWorkOrderBoard, selectScreenKpi } from "@/services/screenKpiService"
 
