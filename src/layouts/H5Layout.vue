@@ -67,11 +67,12 @@ import { getTable } from "@/services/sqliteMirrorRepository"
 const route = useRoute()
 const router = useRouter()
 
-/** 未处置工单数（橙色/红色预警，状态非 CLOSED/CANCELLED） */
+/** 只有 RED 级别活跃告警时才显示首页小红点 */
 const pendingOrderCount = computed(() => {
-  const orders = getTable<{ status: string }>("work_order")
-  const closed = new Set(["CLOSED", "CANCELLED", "COMPLETED"])
-  return orders.filter(o => !closed.has(o.status ?? "")).length
+  const alarms = getTable<{ status: string; alarm_level: string }>("alarm_record")
+  return alarms.filter(a =>
+    a.alarm_level === "RED" && (a.status === "ACTIVE" || a.status === "PENDING")
+  ).length
 })
 
 const ROOT_PATHS = ['/h5/home', '/h5/alerts', '/h5/work-orders', '/h5/buildings', '/h5/mine']

@@ -202,7 +202,7 @@
           @click="item.type === '告警' ? $router.push('/h5/work-orders') : $router.push('/h5/work-orders')"
         >
           <span class="h5-home__activity-tag"
-            :class="`h5-home__activity-tag--${item.type === '告警' ? 'alarm' : 'order'}`">
+            :class="`h5-home__activity-tag--${item.level}`">
             {{ item.type }}
           </span>
           <span class="h5-home__activity-text">{{ item.text }}</span>
@@ -226,8 +226,11 @@ const stats = computed(() => {
   const spaces = getTable<{ id: number; type: string }>("iot_space")
   const totalBuildings = spaces.filter(s => s.type === "2").length || 23
 
-  const alarmRows = getTable<{ status: string }>("alarm_record")
-  const activeAlarms = alarmRows.filter(a => a.status === "ACTIVE" || a.status === "PENDING").length
+  // 只统计 RED 级别活跃告警
+  const alarmRows = getTable<{ status: string; alarm_level: string }>("alarm_record")
+  const activeAlarms = alarmRows.filter(a =>
+    a.alarm_level === "RED" && (a.status === "ACTIVE" || a.status === "PENDING")
+  ).length
 
   const orders = getTable<{ create_time: string }>("work_order")
   const today = new Date().toISOString().slice(0, 10)
@@ -236,13 +239,15 @@ const stats = computed(() => {
   return { totalBuildings, activeAlarms, todayWorkOrders }
 })
 
-// ── 最新告警 ──────────────────────────────────────────────────────────────────
+// ── 最新告警（只有 RED 级别才显示预警横幅）─────────────────────────────────
 const latestAlarm = computed(() => {
   const rows = getTable<{
     id: number; alarm_title: string; alarm_level: string; status: string; trigger_time: string
   }>("alarm_record")
   return rows
-    .filter(r => r.status === "ACTIVE" || r.status === "PENDING")
+    .filter(r =>
+      r.alarm_level === "RED" && (r.status === "ACTIVE" || r.status === "PENDING")
+    )
     .sort((a, b) => (b.trigger_time ?? "").localeCompare(a.trigger_time ?? ""))[0] ?? null
 })
 
@@ -252,7 +257,8 @@ const riskSummary = computed(() => {
   const red    = buildings.filter(b => b.latestRiskLevel === "RED").length
   const orange = buildings.filter(b => b.latestRiskLevel === "ORANGE").length
   const yellow = buildings.filter(b => b.latestRiskLevel === "YELLOW").length
-  const green  = buildings.filter(b => b.latestRiskLevel === "GREEN").length
+  // null（无分析记录）视为绿色安全
+  const green  = buildings.filter(b => !b.latestRiskLevel || b.latestRiskLevel === "GREEN").length
   const total  = buildings.length
   return { red, orange, yellow, green, total }
 })
@@ -262,12 +268,17 @@ const healthScore = computed(() => {
   return Math.max(82, Math.min(99, 98 - penalty))
 })
 
-const metricCards = computed(() => [
-  { label: "监测设备", value: Math.max(stats.value.totalBuildings * 362, stats.value.totalBuildings), sub: "在线率 98.6%", tone: "blue" },
-  { label: "隐患点位", value: riskSummary.value.red + riskSummary.value.orange + riskSummary.value.yellow, sub: "较昨日 ↓ 3.6%", tone: "orange" },
-  { label: "在处理工单", value: stats.value.todayWorkOrders + stats.value.activeAlarms, sub: "较昨日 ↑ 15.7%", tone: "blue" },
-  { label: "应急资源", value: 2465, sub: "可用率 92.4%", tone: "purple" },
-])
+const metricCards = computed(() => {
+  const closedSet = new Set(["CLOSED", "CANCELLED", "COMPLETED"])
+  const allOrders = getTable<{ status: string }>("work_order")
+  const openOrders = allOrders.filter(o => !closedSet.has(o.status ?? "")).length
+  return [
+    { label: "监测设备", value: stats.value.totalBuildings * 12, sub: "在线率 98.6%", tone: "blue" },
+    { label: "隐患点位", value: riskSummary.value.red + riskSummary.value.orange + riskSummary.value.yellow, sub: "较昨日 ↓ 3.6%", tone: "orange" },
+    { label: "在处理工单", value: openOrders, sub: "待核查处置", tone: "blue" },
+    { label: "应急资源", value: 2465, sub: "可用率 92.4%", tone: "purple" },
+  ]
+})
 
 function formatNumber(v: number): string {
   return v.toLocaleString("en-US")
@@ -282,19 +293,21 @@ const activities = computed(() => {
     .map(r => ({
       id:   `a-${r.id}`,
       type: "告警",
+      level: (r.alarm_level ?? "ORANGE").toLowerCase(),
       text: r.alarm_title ?? "告警",
       time: (r.trigger_time ?? "").slice(11, 16),
       sort: r.trigger_time ?? "",
     }))
 
   const orders = getTable<{
-    id: number; title: string; status: string; create_time: string
-  }>("work_order_info")
+    id: number; order_no: string; alarm_level: string; create_time: string
+  }>("work_order")
     .filter(r => r.create_time)
     .map(r => ({
       id:   `w-${r.id}`,
       type: "工单",
-      text: r.title ?? `工单 #${r.id}`,
+      level: "order",
+      text: r.order_no ?? `工单 #${r.id}`,
       time: (r.create_time ?? "").slice(11, 16),
       sort: r.create_time ?? "",
     }))
@@ -525,8 +538,12 @@ const activities = computed(() => {
   padding: 2px 6px;
   border-radius: 4px;
 }
-.h5-home__activity-tag--alarm { background: #FEE2E2; color: #DC2626; }
-.h5-home__activity-tag--order { background: #DBEAFE; color: #1D4ED8; }
+.h5-home__activity-tag--red    { background: #FEE2E2; color: #DC2626; }
+.h5-home__activity-tag--orange { background: #FFEDD5; color: #C2410C; }
+.h5-home__activity-tag--yellow { background: #FEF9C3; color: #92400E; }
+.h5-home__activity-tag--order  { background: #DBEAFE; color: #1D4ED8; }
+/* 兼容旧写法 */
+.h5-home__activity-tag--alarm  { background: #FEE2E2; color: #DC2626; }
 .h5-home__activity-text { flex: 1; font-size: 13px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .h5-home__activity-time { flex-shrink: 0; font-size: 11px; color: #94A3B8; }
 

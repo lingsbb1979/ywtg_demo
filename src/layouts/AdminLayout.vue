@@ -164,9 +164,10 @@ function menuIcon(label: string): string {
 function menuBadge(label: string): string {
   const cap = (n: number) => n > 99 ? "99+" : n > 0 ? String(n) : ""
   if (label.includes("工单")) {
+    // 只有 RED 级别未关闭工单才计入
     const closed = new Set(["CLOSED", "CANCELLED", "COMPLETED"])
-    const orders = getTable<{ status: string }>("work_order")
-    const n = orders.filter(o => !closed.has(o.status ?? "")).length
+    const orders = getTable<{ status: string; alarm_level: string }>("work_order")
+    const n = orders.filter(o => o.alarm_level === "RED" && !closed.has(o.status ?? "")).length
     return cap(n)
   }
   if (label.includes("应急")) {
@@ -176,9 +177,10 @@ function menuBadge(label: string): string {
     return cap(n)
   }
   if (label.includes("告警")) {
+    // 只有 RED 级别未关闭告警才计入
     const closed = new Set(["CLOSED", "CANCELLED", "RESOLVED"])
-    const alarms = getTable<{ status: string }>("alarm_record")
-    const n = alarms.filter(a => !closed.has(a.status ?? "")).length
+    const alarms = getTable<{ status: string; alarm_level: string }>("alarm_record")
+    const n = alarms.filter(a => a.alarm_level === "RED" && !closed.has(a.status ?? "")).length
     return cap(n)
   }
   return ""
