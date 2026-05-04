@@ -385,94 +385,6 @@
       </div>
     </footer>
 
-    <!-- ④ 应急指挥弹窗（Teleport 到 body，避免被 screen-root overflow:hidden 裁切）-->
-    <Teleport to="body">
-    <Transition name="emergency-fade">
-      <div
-        v-if="activeIncident"
-        class="screen-emergency-overlay"
-        data-testid="emergency-overlay"
-      >
-        <div class="screen-emergency-panel screen-glass-card">
-          <!-- 标题 -->
-          <div class="screen-emergency-panel__header">
-            <span class="screen-emergency-panel__icon">🚨</span>
-            <div class="screen-emergency-panel__titles">
-              <h2 class="screen-emergency-panel__title">红色预警 — 应急指挥流程</h2>
-              <p class="screen-emergency-panel__subtitle">
-                {{ incidentBuilding }} · 倾斜超限 · 事件编号 {{ activeIncident.incident_no }}
-              </p>
-            </div>
-          </div>
-
-          <!-- 步骤列表 -->
-          <div class="screen-emergency-steps">
-            <div
-              v-for="(node, idx) in planNodes"
-              :key="node.id"
-              class="screen-emergency-step"
-              :class="{
-                'screen-emergency-step--done':    idx < activeIncident.current_step,
-                'screen-emergency-step--current': idx === activeIncident.current_step,
-                'screen-emergency-step--locked':  idx > activeIncident.current_step,
-              }"
-            >
-              <div class="screen-emergency-step__left">
-                <span class="screen-emergency-step__no">
-                  <template v-if="idx < activeIncident.current_step">✓</template>
-                  <template v-else>{{ idx + 1 }}</template>
-                </span>
-              </div>
-              <div class="screen-emergency-step__body">
-                <span class="screen-emergency-step__name">{{ node.node_name }}</span>
-                <span v-if="node.limit_minutes" class="screen-emergency-step__limit">
-                  时限 {{ node.limit_minutes }} 分钟
-                </span>
-                <!-- Step 5：显示 H5 链接 -->
-                <template v-if="idx === planNodes.length - 1 && idx < activeIncident.current_step">
-                  <div class="screen-emergency-step__h5-link">
-                    <span class="screen-emergency-step__h5-hint">请外勤人员打开手机访问：</span>
-                    <a
-                      :href="h5EmergencyUrl"
-                      target="_blank"
-                      class="screen-emergency-step__h5-btn"
-                    >
-                      打开 H5 结案页 →
-                    </a>
-                  </div>
-                </template>
-              </div>
-              <div class="screen-emergency-step__right">
-                <button
-                  v-if="idx === activeIncident.current_step"
-                  class="screen-emergency-step__confirm-btn"
-                  @click="handleConfirmStep(node)"
-                >
-                  ✓ 确认
-                </button>
-                <span v-else-if="idx < activeIncident.current_step" class="screen-emergency-step__done-tag">
-                  已完成
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 结案后底部提示 -->
-          <div
-            v-if="activeIncident.current_step >= planNodes.length && !incidentClosed"
-            class="screen-emergency-panel__footer"
-          >
-            <span class="screen-emergency-panel__footer-hint">
-              所有步骤已完成，等待外勤 H5 端选择结案方式…
-            </span>
-          </div>
-          <div v-if="incidentClosed" class="screen-emergency-panel__footer screen-emergency-panel__footer--closed">
-            <span>✅ 应急事件已结案，大屏将在 3 秒后恢复正常</span>
-          </div>
-        </div>
-      </div>
-    </Transition>
-    </Teleport>
     <ScreenEmergencyFloatBtn />
   </div>
 </template>
@@ -494,13 +406,6 @@ import {
   type HazardListItem,
   type WorkOrderBoard,
 } from "@/services/screenKpiService"
-import {
-  getActiveIncident,
-  getPlanNodes,
-  confirmStep,
-  type EmergencyIncident,
-  type EmergencyFlowNode,
-} from "@/services/emergencyService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 import { getBuildingIotSummary, type BuildingIotSummary } from "@/services/iotDemoService"
 
@@ -708,48 +613,6 @@ function addAmapMarkers(): void {
 
     marker.setMap(amapInstance)
     amapMarkers.push(marker)
-  }
-}
-
-// ── 应急指挥状态 ─────────────────────────────────────────────────────────────
-const activeIncident  = ref<EmergencyIncident | null>(null)
-const planNodes       = ref<EmergencyFlowNode[]>([])
-const incidentClosed  = ref(false)
-
-/** 关联建筑名称 */
-const incidentBuilding = computed(() => {
-  if (!activeIncident.value) return ""
-  const spaces = getTable<{ id: number; name: string }>("iot_space")
-  const space = spaces.find((s) => Number(s.id) === Number(activeIncident.value!.building_id))
-  return space?.name ?? `建筑 #${activeIncident.value.building_id}`
-})
-
-/** H5 结案页 URL（带 _role 参数，新标签页自动以外勤角色打开） */
-const h5EmergencyUrl = computed(() => {
-  if (!activeIncident.value) return ""
-  const base = `${window.location.origin}/h5/emergency/${activeIncident.value.id}`
-  return `${base}?_role=FIELD_WORKER`
-})
-
-/** 用户点击"✓ 确认"某个步骤 */
-function handleConfirmStep(node: EmergencyFlowNode): void {
-  if (!activeIncident.value) return
-  confirmStep(activeIncident.value.id, node.node_code)
-  // 同步刷新应急状态
-  loadEmergency()
-}
-
-/** 轮询检测应急事件关闭（H5 端结案后大屏自动消弹窗） */
-function loadEmergency(): void {
-  const incident = getActiveIncident()
-  activeIncident.value = incident
-  if (incident) {
-    planNodes.value = getPlanNodes(incident.plan_id)
-    incidentClosed.value = false
-  } else if (activeIncident.value && !incident) {
-    // 刚从有变无 → 事件被 H5 关闭了
-    incidentClosed.value = true
-    setTimeout(() => { incidentClosed.value = false }, 3000)
   }
 }
 
@@ -1087,7 +950,6 @@ function loadData() {
   hazardList.value = selectHazardList({ limit: 15 })
   board.value      = selectWorkOrderBoard()
   currentTime.value = formatTime(new Date())
-  loadEmergency()
   iotRefreshTick.value++  // 触发 selectedIotSummary 重计算
   updateTrendChart()
   updateRiskChart()
@@ -2708,177 +2570,6 @@ onUnmounted(() => {
   .screen-command-node strong { font-size: 10px; }
   .screen-command-node small { display: none; }
   .screen-command-node:not(:last-child)::after { top: 13px; left: calc(50% + 20px); width: calc(100% - 40px); }
-}
-
-/* ===== 应急指挥弹窗 overlay ===== */
-.screen-emergency-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(6, 2, 10, 0.80);
-  backdrop-filter: blur(4px);
-}
-.screen-emergency-panel {
-  width: 560px;
-  max-width: 92vw;
-  padding: 28px 28px 20px;
-  border: 1px solid rgba(239, 68, 68, 0.50);
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25), 0 0 40px rgba(239, 68, 68, 0.20), 0 8px 40px rgba(0,0,0,0.6);
-}
-.screen-emergency-panel__header {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 22px;
-}
-.screen-emergency-panel__icon {
-  font-size: 32px;
-  flex-shrink: 0;
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.screen-emergency-panel__title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #EF4444;
-  margin: 0 0 4px;
-}
-.screen-emergency-panel__subtitle {
-  font-size: 12px;
-  color: rgba(255,255,255,0.55);
-  margin: 0;
-}
-
-/* 步骤列表 */
-.screen-emergency-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.screen-emergency-step {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  transition: background 0.2s;
-}
-.screen-emergency-step--done {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.20);
-}
-.screen-emergency-step--current {
-  background: rgba(239, 68, 68, 0.10);
-  border-color: rgba(239, 68, 68, 0.35);
-}
-.screen-emergency-step--locked {
-  background: rgba(255,255,255,0.03);
-  border-color: rgba(255,255,255,0.06);
-  opacity: 0.5;
-}
-.screen-emergency-step__left { flex-shrink: 0; }
-.screen-emergency-step__no {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 13px;
-  font-weight: 700;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.6);
-}
-.screen-emergency-step--done   .screen-emergency-step__no { background: rgba(16,185,129,0.20); color: #10B981; }
-.screen-emergency-step--current .screen-emergency-step__no { background: rgba(239,68,68,0.25); color: #EF4444; }
-
-.screen-emergency-step__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.screen-emergency-step__name {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.90);
-}
-.screen-emergency-step--done .screen-emergency-step__name { color: rgba(16,185,129,0.85); }
-.screen-emergency-step__limit {
-  font-size: 11px;
-  color: rgba(255,255,255,0.40);
-}
-
-.screen-emergency-step__h5-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-.screen-emergency-step__h5-hint {
-  font-size: 11px;
-  color: rgba(255,255,255,0.50);
-}
-.screen-emergency-step__h5-btn {
-  display: inline-block;
-  padding: 4px 12px;
-  background: linear-gradient(135deg, #1B6FE8, #00D4FF);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.screen-emergency-step__h5-btn:hover {
-  opacity: 0.85;
-}
-
-.screen-emergency-step__right { flex-shrink: 0; }
-.screen-emergency-step__confirm-btn {
-  padding: 6px 16px;
-  background: #EF4444;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.screen-emergency-step__confirm-btn:hover { background: #DC2626; }
-.screen-emergency-step__done-tag {
-  font-size: 11px;
-  color: #10B981;
-  font-weight: 600;
-}
-
-.screen-emergency-panel__footer {
-  margin-top: 16px;
-  padding: 10px 14px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 6px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.55);
-  text-align: center;
-}
-.screen-emergency-panel__footer--closed {
-  background: rgba(16,185,129,0.10);
-  color: #10B981;
-}
-
-/* 过渡动画 */
-.emergency-fade-enter-active,
-.emergency-fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.emergency-fade-enter-from,
-.emergency-fade-leave-to {
-  opacity: 0;
 }
 
 /* ===== IoT 实时数据 mini 面板 ===== */
