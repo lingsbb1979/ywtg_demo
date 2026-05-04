@@ -329,6 +329,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
+import { useRouter } from "vue-router"
 import {
   listAlarms,
   getAlarm,
@@ -359,6 +360,7 @@ const keyword            = ref("")
 const drawerVisible      = ref(false)
 const actionMsg          = ref("")
 const dispatchedOrderNo  = ref("")
+const router = useRouter()
 
 // ── 状态筛选标签 ──────────────────────────────────────────────────────────────
 
@@ -458,11 +460,18 @@ function dispatchAlarm() {
   if (result.ok) {
     dispatchedOrderNo.value = result.orderNo ?? ""
     loadData()
-    actionMsg.value = `✓ 已派单，工单号：${result.orderNo}`
+    // RED 级别告警→关闭抖幘并跳转大屏应急指挥页
+    if (alarm.alarmLevel === "RED") {
+      closeDrawer()
+      router.push("/screen/emergency")
+    } else {
+      actionMsg.value = `✓ 已派单，工单号：${result.orderNo}`
+      setTimeout(() => { actionMsg.value = "" }, 4000)
+    }
   } else {
     actionMsg.value = `✗ ${result.error}`
+    setTimeout(() => { actionMsg.value = "" }, 4000)
   }
-  setTimeout(() => { actionMsg.value = "" }, 4000)
 }
 
 // ── 数据加载 ──────────────────────────────────────────────────────────────────
