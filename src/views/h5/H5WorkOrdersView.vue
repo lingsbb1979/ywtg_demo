@@ -46,9 +46,8 @@
       class="h5-emergency-banner h5-emergency-banner--multi"
       role="alert"
     >
-      <span class="h5-emergency-banner__icon">🚨</span>
       <div class="h5-emergency-banner__text">
-        <span class="h5-emergency-banner__title">共 {{ readyIncidents.length }} 个应急事件待结案，请选择：</span>
+        <span class="h5-emergency-banner__title">🚨 共 {{ readyIncidents.length }} 个应急事件待结案，请选择：</span>
         <div class="h5-em-incident-list">
           <div
             v-for="inc in readyIncidents"
@@ -343,16 +342,19 @@ function onCardClick(item: H5TodoItem) {
   flex-direction: column;
   gap: 6px;
   margin-top: 6px;
+  width: 100%;
 }
 .h5-em-incident-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
   background: rgba(0,0,0,0.18);
   border-radius: 6px;
-  padding: 7px 10px;
+  padding: 8px 12px;
   cursor: pointer;
   min-width: 0;
+  box-sizing: border-box;
 }
 .h5-em-incident-item:active { opacity: 0.78; }
 .h5-em-incident-item__info  {
