@@ -232,9 +232,12 @@ const stats = computed(() => {
     a.alarm_level === "RED" && (a.status === "ACTIVE" || a.status === "PENDING")
   ).length
 
-  const orders = getTable<{ create_time: string }>("work_order")
+  const orders = getTable<{ create_time: string; source_type?: string }>("work_order")
   const today = new Date().toISOString().slice(0, 10)
-  const todayWorkOrders = orders.filter(o => (o.create_time ?? "").startsWith(today)).length
+  // 排除应急结案生成的工单
+  const todayWorkOrders = orders.filter(o =>
+    o.source_type !== "EMERGENCY" && (o.create_time ?? "").startsWith(today)
+  ).length
 
   return { totalBuildings, activeAlarms, todayWorkOrders }
 })
@@ -270,8 +273,11 @@ const healthScore = computed(() => {
 
 const metricCards = computed(() => {
   const closedSet = new Set(["CLOSED", "CANCELLED", "COMPLETED", "FINISHED"])
-  const allOrders = getTable<{ status: string }>("work_order")
-  const openOrders = allOrders.filter(o => !closedSet.has(o.status ?? "")).length
+  // 排除 source_type="EMERGENCY" 的应急结案工单（走应急流程，不计入普通工单统计）
+  const allOrders = getTable<{ status: string; source_type?: string }>("work_order")
+  const openOrders = allOrders.filter(o =>
+    o.source_type !== "EMERGENCY" && !closedSet.has(o.status ?? "")
+  ).length
   return [
     { label: "监测设备", value: stats.value.totalBuildings * 12, sub: "在线率 98.6%", tone: "blue" },
     { label: "隐患点位", value: riskSummary.value.red + riskSummary.value.orange + riskSummary.value.yellow, sub: "较昨日 ↓ 3.6%", tone: "orange" },
