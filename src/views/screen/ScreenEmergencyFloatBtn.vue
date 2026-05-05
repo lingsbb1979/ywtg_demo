@@ -233,6 +233,20 @@ function loadData() {
   rawRedAlarms.value = allAlarms.filter(
     r => r.alarm_level === "RED" && (r.status === "CONFIRMED" || r.status === "DISPATCHED")
   )
+  // 自动补建：已 CONFIRMED 但尚无 emergency_incident 的 RED 告警，立即创建事件
+  let incidentCreated = false
+  for (const alarm of rawRedAlarms.value) {
+    const hasIncident = allActiveIncidents.value.some(
+      inc => Number(inc.alarm_record_id) === Number(alarm.id)
+    )
+    if (!hasIncident) {
+      createIncidentFromAlarm(alarm.id)
+      incidentCreated = true
+    }
+  }
+  if (incidentCreated) {
+    allActiveIncidents.value = getAllActiveIncidents()
+  }
   activeRedAlarmCount.value = rawRedAlarms.value.length
   // 若所选告警已关闭，重置
   if (selectedAlarmId.value !== null) {

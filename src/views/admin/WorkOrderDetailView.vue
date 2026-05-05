@@ -10,7 +10,7 @@
       </div>
       <!-- 核查按钮 -->
       <div v-if="order?.status === 'CHECKING'" class="admin-page-header__right" style="gap:8px;display:flex">
-        <button class="btn-pc-secondary btn-sm" @click="doReject">退回重办</button>
+        <button v-if="order?.sourceType !== 'EMERGENCY'" class="btn-pc-secondary btn-sm" @click="doReject">退回重办</button>
         <button class="btn-pc-primary btn-sm" @click="doVerify">核查通过</button>
       </div>
     </div>

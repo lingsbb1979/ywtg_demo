@@ -96,6 +96,7 @@ import { useRoute } from "vue-router"
 import { useDemoRoleStore, ROLE_ACCOUNT, getDefaultPathForRole, DEMO_ROLE_OPTIONS } from "@/stores/demoRole"
 import type { DemoRole } from "@/stores/demoRole"
 import { getTable } from "@/services/sqliteMirrorRepository"
+import { countOpenAlarms } from "@/services/alarmService"
 
 const demoRoleStore = useDemoRoleStore()
 const route = useRoute()
@@ -177,11 +178,7 @@ function menuBadge(label: string): string {
     return cap(n)
   }
   if (label.includes("告警")) {
-    // 只有 RED 级别未关闭告警才计入
-    const closed = new Set(["CLOSED", "CANCELLED", "RESOLVED"])
-    const alarms = getTable<{ status: string; alarm_level: string }>("alarm_record")
-    const n = alarms.filter(a => a.alarm_level === "RED" && !closed.has(a.status ?? "")).length
-    return cap(n)
+    return cap(countOpenAlarms())
   }
   return ""
 }

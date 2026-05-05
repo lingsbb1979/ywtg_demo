@@ -47,6 +47,7 @@ export interface WorkOrderListItem {
   dispatchOrgId: number | null
   receiveOrgId:  number | null
   assigneeId:    number | null
+  sourceType:    string | null
   status:        string | null
   currentNode:   string | null
   dispatchTime:  string | null
@@ -96,6 +97,7 @@ export function listWorkOrders(query: WorkOrderListQuery = {}): WorkOrderListIte
     dispatch_org_id: number | null
     receive_org_id:  number | null
     assignee_id:     number | null
+    source_type:     string | null
     status:          string | null
     current_node:    string | null
     dispatch_time:   string | null
@@ -149,6 +151,7 @@ export function listWorkOrders(query: WorkOrderListQuery = {}): WorkOrderListIte
       dispatchOrgId: r.dispatch_org_id ?? null,
       receiveOrgId:  r.receive_org_id  ?? null,
       assigneeId:    r.assignee_id     ?? null,
+      sourceType:    r.source_type     ?? null,
       status:        r.status          ?? null,
       currentNode:   r.current_node    ?? null,
       dispatchTime:  r.dispatch_time   ?? null,

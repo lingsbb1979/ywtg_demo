@@ -12,6 +12,8 @@
 
 import { getTable, setTable } from "./sqliteMirrorRepository"
 
+const CLOSED_ALARM_STATUSES = new Set(["CLOSED", "CANCELLED", "RESOLVED"])
+
 // ── 类型定义 ──────────────────────────────────────────────────────────────────
 
 export interface AlarmListQuery {
@@ -41,6 +43,11 @@ export interface AlarmListItem {
   handleTime:   string | null
   handleUser:   string | null
   createTime:   string | null
+}
+
+export function countOpenAlarms(): number {
+  const alarms = getTable<{ status: string | null }>("alarm_record")
+  return alarms.filter((alarm) => !CLOSED_ALARM_STATUSES.has(alarm.status ?? "")).length
 }
 
 // ── 内部辅助 ──────────────────────────────────────────────────────────────────

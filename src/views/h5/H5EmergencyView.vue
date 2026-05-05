@@ -33,8 +33,8 @@
       <span class="h5-em__icon">✅</span>
       <p class="h5-em__done-title">应急事件已结案</p>
       <p class="h5-em__done-sub">{{ resolvedMsg }}</p>
-      <button class="h5-btn-primary" style="margin-top:24px" @click="$router.push('/h5/work-orders')">
-        返回工单列表
+      <button class="h5-btn-primary" style="margin-top:24px" @click="$router.push('/h5/home')">
+        返回首页
       </button>
     </div>
 
@@ -148,7 +148,7 @@ function handleResolve(closeType: "REPAIR_ORDER" | "REPORT_GOV"): void {
   if (result.ok) {
     resolved.value = true
     if (closeType === "REPAIR_ORDER") {
-      resolvedMsg.value = `已生成修缮工单，工单编号 WO-EM-${String(result.workOrderId ?? "").padStart(4, "0")}，请工单中心跟进处置。`
+      resolvedMsg.value = `已生成修缮工单，工单编号 WO-EM-${String(result.workOrderId ?? "").padStart(4, "0")}，并自动进入 PC 工单中心待核查。`
     } else {
       resolvedMsg.value = "已上报市政府，事件已归档。整体拆除方案由市政府审批后执行。"
     }

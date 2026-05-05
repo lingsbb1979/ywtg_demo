@@ -118,7 +118,7 @@
                   </button>
                   <!-- 退回重办（仅待核查状态显示） -->
                   <button
-                    v-if="order.status === 'CHECKING'"
+                    v-if="order.status === 'CHECKING' && order.sourceType !== 'EMERGENCY'"
                     class="btn-pc-secondary btn-sm"
                     title="退回重办"
                     @click="doReject(order.id)"

@@ -49,8 +49,8 @@
         </div>
       </div>
       <div class="alarm-dispatch-header__stats tabular-nums">
-        <span class="alarm-stat alarm-stat--red">活跃 {{ activeCount }}</span>
-        <span class="alarm-stat alarm-stat--orange">待确认 {{ pendingCount }}</span>
+        <span class="alarm-stat alarm-stat--red">待确认 {{ pendingCount }}</span>
+        <span class="alarm-stat alarm-stat--orange">已确认 {{ confirmedCount }}</span>
         <span class="alarm-stat alarm-stat--green">今日处置 {{ todayCount }}</span>
       </div>
       <div class="alarm-dispatch-header__right screen-page-header__right">
@@ -110,7 +110,7 @@
 
         <!-- 告警统计 -->
         <div class="alarm-stat-footer tabular-nums">
-          <span>活跃 <strong style="color: var(--risk-red)">{{ activeCount }}</strong></span>
+          <span>待确认 <strong style="color: var(--risk-red)">{{ pendingCount }}</strong></span>
           <span>橙色 <strong style="color: var(--risk-orange)">{{ orangeCount }}</strong></span>
           <span>已派单 <strong style="color: var(--screen-cyan)">{{ dispatchedCount }}</strong></span>
         </div>
@@ -183,7 +183,7 @@
         <div class="dispatch-action-buttons">
           <button
             class="btn-screen-primary"
-            :disabled="!selectedAlarm || selectedAlarm.status !== 'ACTIVE'"
+            :disabled="!canConfirmSelectedAlarm"
             @click="confirmAlarm"
           >
             确认告警
@@ -191,7 +191,7 @@
           <button
             class="btn-screen-primary dispatch-btn-dispatch"
             :class="{ 'dispatch-btn-emergency': selectedAlarm?.alarmLevel === 'RED' }"
-            :disabled="!selectedAlarm || selectedAlarm.status !== 'PENDING'"
+            :disabled="!canDispatchSelectedAlarm"
             @click="dispatchAlarm"
           >
             {{ selectedAlarm?.alarmLevel === 'RED' ? '大屏应急' : '自动派单' }}
@@ -265,8 +265,8 @@ const router        = useRouter()
 
 const filterOptions = [
   { label: "全部",   value: "ALL"    },
-  { label: "活跃",   value: "ACTIVE" },
-  { label: "待处理", value: "PENDING" },
+  { label: "待确认", value: "PENDING" },
+  { label: "已确认", value: "CONFIRMED" },
   { label: "已派单", value: "DISPATCHED" },
 ]
 
@@ -277,11 +277,14 @@ const filteredAlarms = computed(() => {
   return alarms.value.filter(a => a.status === activeFilter.value)
 })
 
-const activeCount     = computed(() => alarms.value.filter(a => a.status === "ACTIVE").length)
+const confirmedCount  = computed(() => alarms.value.filter(a => a.status === "CONFIRMED").length)
+const activeCount     = computed(() => confirmedCount.value)
 const pendingCount    = computed(() => alarms.value.filter(a => a.status === "PENDING").length)
 const orangeCount     = computed(() => alarms.value.filter(a => a.alarmLevel === "ORANGE").length)
 const dispatchedCount = computed(() => alarms.value.filter(a => a.status === "DISPATCHED").length)
 const todayCount      = computed(() => alarms.value.filter(a => a.status === "CLOSED" || a.status === "DISPATCHED").length)
+const canConfirmSelectedAlarm = computed(() => !!selectedAlarm.value && selectedAlarm.value.status === "PENDING")
+const canDispatchSelectedAlarm = computed(() => !!selectedAlarm.value && selectedAlarm.value.status === "CONFIRMED")
 
 // ── 工单统计 ──────────────────────────────────────────────────────────────────
 

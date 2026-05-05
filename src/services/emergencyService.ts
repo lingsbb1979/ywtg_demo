@@ -166,7 +166,7 @@ export function confirmStep(incidentId: number, nodeCode: string): void {
 
 /**
  * 结案：标记事件已关闭，并根据方式选择后续动作。
- * - "REPAIR_ORDER"：生成一张普通修缮工单（source_type="EMERGENCY"）
+ * - "REPAIR_ORDER"：生成一张已处置待核查的修缮工单（source_type="EMERGENCY"）
  * - "REPORT_GOV"：仅归档，不生成工单
  */
 export function resolveIncident(
@@ -203,7 +203,7 @@ export function resolveIncident(
   }
 
   if (closeType === "REPAIR_ORDER") {
-    // 生成修缮工单
+    // H5 已完成应急处置并选择修缮，因此后续直接进入 PC 待核查。
     const orders = getTable<Record<string, unknown>>("work_order")
     const nextId = orders.length > 0
       ? Math.max(...orders.map((r) => Number(r.id ?? 0))) + 1
@@ -228,17 +228,54 @@ export function resolveIncident(
       receive_role_key: "FIELD_WORKER",
       assignee_id:      null,
       priority:         1,
-      status:           "PENDING",
-      current_node:     "PENDING",
+      status:           "CHECKING",
+      current_node:     "CHECK",
       source_id:        incidentId,
       source_type:      "EMERGENCY",
       dispatch_time:    now,
-      accept_time:      null,
-      finish_time:      null,
+      accept_time:      now,
+      finish_time:      now,
       check_time:       null,
       create_time:      now,
       update_time:      now,
     }])
+
+    const disposalRows = getTable<{ id?: number }>("work_order_disposal")
+    const disposalId = disposalRows.length > 0
+      ? Math.max(...disposalRows.map((r) => Number(r.id ?? 0))) + 1
+      : 1
+    setTable("work_order_disposal", [...disposalRows, {
+      id:            disposalId,
+      order_id:      nextId,
+      user_id:       null,
+      gps_location:  null,
+      address_desc:  null,
+      image_urls:    null,
+      video_url:     null,
+      disposal_desc: "H5 应急结案：险情已控制，转入修缮工单待核查",
+      disposal_time: now,
+      create_time:   now,
+    }])
+
+    const logRows = getTable<{ id?: number }>("work_order_log")
+    const logId = logRows.length > 0
+      ? Math.max(...logRows.map((r) => Number(r.id ?? 0))) + 1
+      : 1
+    setTable("work_order_log", [...logRows, {
+      id:            logId,
+      order_id:      nextId,
+      node_type:     "EMERGENCY_CLOSE",
+      node_name:     "应急结案",
+      operator_id:   null,
+      operator_name: "H5应急结案",
+      operator:      "H5应急结案",
+      action_desc:   "H5 端选择“转为修缮工单”，已进入 PC 待核查",
+      action_time:   now,
+      detail_json:   JSON.stringify({ incident_id: incidentId, close_type: closeType }),
+      remark:        null,
+      create_time:   now,
+    }])
+
     return { ok: true, workOrderId: nextId }
   }
 

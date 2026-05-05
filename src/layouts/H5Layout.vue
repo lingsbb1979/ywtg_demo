@@ -23,7 +23,7 @@
           <span class="h5-layout__tabbar-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
           </span>
-          <span v-if="pendingOrderCount > 0" class="h5-layout__tabbar-badge">{{ pendingOrderCount > 99 ? '99+' : pendingOrderCount }}</span>
+          <span v-if="alarmBadgeCount > 0" class="h5-layout__tabbar-badge">{{ alarmBadgeCount > 99 ? '99+' : alarmBadgeCount }}</span>
         </span>
         <span class="h5-layout__tabbar-label">首页</span>
       </router-link>
@@ -62,18 +62,13 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { getTable } from "@/services/sqliteMirrorRepository"
+import { countOpenAlarms } from "@/services/alarmService"
 
 const route = useRoute()
 const router = useRouter()
 
-/** 只有 RED 级别活跃告警时才显示首页小红点 */
-const pendingOrderCount = computed(() => {
-  const alarms = getTable<{ status: string; alarm_level: string }>("alarm_record")
-  return alarms.filter(a =>
-    a.alarm_level === "RED" && (a.status === "ACTIVE" || a.status === "PENDING")
-  ).length
-})
+/** 首页小红点显示全部未关闭告警 */
+const alarmBadgeCount = computed(() => countOpenAlarms())
 
 const ROOT_PATHS = ['/h5/home', '/h5/alerts', '/h5/work-orders', '/h5/buildings', '/h5/mine']
 // alerts 页面有自己的自定义顶栏（含搜索按钮），不使用 layout 提供的通用 header

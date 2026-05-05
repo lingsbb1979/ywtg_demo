@@ -15,8 +15,8 @@
  * 均为 tableRegistry.ts 登记的真实表。
  *
  * 建筑/数据点对应：
- *   橙色：B003（space_id=1003）裂缝数据点 id=10007，limit_h=2.0mm，limit_hh=5.0mm
- *   红色：B012（space_id=1012）倾角数据点 id=10034，limit_h=1.0°，limit_hh=3.0°
+ *   橙色：B006（space_id=1006）裂缝数据点 id=10016，limit_h=2.0mm，limit_hh=5.0mm
+ *   红色：B011（space_id=1011）倾角数据点 id=10032，limit_h=1.0°，limit_hh=3.0°
  */
 
 import { getTable, setTable } from "./sqliteMirrorRepository"
@@ -31,21 +31,21 @@ const TICK_MS = 1000
 const MAX_TICKS = 12
 
 /**
- * B003 裂缝数据点：
- *   space_id=1003，bIdx=2，fIdx=0 → id = 10001 + 2*3 + 0 = 10007
+ * B006 裂缝数据点：
+ *   space_id=1006，bIdx=5，fIdx=0 → id = 10001 + 5*3 + 0 = 10016
  *   limit_h=2.0（橙色），limit_hh=5.0（红色）
  */
-const CRACK_POINT_ID = 10007
-const CRACK_SPACE_ID = 1003
+const CRACK_POINT_ID = 10016
+const CRACK_SPACE_ID = 1006
 const CRACK_LIMIT_H  = 2.0   // 橙色阈值
 
 /**
- * B012 倾角数据点：
- *   space_id=1012，bIdx=11，fIdx=1 → id = 10001 + 11*3 + 1 = 10035
+ * B011 倾角数据点：
+ *   space_id=1011，bIdx=10，fIdx=1 → id = 10001 + 10*3 + 1 = 10032
  *   limit_h=1.0（橙色），limit_hh=3.0（红色）
  */
-const TILT_POINT_ID  = 10035
-const TILT_SPACE_ID  = 1012
+const TILT_POINT_ID  = 10032
+const TILT_SPACE_ID  = 1011
 const TILT_LIMIT_HH  = 3.0   // 红色阈值（倾角超红色用 limit_hh）
 
 // ── 状态（防止重复触发） ───────────────────────────────────────────────────────
@@ -175,7 +175,7 @@ export function startOrangeCrackIot(callbacks: IotDemoCallbacks): void {
     if (triggered) {
       ensureAlarm({
         buildingId:   CRACK_SPACE_ID,
-        buildingName: "杏林路民国砖楼（B003）",
+        buildingName: "解放路旧式办公楼（B006）",
         alarmType:    "CRACK_DEFORM",
         alarmTitle:   "裂缝宽度超限（IoT驱动）",
         alarmLevel:   "ORANGE",
@@ -222,7 +222,7 @@ export function startRedTiltIot(callbacks: IotDemoCallbacks): void {
     if (triggered) {
       ensureAlarm({
         buildingId:   TILT_SPACE_ID,
-        buildingName: "前进路俄式民居（B012）",
+        buildingName: "长安街旧时商铺（B011）",
         alarmType:    "STRUCT_TILT",
         alarmTitle:   "倾斜角超红色阈值（IoT驱动）",
         alarmLevel:   "RED",

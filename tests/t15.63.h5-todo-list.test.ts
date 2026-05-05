@@ -109,6 +109,14 @@ const ORDER_CHECKING = {
   assignee_id: 201, receive_org_id: 10,
   dispatch_time: "2024-03-08 07:00:00", current_node: "CHECK",
 }
+const ORDER_PENDING_EMERGENCY = {
+  id: 6, order_no: "WO-EM-0001", status: "PENDING",
+  order_level: "HIGH", alarm_level: "RED",
+  building_id: 1001, alarm_id: null,
+  assignee_id: 201, receive_org_id: 10,
+  source_type: "EMERGENCY",
+  dispatch_time: "2024-03-08 06:00:00", current_node: "PENDING",
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 describe("T15.63 selectH5TodoList() — 导出", () => {
@@ -148,6 +156,12 @@ describe("T15.63 selectH5TodoList() — 状态过滤", () => {
   it("CHECKING 不返回", async () => {
     const { selectH5TodoList } = await importService()
     expect(selectH5TodoList().every((r: any) => r.status !== "CHECKING")).toBe(true)
+  })
+
+  it("EMERGENCY 来源工单不返回", async () => {
+    setTable("work_order", [ORDER_PENDING_URGENT, ORDER_PENDING_EMERGENCY])
+    const { selectH5TodoList } = await importService()
+    expect(selectH5TodoList().every((r: any) => r.orderNo !== "WO-EM-0001")).toBe(true)
   })
 })
 

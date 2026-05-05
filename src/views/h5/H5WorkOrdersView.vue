@@ -226,6 +226,7 @@ function loadData() {
     id: number; order_no: string; status: string
     order_level: string | null; alarm_level: string | null
     building_id: number | null; alarm_id: string | null
+    source_type: string | null
     dispatch_time: string | null; current_node: string | null
   }>("work_order")
   const spaces = getTable<{ id: number; name: string }>("iot_space")
@@ -234,7 +235,7 @@ function loadData() {
   const alarmMap = new Map(alarms.map(a => [a.alarm_id, a.alarm_title ?? null]))
   const checkingIds = new Set(base.map(i => i.id))
   const checking: H5TodoItem[] = allOrders
-    .filter(o => o.status === 'CHECKING' && !checkingIds.has(o.id))
+    .filter(o => o.status === 'CHECKING' && o.source_type !== 'EMERGENCY' && !checkingIds.has(o.id))
     .map(o => ({
       id:           o.id,
       orderNo:      o.order_no,
@@ -587,12 +588,13 @@ function onCardClick(item: H5TodoItem) {
   border: 1px solid var(--h5-border, #EEF2F7);
 }
 .h5-accept-btn--checking {
-  background: rgba(245,158,11,0.08);
-  color: #B45309;
-  border: 1px solid rgba(245,158,11,0.3);
+  background: linear-gradient(135deg, #1B6FE8, #4B96FF);
+  color: #FFFFFF;
+  border: 1px solid rgba(27,111,232,0.65);
   font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 6px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 18px;
   white-space: nowrap;
 }
 .h5-accept-btn--finished {

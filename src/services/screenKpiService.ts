@@ -30,7 +30,7 @@ export function selectScreenKpi(): ScreenKpi {
   // ── 工单闭环率 ─────────────────────────────────────────────────────────────
   const orders    = getTable<{ status: string }>("work_order")
   const total     = orders.length
-  const finished  = orders.filter((o) => o.status === "FINISHED").length
+  const finished  = orders.filter((o) => o.status === "FINISHED" || o.status === "CLOSED").length
   const closeRate = total === 0
     ? 0
     : Math.round((finished / total) * 1000) / 10  // 保留 1 位小数
@@ -262,7 +262,8 @@ export interface H5TodoItem {
 const ORDER_LEVEL_SORT: Record<string, number> = { URGENT: 3, HIGH: 2, NORMAL: 1 }
 
 /**
- * H5 外勤工单：PENDING + PROCESSING + CHECKING + FINISHED/CLOSED 全部，按 orderLevel 降序、同级 dispatchTime 升序。
+ * H5 外勤工单：只显示普通 ALARM 来源待办，不包含应急结案生成的 EMERGENCY 修缮工单。
+ * 返回 PENDING + PROCESSING，按 orderLevel 降序、同级 dispatchTime 升序。
  */
 export function selectH5TodoList(query: H5TodoQuery = {}): H5TodoItem[] {
   const { assigneeId, receiveOrgId, limit = 200 } = query
@@ -274,6 +275,7 @@ export function selectH5TodoList(query: H5TodoQuery = {}): H5TodoItem[] {
     order_level: string | null; alarm_level: string | null
     building_id: number | null; alarm_id: string | null
     assignee_id: number | null; receive_org_id: number | null
+    source_type: string | null
     dispatch_time: string | null; current_node: string | null
   }>("work_order")
 
@@ -283,7 +285,7 @@ export function selectH5TodoList(query: H5TodoQuery = {}): H5TodoItem[] {
   const spaceMap = new Map(spaces.map((s) => [s.id, s.name]))
   const alarmMap = new Map(alarms.map((a) => [a.alarm_id, a.alarm_title ?? null]))
 
-  let rows = orders.filter((o) => TODO_SET.has(o.status))
+  let rows = orders.filter((o) => TODO_SET.has(o.status) && o.source_type !== "EMERGENCY")
 
   if (assigneeId   != null) rows = rows.filter((o) => o.assignee_id   === assigneeId)
   if (receiveOrgId != null) rows = rows.filter((o) => o.receive_org_id === receiveOrgId)

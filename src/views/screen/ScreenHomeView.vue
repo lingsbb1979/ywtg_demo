@@ -552,25 +552,27 @@ async function initAmapMap(): Promise<void> {
     if (!amapContainerRef.value || !window.AMap) return
 
     amapInstance = new window.AMap.Map(amapContainerRef.value, {
-      zoom:         19,
+      zoom:         11,
       center:       [130.3620, 46.8221],    // 佳木斯市中心
       mapStyle:     "amap://styles/darkblue",  // 深蓝商务科技风格，与大屏 UI 色调一致
-      features:     ["bg", "road"],  // "bg" 包含河流/水系名称，"road" 包含街道名称；去掉 "point" 不显示景区等兴趣点
+      features:     ["bg", "road", "building", "point"],
       viewMode:     "2D",
       resizeEnable: true,
       showLabel:    true,
+      zooms:        [11, 18],
     })
 
     amapLoaded.value = true
     addAmapMarkers()
 
-    // 自适应显示所有建筑点位，然后再放大 3 级使街道/河流名称更清晰
+    // 自适应显示所有建筑点位，并把缩放保持在 12~14，优先保证街道名称可见。
     const validMarkers = amapMarkers.filter(Boolean)
     if (validMarkers.length > 0) {
       amapInstance.setFitView(validMarkers)
       setTimeout(() => {
         if (amapInstance) {
-          amapInstance.setZoom(Math.min(Math.round((amapInstance.getZoom() + 3) * 1.3), 18))
+          const nextZoom = Math.max(12, Math.min(Math.round(amapInstance.getZoom() + 1), 14))
+          amapInstance.setZoom(nextZoom)
         }
       }, 600)
     }

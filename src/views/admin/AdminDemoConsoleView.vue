@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!--
     T15.86 管理端演示控制台 /admin/demo-console
     ─────────────────────────────────────────────────────────────
@@ -201,47 +201,6 @@
           </button>
         </div>
 
-        <!-- 场景 3：超时督办 -->
-        <div class="admin-scenario-card admin-scenario-card--timeout">
-          <div class="admin-scenario-card__badge" style="background:#EDE9FE;color:#7C3AED">
-            <span>⏰</span>
-            TIMEOUT
-          </div>
-          <div class="admin-scenario-card__title">触发超时督办</div>
-          <div class="admin-scenario-card__detail">
-            <strong>B001</strong> 历史建筑 A<br>
-            工单派单时间提前 200 分钟，超出 SLA（120 分钟），生成督办单
-          </div>
-          <button
-            class="btn-pc-secondary"
-            :disabled="loading === 'timeout'"
-            @click="doTimeoutSupervision"
-          >
-            {{ loading === 'timeout' ? '触发中...' : '⏰ 触发超时督办' }}
-          </button>
-        </div>
-
-        <!-- 场景 4：模拟数据回稳 -->
-        <div class="admin-scenario-card admin-scenario-card--recovery">
-          <div class="admin-scenario-card__badge" style="background:#D1FAE5;color:#059669">
-            <span class="risk-dot risk-dot--green" style="display:inline-block"></span>
-            RECOVERY
-          </div>
-          <div class="admin-scenario-card__title">模拟数据回稳</div>
-          <div class="admin-scenario-card__detail">
-            <strong>B003</strong> 裂缝数据恢复正常<br>
-            将 B003 活跃裂缝告警标记为 CLOSED，用于演示数据恢复流程
-          </div>
-          <button
-            class="btn-pc-secondary btn-pc-secondary--success"
-            style="color:var(--color-success,#10B981);border-color:var(--color-success,#10B981)"
-            :disabled="loading === 'recovery'"
-            @click="doDataRecovery"
-          >
-            {{ loading === 'recovery' ? '恢复中...' : '🟢 模拟数据回稳' }}
-          </button>
-        </div>
-
         <!-- 场景 5：IoT 驱动橙色裂缝（新增，不影响上方按钮） -->
         <div class="admin-scenario-card admin-scenario-card--iot-orange">
           <div class="admin-scenario-card__badge" style="background:#FEF3C7;color:#D97706">
@@ -250,7 +209,7 @@
           </div>
           <div class="admin-scenario-card__title">IoT 模拟触发橙色（裂缝扩展）</div>
           <div class="admin-scenario-card__detail">
-            <strong>B003</strong> 杏林路民国砖楼<br>
+            <strong>B006</strong> 解放路旧式办公楼<br>
             每秒注入裂缝原始遥测数据，分析引擎计算超阈值后自动触发橙色告警
             <div v-if="iotOrangeTick > 0" class="admin-iot-progress">
               第 {{ iotOrangeTick }} 次注入 · 当前值 {{ iotOrangeValue.toFixed(2) }} mm
@@ -276,7 +235,7 @@
           </div>
           <div class="admin-scenario-card__title">IoT 模拟触发红色（倾斜超限）</div>
           <div class="admin-scenario-card__detail">
-            <strong>B012</strong> 前进路俄式民居<br>
+            <strong>B011</strong> 长安街旧时商铺<br>
             每秒注入倾角原始遥测数据，分析引擎计算超红色阈值后触发应急告警
             <div v-if="iotRedTick > 0" class="admin-iot-progress">
               第 {{ iotRedTick }} 次注入 · 当前值 {{ iotRedValue.toFixed(2) }} °
@@ -292,6 +251,26 @@
             @click="doIotRed"
           >
             {{ iotRedRunning ? `注入中 (${iotRedTick})…` : '📡 IoT 触发红色倾斜' }}
+          </button>
+        </div>
+
+        <!-- 场景 7：超时督办 -->
+        <div class="admin-scenario-card admin-scenario-card--timeout">
+          <div class="admin-scenario-card__badge" style="background:#EDE9FE;color:#7C3AED">
+            <span>⏰</span>
+            TIMEOUT
+          </div>
+          <div class="admin-scenario-card__title">触发超时督办</div>
+          <div class="admin-scenario-card__detail">
+            <strong>B001</strong> 历史建筑 A<br>
+            工单派单时间提前 200 分钟，超出 SLA（120 分钟），生成督办单
+          </div>
+          <button
+            class="btn-pc-secondary"
+            :disabled="loading === 'timeout'"
+            @click="doTimeoutSupervision"
+          >
+            {{ loading === 'timeout' ? '触发中...' : '⏰ 触发超时督办' }}
           </button>
         </div>
 
@@ -454,20 +433,28 @@ interface LogEntry {
 const actionLog = ref([] as LogEntry[])
 
 // ── 高德地图 Key 配置 ──────────────────────────────────────────────────────────
+const DEFAULT_AMAP_KEY          = "1a8fc8721e8413900b95014b6feaec9a"
+const DEFAULT_AMAP_SECURITY     = "497f05ada8659ff6980e91c346f5a295"
 const AMAP_KEY_LS           = "AMAP_KEY"
 const AMAP_SECURITY_LS      = "AMAP_SECURITY_CODE"
 const amapKeyInput          = ref(localStorage.getItem(AMAP_KEY_LS) ?? "")
 const amapSecurityInput     = ref(localStorage.getItem(AMAP_SECURITY_LS) ?? "")
 const amapKeyStored         = ref(!!(localStorage.getItem(AMAP_KEY_LS)))
 
+function persistAmapKey(key: string, sec: string) {
+  localStorage.setItem(AMAP_KEY_LS, key)
+  if (sec) localStorage.setItem(AMAP_SECURITY_LS, sec)
+  else localStorage.removeItem(AMAP_SECURITY_LS)
+  amapKeyInput.value = key
+  amapSecurityInput.value = sec
+  amapKeyStored.value = true
+}
+
 function saveAmapKey() {
   const key = amapKeyInput.value.trim()
   const sec  = amapSecurityInput.value.trim()
   if (!key) { log("⚠ 请输入高德地图 Key", "error"); return }
-  localStorage.setItem(AMAP_KEY_LS, key)
-  if (sec) localStorage.setItem(AMAP_SECURITY_LS, sec)
-  else localStorage.removeItem(AMAP_SECURITY_LS)
-  amapKeyStored.value = true
+  persistAmapKey(key, sec)
   log("✓ 高德地图 Key 已保存，请刷新大屏页面（/screen/home）即可显示真实地图", "success")
 }
 
@@ -513,8 +500,9 @@ function doReset() {
   loading.value = "reset"
   try {
     resetDemo()
+    persistAmapKey(DEFAULT_AMAP_KEY, DEFAULT_AMAP_SECURITY)
     loadStats()
-    log("✓ 已重置演示数据：23 栋建筑 · 2 条告警 · 2 条工单", "success")
+    log("✓ 已重置演示数据，并自动写入默认高德地图 Key", "success")
   } catch (e) {
     log(`✗ 重置失败：${e}`, "error")
   } finally {
@@ -590,7 +578,7 @@ function doIotOrange() {
   iotOrangeTick.value  = 0
   iotOrangeValue.value = 0
   iotOrangeState.value = "running"
-  log("▶ IoT 橙色裂缝模拟开始：B003 每秒注入裂缝遥测数据…", "info")
+  log("▶ IoT 橙色裂缝模拟开始：B006 每秒注入裂缝遥测数据…", "info")
 
   startOrangeCrackIot({
     onTick(tick, value) {
@@ -601,7 +589,7 @@ function doIotOrange() {
       if (outcome === "triggered") {
         iotOrangeState.value = "triggered"
         loadStats()
-        log(`✓ IoT 橙色触发成功：B003 裂缝值 ${iotOrangeValue.value.toFixed(2)}mm | ${riskLevel} 告警已写入 alarm_record`, "success")
+        log(`✓ IoT 橙色触发成功：B006 裂缝值 ${iotOrangeValue.value.toFixed(2)}mm | ${riskLevel} 告警已写入 alarm_record`, "success")
       } else {
         iotOrangeState.value = "timeout"
         log("⚠ IoT 橙色触发：注入次数已达上限，请检查分析配置", "error")
@@ -614,7 +602,7 @@ function doIotRed() {
   iotRedTick.value  = 0
   iotRedValue.value = 0
   iotRedState.value = "running"
-  log("▶ IoT 红色倾斜模拟开始：B012 每秒注入倾角遥测数据…", "info")
+  log("▶ IoT 红色倾斜模拟开始：B011 每秒注入倾角遥测数据…", "info")
 
   startRedTiltIot({
     onTick(tick, value) {
@@ -625,7 +613,7 @@ function doIotRed() {
       if (outcome === "triggered") {
         iotRedState.value = "triggered"
         loadStats()
-        log(`✓ IoT 红色触发成功：B012 倾角值 ${iotRedValue.value.toFixed(2)}° | RED 告警已写入 alarm_record`, "success")
+        log(`✓ IoT 红色触发成功：B011 倾角值 ${iotRedValue.value.toFixed(2)}° | RED 告警已写入 alarm_record`, "success")
       } else {
         iotRedState.value = "timeout"
         log("⚠ IoT 红色触发：注入次数已达上限，请检查分析配置", "error")

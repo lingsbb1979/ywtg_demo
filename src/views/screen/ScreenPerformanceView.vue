@@ -1,10 +1,8 @@
 <template>
   <!--
-    T15.100 大屏绩效看板 /screen/performance
-    ─────────────────────────────────────────────────────────────
-    P1 轻量版：展示闭环率、平均响应时间、超时数、督办数
-    数据来源：work_order 表 + supervision_order 表
-    ─────────────────────────────────────────────────────────────
+    T15.100 大屏绩效督办中心 /screen/performance
+    统计口径：仅督办单（supervision_order），不含工单
+    数据来源：supervision_order 表
   -->
   <div class="screen-root screen-bg screen-performance">
     <!-- ===== 顶部标题栏 ===== -->
@@ -19,7 +17,7 @@
         </div>
       </div>
       <div class="screen-page-header__right">
-        <span class="screen-metric-pill">督办 {{ supervisionCount }} 件</span>
+        <span class="screen-metric-pill">督办 {{ supervisionTotal }} 件</span>
         <span class="screen-performance__time screen-page-time tabular-nums">{{ currentTime }}</span>
       </div>
     </header>
@@ -27,117 +25,78 @@
     <!-- ===== 主内容区 ===== -->
     <main class="screen-performance__main">
 
-      <!-- KPI 主指标行 -->
+      <!-- KPI 主指标行（全部督办口径） -->
       <div class="screen-glass-card screen-kpi-ribbon screen-performance__kpi-row" data-zone="kpi">
-        <div class="screen-kpi-item">
-          <span class="board-icon board-icon--finished"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>
-          <span class="screen-kpi-item__label">工单闭环率</span>
-          <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--success">
-            {{ closeRate }}%
-          </span>
-          <span class="screen-kpi-item__unit">闭环率</span>
-        </div>
-        <div class="screen-kpi-divider" />
-        <div class="screen-kpi-item">
-          <span class="board-icon board-icon--processing"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></span>
-          <span class="screen-kpi-item__label">平均响应时间</span>
-          <span class="screen-kpi-item__value tabular-nums">
-            {{ avgResponseTime }}
-          </span>
-          <span class="screen-kpi-item__unit">分钟</span>
-        </div>
-        <div class="screen-kpi-divider" />
-        <div class="screen-kpi-item">
-          <span class="board-icon board-icon--pending"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm1-13h-2v6h2V7zm0 8h-2v2h2v-2z"/></svg></span>
-          <span class="screen-kpi-item__label">超时工单数</span>
-          <span
-            class="screen-kpi-item__value tabular-nums"
-            :class="overdueCount > 0 ? 'screen-kpi-item__value--warn' : ''"
-          >
-            {{ overdueCount }}
-          </span>
-          <span class="screen-kpi-item__unit">条</span>
-        </div>
-        <div class="screen-kpi-divider" />
+        <!-- 督办总数 -->
         <div class="screen-kpi-item">
           <span class="board-icon board-icon--checking"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg></span>
-          <span class="screen-kpi-item__label">督办数</span>
-          <span
-            class="screen-kpi-item__value tabular-nums"
-            :class="supervisionCount > 0 ? 'screen-kpi-item__value--warn' : ''"
-          >
-            {{ supervisionCount }}
+          <span class="screen-kpi-item__label">督办总数</span>
+          <span class="screen-kpi-item__value tabular-nums" :class="supervisionTotal > 0 ? 'screen-kpi-item__value--warn' : ''">
+            {{ supervisionTotal }}
           </span>
           <span class="screen-kpi-item__unit">件</span>
         </div>
+        <div class="screen-kpi-divider" />
+        <!-- 待回复 -->
+        <div class="screen-kpi-item">
+          <span class="board-icon board-icon--pending"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm1-13h-2v6h2V7zm0 8h-2v2h2v-2z"/></svg></span>
+          <span class="screen-kpi-item__label">待回复</span>
+          <span class="screen-kpi-item__value tabular-nums" :class="supervisionPending > 0 ? 'screen-kpi-item__value--warn' : ''">
+            {{ supervisionPending }}
+          </span>
+          <span class="screen-kpi-item__unit">件</span>
+        </div>
+        <div class="screen-kpi-divider" />
+        <!-- 已回复 -->
+        <div class="screen-kpi-item">
+          <span class="board-icon board-icon--finished"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>
+          <span class="screen-kpi-item__label">已回复</span>
+          <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--success">
+            {{ supervisionReplied }}
+          </span>
+          <span class="screen-kpi-item__unit">件</span>
+        </div>
+        <div class="screen-kpi-divider" />
+        <!-- 督办回复率 -->
+        <div class="screen-kpi-item">
+          <span class="board-icon board-icon--processing"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></span>
+          <span class="screen-kpi-item__label">督办回复率</span>
+          <span class="screen-kpi-item__value tabular-nums screen-kpi-item__value--success">
+            {{ replyRate }}%
+          </span>
+          <span class="screen-kpi-item__unit">回复率</span>
+        </div>
       </div>
 
-      <!-- 详细统计卡片 -->
-      <div class="screen-performance__detail-row">
-        <!-- 工单完成统计 -->
-        <div class="screen-glass-card screen-performance__detail-card" data-zone="workorder-stats">
-          <div class="screen-section-title">
-            <span class="screen-section-title__bar" />
-            工单完成统计
-          </div>
-          <div class="screen-performance__stat-list">
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">待接单</span>
-              <span class="screen-performance__stat-value tabular-nums" style="color:var(--wo-pending,#F59E0B)">
-                {{ stats.pending }}
-              </span>
-            </div>
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">处理中</span>
-              <span class="screen-performance__stat-value tabular-nums" style="color:var(--wo-processing,#3B82F6)">
-                {{ stats.processing }}
-              </span>
-            </div>
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">待核查</span>
-              <span class="screen-performance__stat-value tabular-nums" style="color:var(--wo-checking,#8B5CF6)">
-                {{ stats.checking }}
-              </span>
-            </div>
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">已销号</span>
-              <span class="screen-performance__stat-value tabular-nums" style="color:var(--wo-finished,#10B981)">
-                {{ stats.finished }}
-              </span>
-            </div>
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">总计</span>
-              <span class="screen-performance__stat-value tabular-nums" style="color:var(--screen-cyan,#00D4FF)">
-                {{ stats.total }}
-              </span>
-            </div>
-          </div>
+      <!-- 详细督办列表 -->
+      <div class="screen-glass-card screen-performance__detail-card screen-performance__list-card" data-zone="supervision-list">
+        <div class="screen-section-title">
+          <span class="screen-section-title__bar" />
+          督办明细
         </div>
-
-        <!-- 督办统计 -->
-        <div class="screen-glass-card screen-performance__detail-card" data-zone="supervision-stats">
-          <div class="screen-section-title">
-            <span class="screen-section-title__bar" />
-            督办统计
-          </div>
-          <div class="screen-performance__stat-list">
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">督办总数</span>
-              <span class="screen-performance__stat-value tabular-nums">{{ supervisionCount }}</span>
+        <div class="screen-performance__stat-list">
+          <div
+            v-for="sup in supervisions"
+            :key="sup.id"
+            class="screen-performance__stat-item"
+          >
+            <div class="screen-sup-item__left">
+              <span class="screen-sup-item__no">{{ sup.supervision_no ?? `#${sup.id}` }}</span>
+              <span class="screen-sup-item__title">{{ sup.title ?? '—' }}</span>
             </div>
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">待回复</span>
+            <div class="screen-sup-item__right">
               <span
-                class="screen-performance__stat-value tabular-nums"
-                :class="supervisionPending > 0 ? 'screen-performance__stat-value--warn' : ''"
-              >
-                {{ supervisionPending }}
-              </span>
+                class="screen-sup-item__status"
+                :class="{
+                  'screen-sup-item__status--pending':  !sup.reply,
+                  'screen-sup-item__status--replied':  !!sup.reply,
+                }"
+              >{{ sup.reply ? '已回复' : '待回复' }}</span>
+              <span class="screen-sup-item__time tabular-nums">{{ (sup.issue_time ?? sup.create_time ?? '').slice(0, 16) }}</span>
             </div>
-            <div class="screen-performance__stat-item">
-              <span class="screen-performance__stat-label">已回复</span>
-              <span class="screen-performance__stat-value tabular-nums">{{ supervisionReplied }}</span>
-            </div>
+          </div>
+          <div v-if="supervisions.length === 0" class="screen-performance__empty">
+            暂无督办记录
           </div>
         </div>
       </div>
@@ -151,19 +110,31 @@
 import { ref, computed, onMounted } from "vue"
 import ScreenEmergencyFloatBtn from "./ScreenEmergencyFloatBtn.vue"
 import { getTable } from "@/services/sqliteMirrorRepository"
-import { selectWorkOrderBoard, selectScreenKpi } from "@/services/screenKpiService"
+
+interface SupervisionRow {
+  id:              number
+  supervision_no:  string | null
+  title:           string | null
+  status:          string | null
+  reply:           string | null
+  issue_time:      string | null
+  create_time:     string | null
+}
 
 // ── 响应式状态 ─────────────────────────────────────────────────────────────────
-const closeRate       = ref(0)
-const avgResponseTime = ref("—")
-const overdueCount    = ref(0)
-const supervisionCount  = ref(0)
-const supervisionPending  = ref(0)
-const supervisionReplied  = ref(0)
-const currentTime     = ref("")
-const stats = ref({ pending: 0, processing: 0, checking: 0, finished: 0, total: 0 })
+const supervisions      = ref<SupervisionRow[]>([])
+const supervisionTotal  = ref(0)
+const supervisionPending = ref(0)
+const supervisionReplied = ref(0)
+const currentTime        = ref("")
 
-// ── 辅助函数 ──────────────────────────────────────────────────────────────────
+const replyRate = computed(() =>
+  supervisionTotal.value === 0
+    ? 0
+    : Math.round((supervisionReplied.value / supervisionTotal.value) * 1000) / 10
+)
+
+// ── 辅助 ──────────────────────────────────────────────────────────────────────
 function formatTime(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0")
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
@@ -172,52 +143,16 @@ function formatTime(d: Date): string {
 // ── 数据加载 ──────────────────────────────────────────────────────────────────
 function loadData() {
   currentTime.value = formatTime(new Date())
-
-  // 工单数据
-  const kpi = selectScreenKpi()
-  closeRate.value = kpi.closeRate
-
-  const board = selectWorkOrderBoard()
-  overdueCount.value = board.overdueCount
-  stats.value = {
-    pending:    board.pending,
-    processing: board.processing,
-    checking:   board.checking,
-    finished:   board.finished,
-    total:      board.total,
-  }
-
-  // 平均响应时间（简化：从已完成工单计算）
-  const orders = getTable<{
-    status: string
-    dispatch_time: string | null
-    finish_time:   string | null
-  }>("work_order")
-
-  const finished = orders.filter(o => o.status === "FINISHED" && o.dispatch_time && o.finish_time)
-  if (finished.length > 0) {
-    const totalMins = finished.reduce((sum, o) => {
-      const diffMs = Date.parse((o.finish_time!).replace(" ", "T")) -
-                     Date.parse((o.dispatch_time!).replace(" ", "T"))
-      return sum + Math.floor(diffMs / 60000)
-    }, 0)
-    avgResponseTime.value = String(Math.floor(totalMins / finished.length))
-  } else {
-    avgResponseTime.value = "—"
-  }
-
-  // 督办数据
-  const supervisions = getTable<{ status: string; reply: string | null }>("supervision_order")
-  supervisionCount.value  = supervisions.length
-  supervisionPending.value  = supervisions.filter(s => !s.reply).length
-  supervisionReplied.value  = supervisions.filter(s => !!s.reply).length
+  const rows = getTable<SupervisionRow>("supervision_order")
+  supervisions.value      = [...rows].sort((a, b) => b.id - a.id)
+  supervisionTotal.value  = rows.length
+  supervisionPending.value = rows.filter(s => !s.reply).length
+  supervisionReplied.value = rows.filter(s => !!s.reply).length
 }
 
-onMounted(() => {
-  loadData()
-})
+let timer: ReturnType<typeof setInterval>
+onMounted(() => { loadData(); timer = setInterval(loadData, 5_000) })
 </script>
-
 <style scoped>
 .screen-performance {
   display: flex;
@@ -447,5 +382,73 @@ onMounted(() => {
 .screen-performance__stat-value {
   font-size: 22px;
   text-shadow: 0 0 14px currentColor;
+}
+
+/* ===== 督办明细列表 ===== */
+.screen-performance__list-card {
+  border-color: rgba(44, 166, 255, 0.64);
+  background:
+    linear-gradient(180deg, rgba(7, 42, 98, 0.9), rgba(4, 22, 55, 0.8)),
+    radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.12), transparent 62%);
+  box-shadow: 0 0 28px rgba(0, 132, 255, 0.24), inset 0 0 28px rgba(16, 92, 190, 0.16);
+  padding: 20px 24px;
+  border-radius: var(--radius-lg, 12px);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.screen-sup-item__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.screen-sup-item__no {
+  font-size: 11px;
+  color: var(--screen-cyan, #00D4FF);
+  opacity: 0.75;
+}
+
+.screen-sup-item__title {
+  font-size: 14px;
+  color: var(--screen-text-h1, #fff);
+}
+
+.screen-sup-item__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.screen-sup-item__status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.screen-sup-item__status--pending {
+  background: rgba(239,68,68,0.15);
+  color: #F87171;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+
+.screen-sup-item__status--replied {
+  background: rgba(16,185,129,0.15);
+  color: #34D399;
+  border: 1px solid rgba(16,185,129,0.3);
+}
+
+.screen-sup-item__time {
+  font-size: 11px;
+  color: var(--screen-text-muted, rgba(255,255,255,0.45));
+}
+
+.screen-performance__empty {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--screen-text-muted, rgba(255,255,255,0.4));
+  font-size: 13px;
 }
 </style>

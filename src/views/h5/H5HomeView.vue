@@ -14,7 +14,7 @@
         </div>
       </div>
       <div class="h5-home__top-actions">
-        <button class="h5-home__icon-btn" type="button" aria-label="通知">
+        <button class="h5-home__icon-btn" type="button" aria-label="通知" @click="openAlarmCenter">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span v-if="stats.activeAlarms > 0" class="h5-home__notice-badge">{{ stats.activeAlarms }}</span>
         </button>
@@ -75,10 +75,10 @@
     <!-- ② 活跃告警横幅（有告警时才显示） -->
     <div v-if="latestAlarm" class="h5-home__alert-strip"
       :class="`h5-home__alert-strip--${(latestAlarm.alarm_level ?? 'orange').toLowerCase()}`"
-      @click="$router.push('/h5/work-orders')">
+      @click="openAlarmCenter">
       <span class="h5-home__alert-icon">⚠</span>
       <div class="h5-home__alert-body">
-        <span class="h5-home__alert-level">{{ latestAlarm.alarm_level ?? 'ORANGE' }} 预警</span>
+        <span class="h5-home__alert-level">{{ latestAlarm.alarm_level ?? 'ORANGE' }} 告警</span>
         <span class="h5-home__alert-title">{{ latestAlarm.alarm_title }}</span>
       </div>
       <span class="h5-home__alert-btn">立即查看 ›</span>
@@ -93,11 +93,11 @@
           </div>
           <span class="h5-home__nav-label">风险监测</span>
         </div>
-        <div class="h5-home__nav-item" @click="$router.push('/h5/work-orders')">
+        <div class="h5-home__nav-item" @click="openAlarmCenter">
           <div class="h5-home__nav-icon h5-home__nav-icon--orange">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 8v4l3 3"/></svg>
           </div>
-          <span class="h5-home__nav-label">预警中心</span>
+          <span class="h5-home__nav-label">告警中心</span>
           <span v-if="stats.activeAlarms > 0" class="h5-home__nav-badge">{{ stats.activeAlarms }}</span>
         </div>
         <div class="h5-home__nav-item" @click="$router.push('/h5/buildings')">
@@ -199,7 +199,7 @@
           v-for="item in activities"
           :key="item.id"
           class="h5-home__activity"
-          @click="item.type === '告警' ? $router.push('/h5/work-orders') : $router.push('/h5/work-orders')"
+          @click="openActivity(item.type)"
         >
           <span class="h5-home__activity-tag"
             :class="`h5-home__activity-tag--${item.level}`">
@@ -218,19 +218,32 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
+import { useRouter } from "vue-router"
+import { countOpenAlarms } from "@/services/alarmService"
 import { getTable } from "@/services/sqliteMirrorRepository"
 import { listBuildings } from "@/services/buildingService"
+
+const router = useRouter()
+const CLOSED_ALARM_STATUSES = new Set(["CLOSED", "CANCELLED", "RESOLVED"])
+
+function openAlarmCenter() {
+  router.push("/h5/alerts")
+}
+
+function openActivity(type: string) {
+  if (type === "告警") {
+    openAlarmCenter()
+    return
+  }
+  router.push("/h5/work-orders")
+}
 
 // ── 核心统计 ──────────────────────────────────────────────────────────────────
 const stats = computed(() => {
   const spaces = getTable<{ id: number; type: string }>("iot_space")
   const totalBuildings = spaces.filter(s => s.type === "2").length || 23
 
-  // 只统计 RED 级别活跃告警
-  const alarmRows = getTable<{ status: string; alarm_level: string }>("alarm_record")
-  const activeAlarms = alarmRows.filter(a =>
-    a.alarm_level === "RED" && (a.status === "ACTIVE" || a.status === "PENDING")
-  ).length
+  const activeAlarms = countOpenAlarms()
 
   const orders = getTable<{ create_time: string; source_type?: string }>("work_order")
   const today = new Date().toISOString().slice(0, 10)
@@ -242,15 +255,13 @@ const stats = computed(() => {
   return { totalBuildings, activeAlarms, todayWorkOrders }
 })
 
-// ── 最新告警（只有 RED 级别才显示预警横幅）─────────────────────────────────
+// ── 最新未关闭告警（首页横幅点击进入告警中心）───────────────────────────────
 const latestAlarm = computed(() => {
   const rows = getTable<{
     id: number; alarm_title: string; alarm_level: string; status: string; trigger_time: string
   }>("alarm_record")
   return rows
-    .filter(r =>
-      r.alarm_level === "RED" && (r.status === "ACTIVE" || r.status === "PENDING")
-    )
+    .filter(r => !CLOSED_ALARM_STATUSES.has(r.status ?? ""))
     .sort((a, b) => (b.trigger_time ?? "").localeCompare(a.trigger_time ?? ""))[0] ?? null
 })
 

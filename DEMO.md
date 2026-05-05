@@ -20,6 +20,10 @@ npm run dev
 | 街道工作人员 | user | 123456 |
 | 外勤人员 | field | 123456 |
 
+TILT — 场景触发的整体倾斜告警（scenarioService 手动写入，B012 红色倾斜场景按钮产生）
+STRUCT_TILT — IoT 遥测驱动的结构倾斜告警（iotDemoService 注入产生，IoT·RED 按钮产生）
+CRACK / CRACK_DEFORM — 裂缝宽度超阈值告警
+
 ---
 
 ## 三端路由
@@ -28,7 +32,8 @@ npm run dev
 |---------|--------------------|--------------------------|
 | 大屏端   | http://localhost:5173/screen/home       | 一体化综合监管大屏         |
 | 大屏应急 | http://localhost:5173/screen/emergency  | 应急管理页面               |
-| 后台管理 | http://localhost:5173/admin/dashboard   | 管理后台主页               |
+| 后台管理 | http://localhost:5173/admi
+n/dashboard   | 管理后台主页               |
 | 后台工单 | http://localhost:5173/admin/work-orders | 工单列表管理               |
 | 后台告警 | http://localhost:5173/admin/alarms      | 告警管理                   |
 | 后台督办 | http://localhost:5173/admin/supervision | 督办管理                   |

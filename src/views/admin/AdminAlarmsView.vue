@@ -285,9 +285,12 @@
                 <li v-if="currentAlarm.status === 'DISPATCHED' || currentAlarm.status === 'CLOSED'" class="admin-timeline-item">
                   <div class="admin-timeline-dot admin-timeline-dot--success"></div>
                   <div class="admin-timeline-content">
-                    <div class="admin-timeline-content__title">已派单处置</div>
+                    <div class="admin-timeline-content__title">
+                      {{ currentAlarm.alarmLevel === 'RED' ? '已启动应急响应' : '已派单处置' }}
+                    </div>
                     <div class="admin-timeline-content__time">
-                      {{ dispatchedOrderNo ? `工单号：${dispatchedOrderNo}` : '工单已生成，可到工单中心查看' }}
+                      <template v-if="currentAlarm.alarmLevel === 'RED'">应急事件已创建，可到大屏应急中心查看进度</template>
+                      <template v-else>{{ dispatchedOrderNo ? `工单号：${dispatchedOrderNo}` : '工单已生成，可到工单中心查看' }}</template>
                     </div>
                   </div>
                 </li>
@@ -316,7 +319,9 @@
             <button
               class="btn-pc-primary"
               :class="{ 'btn-pc-danger': currentAlarm?.alarmLevel === 'RED' }"
-              :disabled="!currentAlarm || currentAlarm.status !== 'CONFIRMED'"
+              :disabled="!currentAlarm || (currentAlarm.alarmLevel === 'RED'
+                ? (currentAlarm.status !== 'CONFIRMED' && currentAlarm.status !== 'DISPATCHED')
+                : currentAlarm.status !== 'CONFIRMED')"
               @click="dispatchAlarm"
             >
               {{ currentAlarm?.alarmLevel === 'RED' ? '大屏应急' : '立即派单' }}
