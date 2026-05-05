@@ -527,8 +527,6 @@ const amapLoaded       = ref(false)
 let   amapInstance: AMapInstance | null = null
 let   amapMarkers: AMapMarker[]         = []
 let   amapInfoWindow: AMapInfoWindow | null = null
-// document-level mouseup handler 用于拖拽结束后重新锁定地图
-let   amapDocMouseupHandler: (() => void) | null = null
 
 /** 动态加载高德地图 JS API 脚本 */
 function loadAmapScript(): Promise<void> {
@@ -572,23 +570,15 @@ async function initAmapMap(): Promise<void> {
 
     amapLoaded.value = true
 
-    // 默认锁定地图所有交互，仅允许从点位图标发起操作
+    // 地图交互保持开启，命中范围由 CSS 控制：只有点位 marker 接收鼠标事件
     amapInstance.setStatus({
-      dragEnable:       false,
-      zoomEnable:       false,
-      scrollWheel:      false,
+      dragEnable:       true,
+      zoomEnable:       true,
+      scrollWheel:      true,
       doubleClickZoom:  false,
       keyboardEnable:   false,
       rotateEnable:     false,
     })
-
-    // 打开拖拽结束后重新锁定的全局监听器
-    amapDocMouseupHandler = () => {
-      if (amapInstance) {
-        amapInstance.setStatus({ dragEnable: false })
-      }
-    }
-    document.addEventListener("mouseup", amapDocMouseupHandler)
 
     addAmapMarkers()
 
@@ -644,17 +634,6 @@ function addAmapMarkers(): void {
 
     marker.on("click", () => {
       selectedPoint.value = pt
-    })
-
-    // 仅允许从点位图标发起拖拽；悬停在图标上时开启滚轮缩放
-    marker.on("mousedown", () => {
-      if (amapInstance) amapInstance.setStatus({ dragEnable: true })
-    })
-    marker.on("mouseover", () => {
-      if (amapInstance) amapInstance.setStatus({ zoomEnable: true, scrollWheel: true })
-    })
-    marker.on("mouseout", () => {
-      if (amapInstance) amapInstance.setStatus({ zoomEnable: false, scrollWheel: false })
     })
 
     marker.setMap(amapInstance)
@@ -1023,10 +1002,6 @@ watch(hazardTypeStats, updateHazardTypeChart, { deep: true })
 onUnmounted(() => {
   clearInterval(timer)
   window.removeEventListener("resize", resizeAllCharts)
-  if (amapDocMouseupHandler) {
-    document.removeEventListener("mouseup", amapDocMouseupHandler)
-    amapDocMouseupHandler = null
-  }
   trendChart?.dispose()
   trendChart = null
   riskChart?.dispose()
@@ -3844,16 +3819,23 @@ onUnmounted(() => {
 }
 
 /* 落针容器 */
+:deep(.amap-marker:has(.bldg-pin)) {
+  pointer-events: all !important;
+}
 :deep(.bldg-pin) {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   cursor: pointer !important;
+  pointer-events: all !important;
   user-select: none !important;
   width: 50px !important;
   gap: 3px !important;
   transition: transform 0.18s ease, filter 0.15s ease !important;
   filter: none !important;
+}
+:deep(.bldg-pin *) {
+  pointer-events: all !important;
 }
 :deep(.bldg-pin:hover) {
   transform: translateY(-5px) scale(1.1) !important;
@@ -4107,9 +4089,7 @@ onUnmounted(() => {
   width: 100vw !important;
   height: 100vh !important;
   filter: brightness(1.12) saturate(1.5) hue-rotate(-5deg) !important;
-  /* 必须恢复 pointer-events，AMap 容器及其 marker 子元素才能接收到鼠标事件；
-     是否响应拖拽/缩放由 amapInstance.setStatus() 控制 */
-  pointer-events: all !important;
+  pointer-events: none !important;
 }
 
 /* 根容器透明：地图直接作为背景 */
