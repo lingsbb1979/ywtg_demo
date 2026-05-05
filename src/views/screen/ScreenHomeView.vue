@@ -4185,6 +4185,53 @@ onUnmounted(() => {
   box-shadow: 0 -2px 20px rgba(0, 70, 180, 0.26) !important;
 }
 
+/* =======================================================================
+   四周悬浮区域最终透明度覆盖：让底层地图在上/左/右/下区域都能看见
+   ======================================================================= */
+.screen-header {
+  background: rgba(1, 7, 24, 0.42) !important;
+  backdrop-filter: blur(10px) saturate(1.35) !important;
+}
+
+.screen-kpi-ribbon {
+  background: rgba(2, 10, 32, 0.30) !important;
+  backdrop-filter: blur(8px) saturate(1.25) !important;
+}
+
+.screen-panel--left,
+.screen-panel--right {
+  background: rgba(2, 11, 36, 0.30) !important;
+  backdrop-filter: blur(10px) saturate(1.35) !important;
+}
+
+.screen-footer {
+  background: rgba(1, 8, 26, 0.30) !important;
+  backdrop-filter: blur(8px) saturate(1.25) !important;
+}
+
+.screen-panel--left .screen-side-section,
+.screen-panel--right .screen-side-section,
+.screen-panel--right [data-zone="workorder-board"],
+.screen-panel--right .screen-iot-panel {
+  background: rgba(2, 13, 40, 0.14) !important;
+}
+
+.screen-kpi-ribbon .screen-kpi-item,
+.screen-panel--left .screen-resource-item,
+.screen-panel--left .screen-status-item,
+.screen-panel--right .screen-board-item,
+.screen-panel--right .screen-alarm-entry__item,
+.screen-panel--right .screen-iot-point,
+.screen-panel--right .screen-iot-empty,
+.screen-panel--right .screen-quick-link {
+  background-color: rgba(5, 22, 55, 0.20) !important;
+}
+
+.screen-panel--left .screen-trend-chart,
+.screen-panel--right .screen-iot-sparkline {
+  background: rgba(0, 12, 32, 0.16) !important;
+}
+
 /* 降级列表 */
 .screen-map__fallback-list {
   z-index: 5;
