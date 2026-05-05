@@ -4107,6 +4107,9 @@ onUnmounted(() => {
   width: 100vw !important;
   height: 100vh !important;
   filter: brightness(1.12) saturate(1.5) hue-rotate(-5deg) !important;
+  /* 必须恢复 pointer-events，AMap 容器及其 marker 子元素才能接收到鼠标事件；
+     是否响应拖拽/缩放由 amapInstance.setStatus() 控制 */
+  pointer-events: all !important;
 }
 
 /* 根容器透明：地图直接作为背景 */
