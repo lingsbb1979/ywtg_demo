@@ -12,6 +12,13 @@
     └──────────────────┴───────────────────┴────────────────────────────┘
   -->
   <div class="screen-root screen-bg">
+    <!-- 高德地图全屏背景层（z-index: 0，固定定位，全部 UI 面板悬浮其上） -->
+    <div
+      ref="amapContainerRef"
+      class="screen-map__amap-layer screen-map__amap-bg"
+      :class="{ 'screen-map__amap-layer--hidden': mapError }"
+      aria-label="高德地图 — 佳木斯历史建筑分布"
+    />
     <!-- ① 顶部标题栏（screen-header） -->
     <header class="screen-header screen-command-header" data-testid="screen-header">
       <span class="screen-header__kpi-anchor" data-zone="kpi" aria-hidden="true" />
@@ -172,13 +179,7 @@
             <span v-if="!mapError && amapLoaded" class="screen-map__live-badge">实时</span>
           </div>
 
-          <!-- 高德地图真实地图容器 -->
-          <div
-            ref="amapContainerRef"
-            class="screen-map__amap-layer"
-            :class="{ 'screen-map__amap-layer--hidden': mapError }"
-            aria-label="高德地图 — 佳木斯历史建筑分布"
-          />
+          <!-- 地图容器已移至根层级（全屏固定定位），此处不再渲染 -->
 
           <!-- 地图 Key 未配置提示（仅在 !mapError 但地图无法初始化时显示） -->
           <div v-if="!mapError && !amapLoaded" class="screen-map__loading">
@@ -552,14 +553,16 @@ async function initAmapMap(): Promise<void> {
     if (!amapContainerRef.value || !window.AMap) return
 
     amapInstance = new window.AMap.Map(amapContainerRef.value, {
-      zoom:         11,
+      zoom:         13,
       center:       [130.3620, 46.8221],    // 佳木斯市中心
       mapStyle:     "amap://styles/darkblue",  // 深蓝商务科技风格，与大屏 UI 色调一致
       features:     ["bg", "road", "building", "point"],
-      viewMode:     "2D",
+      viewMode:     "3D",            // 3D 视角，高德自动渲染建筑立体模型
+      pitch:        35,              // 倾斜角度（0=正上方俯视，60=大角度倾斜）
+      buildingAnimation: true,       // 建筑挤出动画
       resizeEnable: true,
       showLabel:    true,
-      zooms:        [11, 18],
+      zooms:        [10, 18],
     })
 
     amapLoaded.value = true
@@ -571,7 +574,7 @@ async function initAmapMap(): Promise<void> {
       amapInstance.setFitView(validMarkers)
       setTimeout(() => {
         if (amapInstance) {
-          const nextZoom = Math.max(12, Math.min(Math.round(amapInstance.getZoom() + 1), 14))
+          const nextZoom = Math.max(13, Math.min(Math.round(amapInstance.getZoom() + 1), 15))
           amapInstance.setZoom(nextZoom)
         }
       }, 600)
@@ -3758,4 +3761,168 @@ onUnmounted(() => {
 .screen-kpi-item__value--success { color: #00F5A0 !important; text-shadow: 0 0 14px rgba(0,245,160,0.5) !important; }
 .screen-kpi-item__label { color: #7AB8E8 !important; }
 .screen-kpi-item__unit { color: #6090B8 !important; }
+
+/* =======================================================================
+   全屏地图布局：高德地图铺满全屏，面板半透明悬浮其上
+   参考：高德导航大屏 + 智慧农业产业一张图风格
+   ======================================================================= */
+
+/* 全屏地图背景层：固定定位铺满视口 */
+.screen-map__amap-bg {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  border-radius: 0 !important;
+  flex: none !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  filter: brightness(1.12) saturate(1.5) hue-rotate(-5deg) !important;
+}
+
+/* 根容器透明：地图直接作为背景 */
+.screen-root {
+  background: transparent !important;
+  position: relative;
+  z-index: 1;
+}
+.screen-root::before,
+.screen-root::after {
+  display: none !important;
+}
+
+/* 全部 UI 层确保在地图上方 */
+.screen-header,
+.screen-kpi-ribbon,
+.screen-main,
+.screen-footer {
+  position: relative;
+  z-index: 2;
+}
+
+/* Header：深色半透明玻璃，轻微模糊背景 */
+.screen-header {
+  background: rgba(1, 7, 24, 0.86) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  border-bottom-color: rgba(0, 175, 255, 0.45) !important;
+  box-shadow: 0 2px 28px rgba(0, 70, 180, 0.35) !important;
+}
+
+/* KPI 指标条：深色半透明 */
+.screen-kpi-ribbon {
+  background: rgba(2, 10, 32, 0.86) !important;
+  backdrop-filter: blur(16px) saturate(1.3) !important;
+  border-color: rgba(0, 170, 255, 0.55) !important;
+  box-shadow: 0 0 22px rgba(0, 110, 220, 0.30), inset 0 1px 0 rgba(160, 220, 255, 0.20) !important;
+}
+
+/* 地图中央区域：完全透明，地图穿透显示 */
+.screen-map {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+.screen-map__container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  backdrop-filter: none !important;
+}
+.screen-map__container::before,
+.screen-map__container::after {
+  display: none !important;
+}
+
+/* 地图标题栏：隐藏（全屏模式下不需要标题区域框） */
+.screen-map__title-bar {
+  display: none !important;
+}
+
+/* 加载提示：绝对定位居中显示 */
+.screen-map__loading {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 5;
+  background: rgba(2, 10, 36, 0.88);
+  padding: 12px 22px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 180, 255, 0.40);
+  backdrop-filter: blur(8px);
+}
+
+/* 建筑详情弹窗：固定在中央偏右 */
+.screen-building-popup.screen-glass-card {
+  position: absolute !important;
+  right: 14px !important;
+  top: 50px !important;
+  z-index: 20 !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(2, 12, 38, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* 左右面板：半透明玻璃，悬浮在地图上 */
+.screen-panel--left,
+.screen-panel--right {
+  background: rgba(2, 11, 36, 0.82) !important;
+  backdrop-filter: blur(18px) saturate(1.4) !important;
+  border: 1px solid rgba(0, 175, 255, 0.52) !important;
+  box-shadow:
+    0 0 36px rgba(0, 90, 220, 0.28),
+    inset 0 1px 0 rgba(180, 230, 255, 0.16) !important;
+}
+
+/* 底部状态栏：半透明玻璃 */
+.screen-footer {
+  background: rgba(1, 8, 26, 0.84) !important;
+  backdrop-filter: blur(16px) saturate(1.3) !important;
+  border-color: rgba(0, 175, 255, 0.50) !important;
+  box-shadow: 0 -2px 20px rgba(0, 70, 180, 0.26) !important;
+}
+
+/* 降级列表（无地图时）：显示在中央透明区域 */
+.screen-map__fallback-list {
+  z-index: 5;
+}
+
+/* =======================================================================
+   建筑标记：去除吓人的急速闪烁，改为缓慢呼吸光晕
+   ======================================================================= */
+
+/* 红色标记：4s 缓慢呼吸，取代原来 1.5s 急速闪 */
+:deep(.bldg-pin--red .bldg-pin__core) {
+  animation: bldg-glow-breath 4s ease-in-out infinite !important;
+}
+
+@keyframes bldg-glow-breath {
+  0%, 100% { box-shadow: 0 0 6px #FF4E45, 0 0 14px rgba(255,78,69,0.55), 0 0 24px rgba(255,78,69,0.22); }
+  50%       { box-shadow: 0 0 10px #FF4E45, 0 0 22px rgba(255,78,69,0.70), 0 0 38px rgba(255,78,69,0.32); }
+}
+
+/* 红色紧急（red-blink）：改为慢速呼吸，去除文字闪烁 */
+:deep(.bldg-pin--red-blink .bldg-pin__core) {
+  background: #FF4E45 !important;
+  animation: bldg-glow-breath 3s ease-in-out infinite !important;
+  box-shadow: 0 0 8px #FF4E45, 0 0 18px rgba(255,78,69,0.65) !important;
+}
+:deep(.bldg-pin--red-blink .bldg-pin__lbl) {
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+/* 所有颜色的脉冲圆环：放慢速度，减少视觉压力 */
+:deep(.bldg-pin__ring) {
+  animation-duration: 3.8s !important;
+}
+
+/* 绿色、橙色、黄色的 ring 减小视觉强度 */
+:deep(.bldg-pin--green .bldg-pin__ring),
+:deep(.bldg-pin--orange .bldg-pin__ring),
+:deep(.bldg-pin--yellow .bldg-pin__ring) {
+  opacity: 0.6 !important;
+}
 </style>
