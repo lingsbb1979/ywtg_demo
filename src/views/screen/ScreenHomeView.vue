@@ -212,6 +212,7 @@
             <div
               v-if="selectedPoint"
               class="screen-building-popup screen-glass-card"
+              :class="`popup-risk--${selectedPoint.color}`"
               data-testid="screen-building-popup"
             >
               <div class="screen-popup-header">
@@ -556,10 +557,11 @@ async function initAmapMap(): Promise<void> {
       zoom:         13,
       center:       [130.3620, 46.8221],    // 佳木斯市中心
       mapStyle:     "amap://styles/darkblue",  // 深蓝商务科技风格，与大屏 UI 色调一致
-      features:     ["bg", "road", "building", "point"],
+      features:     ["bg", "road", "building"],  // 移除 point 层（隐藏景区/POI 标注）
       viewMode:     "3D",            // 3D 视角，高德自动渲染建筑立体模型
-      pitch:        35,              // 倾斜角度（0=正上方俯视，60=大角度倾斜）
+      pitch:        40,              // 倾斜角度
       buildingAnimation: true,       // 建筑挤出动画
+      showBuildingBlock: true,       // 显示3D楼块
       resizeEnable: true,
       showLabel:    true,
       zooms:        [10, 18],
@@ -600,12 +602,11 @@ function addAmapMarkers(): void {
     const zIndex = pt.color === "red" ? 200 : pt.color === "orange" ? 150 : pt.color === "yellow" ? 100 : 50
     const label  = pt.shortName || pt.name.slice(0, 5)
 
-    // 自定义 HTML 标记：发光圆点 + 脉冲圆环 + 建筑短名标签
+    // 自定义 HTML 标记：地图落针样式（静态，无闪烁）
     const content = [
       `<div class="bldg-pin bldg-pin--${pt.color}">`,
-      `  <div class="bldg-pin__beacon">`,
-      `    <div class="bldg-pin__ring"></div>`,
-      `    <div class="bldg-pin__core"></div>`,
+      `  <div class="bldg-pin__icon">`,
+      `    <div class="bldg-pin__circle"></div>`,
       `  </div>`,
       `  <span class="bldg-pin__lbl">${label}</span>`,
       `</div>`,
@@ -3763,11 +3764,293 @@ onUnmounted(() => {
 .screen-kpi-item__unit { color: #6090B8 !important; }
 
 /* =======================================================================
-   全屏地图布局：高德地图铺满全屏，面板半透明悬浮其上
-   参考：高德导航大屏 + 智慧农业产业一张图风格
+   全屏地图交互修复：中央区域允许穿透到地图层
    ======================================================================= */
 
-/* 全屏地图背景层：固定定位铺满视口 */
+/* 中央地图列：让鼠标事件穿透到底层 AMap 层，实现地图拖拽/缩放 */
+.screen-map {
+  pointer-events: none !important;
+}
+
+/* 建筑详情弹窗需要独立可交互 */
+.screen-building-popup {
+  pointer-events: all !important;
+}
+
+/* 加载提示不需要交互，保持穿透 */
+.screen-map__loading {
+  pointer-events: none;
+}
+
+/* =======================================================================
+   静态落针图标（全面替换旧版圆点+闪环方案）
+   ======================================================================= */
+
+/* 取消所有旧版 beacon/ring 动画 */
+:deep(.bldg-pin__ring),
+:deep(.bldg-pin__beacon) {
+  display: none !important;
+  animation: none !important;
+}
+:deep(.bldg-pin__core) {
+  animation: none !important;
+}
+
+/* 落针容器 */
+:deep(.bldg-pin) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  width: 50px !important;
+  gap: 3px !important;
+  transition: transform 0.18s ease, filter 0.15s ease !important;
+  filter: none !important;
+}
+:deep(.bldg-pin:hover) {
+  transform: translateY(-5px) scale(1.1) !important;
+  filter: brightness(1.25) !important;
+}
+
+/* 图标容器 */
+:deep(.bldg-pin__icon) {
+  width: 26px !important;
+  height: 33px !important;
+  position: relative !important;
+  display: block !important;
+}
+
+/* 落针形状：圆+尖角（border-radius 50%50%50%0 + rotate(-45deg)） */
+:deep(.bldg-pin__circle) {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 50% 50% 50% 0 !important;
+  transform: rotate(-45deg) !important;
+  border: 2.5px solid rgba(255, 255, 255, 0.65) !important;
+  animation: none !important;
+  /* 内部高光：模拟玻璃质感 */
+  box-sizing: border-box !important;
+}
+
+/* 绿色（安全） */
+:deep(.bldg-pin--green .bldg-pin__circle) {
+  background: linear-gradient(135deg, #2DFFC0 0%, #00C896 100%) !important;
+  box-shadow:
+    0 0 0 3px rgba(32,230,164,0.22),
+    0 4px 18px rgba(32,230,164,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.35) !important;
+}
+:deep(.bldg-pin--green .bldg-pin__lbl) { border-color: rgba(32,230,164,0.35) !important; }
+
+/* 橙色（橙色告警） */
+:deep(.bldg-pin--orange .bldg-pin__circle) {
+  background: linear-gradient(135deg, #FFD060 0%, #FF8C00 100%) !important;
+  box-shadow:
+    0 0 0 3px rgba(255,176,58,0.22),
+    0 4px 18px rgba(255,176,58,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.30) !important;
+}
+:deep(.bldg-pin--orange .bldg-pin__lbl) { border-color: rgba(255,176,58,0.35) !important; }
+
+/* 黄色 */
+:deep(.bldg-pin--yellow .bldg-pin__circle) {
+  background: linear-gradient(135deg, #FFE870 0%, #F0B800 100%) !important;
+  box-shadow:
+    0 0 0 3px rgba(252,211,77,0.20),
+    0 4px 16px rgba(252,211,77,0.50),
+    inset 0 1px 0 rgba(255,255,255,0.30) !important;
+}
+:deep(.bldg-pin--yellow .bldg-pin__lbl) { border-color: rgba(252,211,77,0.35) !important; }
+
+/* 红色（紧急） */
+:deep(.bldg-pin--red .bldg-pin__circle) {
+  background: linear-gradient(135deg, #FF7060 0%, #E82020 100%) !important;
+  box-shadow:
+    0 0 0 4px rgba(255,78,69,0.24),
+    0 4px 22px rgba(255,78,69,0.65),
+    inset 0 1px 0 rgba(255,255,255,0.28) !important;
+}
+:deep(.bldg-pin--red .bldg-pin__lbl) { border-color: rgba(255,78,69,0.40) !important; }
+
+/* 最高级紧急（red-blink）- 同样静态，只是颜色更深更亮 */
+:deep(.bldg-pin--red-blink .bldg-pin__circle) {
+  background: linear-gradient(135deg, #FF5050 0%, #CC0000 100%) !important;
+  border-color: rgba(255,180,180,0.7) !important;
+  box-shadow:
+    0 0 0 5px rgba(255,50,50,0.28),
+    0 4px 26px rgba(255,50,50,0.75),
+    inset 0 1px 0 rgba(255,255,255,0.32) !important;
+  animation: none !important;
+}
+:deep(.bldg-pin--red-blink .bldg-pin__lbl) {
+  border-color: rgba(255,80,80,0.50) !important;
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+/* 标签样式：深色玻璃背景 + 细边框 */
+:deep(.bldg-pin__lbl) {
+  display: block !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #EAF5FF !important;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.95) !important;
+  background: rgba(0, 8, 28, 0.84) !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  backdrop-filter: blur(4px) !important;
+  max-width: 82px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+}
+
+/* =======================================================================
+   建筑详情弹窗：炫酷科技风设计
+   ======================================================================= */
+
+.screen-building-popup.screen-glass-card {
+  position: absolute !important;
+  right: 18px !important;
+  top: 20px !important;
+  width: 270px !important;
+  padding: 0 !important;
+  z-index: 20 !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(1, 9, 30, 0.95) !important;
+  border: 1px solid rgba(0, 180, 255, 0.40) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(24px) saturate(1.8) !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 210, 255, 0.08),
+    0 8px 48px rgba(0, 60, 180, 0.45),
+    0 0 60px rgba(0, 120, 255, 0.12),
+    inset 0 1px 0 rgba(200, 240, 255, 0.12) !important;
+}
+
+/* 顶部细线按风险色高亮 */
+.popup-risk--red    { border-top: 3px solid #FF4E45 !important; }
+.popup-risk--orange { border-top: 3px solid #FFB03A !important; }
+.popup-risk--yellow { border-top: 3px solid #FCD34D !important; }
+.popup-risk--green  { border-top: 3px solid #20E6A4 !important; }
+
+.popup-risk--red    .screen-popup-header { background: linear-gradient(90deg, rgba(255,78,69,0.15), transparent) !important; }
+.popup-risk--orange .screen-popup-header { background: linear-gradient(90deg, rgba(255,176,58,0.12), transparent) !important; }
+.popup-risk--yellow .screen-popup-header { background: linear-gradient(90deg, rgba(252,211,77,0.10), transparent) !important; }
+.popup-risk--green  .screen-popup-header { background: linear-gradient(90deg, rgba(32,230,164,0.10), transparent) !important; }
+
+/* 弹窗头部 */
+.screen-popup-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 14px 16px 10px !important;
+  border-bottom: 1px solid rgba(0,180,255,0.16) !important;
+}
+
+/* 建筑名称 */
+.screen-popup-building-name {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  text-shadow: 0 0 18px rgba(0, 200, 255, 0.55) !important;
+  letter-spacing: 0.5px !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* 关闭按钮 */
+.screen-popup-close {
+  width: 26px !important;
+  height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255,255,255,0.07) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  border-radius: 50% !important;
+  color: rgba(255,255,255,0.65) !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+}
+.screen-popup-close:hover {
+  background: rgba(255,255,255,0.16) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255,255,255,0.35) !important;
+}
+
+/* 风险等级徽章 */
+.screen-popup-risk-badge {
+  margin: 10px 16px 0 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+  text-align: center !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* 摘要信息 */
+.screen-popup-summary {
+  margin: 8px 16px !important;
+  font-size: 12px !important;
+  color: rgba(200, 225, 255, 0.88) !important;
+  line-height: 1.6 !important;
+  background: rgba(255,255,255,0.04) !important;
+  border-radius: 7px !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+}
+
+/* 查看详情链接按钮 */
+.screen-popup-link {
+  display: block !important;
+  margin: 10px 16px 14px !important;
+  padding: 9px 16px !important;
+  background: linear-gradient(135deg, rgba(0,100,220,0.30), rgba(0,200,255,0.18)) !important;
+  border: 1px solid rgba(0,190,255,0.45) !important;
+  border-radius: 8px !important;
+  color: #60D8FF !important;
+  font-size: 13px !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.4px !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 2px 12px rgba(0,150,255,0.20) !important;
+}
+.screen-popup-link:hover {
+  background: linear-gradient(135deg, rgba(0,130,255,0.40), rgba(0,220,255,0.25)) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 20px rgba(0,180,255,0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 弹窗过渡动画 */
+.screen-popup-enter-active { transition: opacity 220ms ease, transform 220ms ease !important; }
+.screen-popup-leave-active { transition: opacity 160ms ease, transform 160ms ease !important; }
+.screen-popup-enter-from   { opacity: 0 !important; transform: translateX(12px) scale(0.96) !important; }
+.screen-popup-leave-to     { opacity: 0 !important; transform: translateX(8px) scale(0.97) !important; }
+
+/* =======================================================================
+   全屏地图背景层：固定定位铺满视口
+   ======================================================================= */
 .screen-map__amap-bg {
   position: fixed !important;
   inset: 0 !important;
@@ -3799,7 +4082,7 @@ onUnmounted(() => {
   z-index: 2;
 }
 
-/* Header：深色半透明玻璃，轻微模糊背景 */
+/* Header：深色半透明玻璃 */
 .screen-header {
   background: rgba(1, 7, 24, 0.86) !important;
   backdrop-filter: blur(20px) saturate(1.4) !important;
@@ -3834,12 +4117,12 @@ onUnmounted(() => {
   display: none !important;
 }
 
-/* 地图标题栏：隐藏（全屏模式下不需要标题区域框） */
+/* 地图标题栏：隐藏 */
 .screen-map__title-bar {
   display: none !important;
 }
 
-/* 加载提示：绝对定位居中显示 */
+/* 加载提示：绝对定位居中 */
 .screen-map__loading {
   position: absolute !important;
   left: 50% !important;
@@ -3851,18 +4134,6 @@ onUnmounted(() => {
   border-radius: 8px;
   border: 1px solid rgba(0, 180, 255, 0.40);
   backdrop-filter: blur(8px);
-}
-
-/* 建筑详情弹窗：固定在中央偏右 */
-.screen-building-popup.screen-glass-card {
-  position: absolute !important;
-  right: 14px !important;
-  top: 50px !important;
-  z-index: 20 !important;
-  left: auto !important;
-  transform: none !important;
-  background: rgba(2, 12, 38, 0.92) !important;
-  backdrop-filter: blur(16px) !important;
 }
 
 /* 左右面板：半透明玻璃，悬浮在地图上 */
@@ -3884,45 +4155,8 @@ onUnmounted(() => {
   box-shadow: 0 -2px 20px rgba(0, 70, 180, 0.26) !important;
 }
 
-/* 降级列表（无地图时）：显示在中央透明区域 */
+/* 降级列表 */
 .screen-map__fallback-list {
   z-index: 5;
-}
-
-/* =======================================================================
-   建筑标记：去除吓人的急速闪烁，改为缓慢呼吸光晕
-   ======================================================================= */
-
-/* 红色标记：4s 缓慢呼吸，取代原来 1.5s 急速闪 */
-:deep(.bldg-pin--red .bldg-pin__core) {
-  animation: bldg-glow-breath 4s ease-in-out infinite !important;
-}
-
-@keyframes bldg-glow-breath {
-  0%, 100% { box-shadow: 0 0 6px #FF4E45, 0 0 14px rgba(255,78,69,0.55), 0 0 24px rgba(255,78,69,0.22); }
-  50%       { box-shadow: 0 0 10px #FF4E45, 0 0 22px rgba(255,78,69,0.70), 0 0 38px rgba(255,78,69,0.32); }
-}
-
-/* 红色紧急（red-blink）：改为慢速呼吸，去除文字闪烁 */
-:deep(.bldg-pin--red-blink .bldg-pin__core) {
-  background: #FF4E45 !important;
-  animation: bldg-glow-breath 3s ease-in-out infinite !important;
-  box-shadow: 0 0 8px #FF4E45, 0 0 18px rgba(255,78,69,0.65) !important;
-}
-:deep(.bldg-pin--red-blink .bldg-pin__lbl) {
-  animation: none !important;
-  opacity: 1 !important;
-}
-
-/* 所有颜色的脉冲圆环：放慢速度，减少视觉压力 */
-:deep(.bldg-pin__ring) {
-  animation-duration: 3.8s !important;
-}
-
-/* 绿色、橙色、黄色的 ring 减小视觉强度 */
-:deep(.bldg-pin--green .bldg-pin__ring),
-:deep(.bldg-pin--orange .bldg-pin__ring),
-:deep(.bldg-pin--yellow .bldg-pin__ring) {
-  opacity: 0.6 !important;
 }
 </style>
