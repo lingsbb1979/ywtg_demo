@@ -3495,7 +3495,7 @@ onUnmounted(() => {
 
 .screen-panel,
 .screen-glass-card {
-  background: rgba(5, 22, 55, 0.92) !important;
+  background: rgba(5, 22, 55, 0.58) !important;
   border: 1px solid rgba(0, 180, 255, 0.35) !important;
   box-shadow:
     0 0 0 1px rgba(0, 200, 255, 0.08),
@@ -3764,22 +3764,32 @@ onUnmounted(() => {
 .screen-kpi-item__unit { color: #6090B8 !important; }
 
 /* =======================================================================
-   全屏地图交互修复：中央区域允许穿透到地图层
+   全屏地图交互修复：根容器整体穿透，仅 UI 面板恢复事件
+   关键原理：pointer-events:none 要设到父容器才能让底层 AMap 收到拖拽事件
    ======================================================================= */
 
-/* 中央地图列：让鼠标事件穿透到底层 AMap 层，实现地图拖拽/缩放 */
-.screen-map {
+/* 根容器、主区域：全部穿透 → 鼠标事件直达底层 AMap */
+.screen-root,
+.screen-main,
+.screen-map,
+.screen-map__container,
+.screen-map__loading {
   pointer-events: none !important;
 }
 
-/* 建筑详情弹窗需要独立可交互 */
+/* 有实际交互的 UI 组件恢复事件 */
+.screen-header,
+.screen-kpi-ribbon,
+.screen-panel--left,
+.screen-panel--right,
+.screen-footer,
 .screen-building-popup {
   pointer-events: all !important;
 }
 
-/* 加载提示不需要交互，保持穿透 */
-.screen-map__loading {
-  pointer-events: none;
+/* 建筑详情弹窗单独放行 */
+.screen-building-popup {
+  pointer-events: all !important;
 }
 
 /* =======================================================================
@@ -4084,7 +4094,7 @@ onUnmounted(() => {
 
 /* Header：深色半透明玻璃 */
 .screen-header {
-  background: rgba(1, 7, 24, 0.86) !important;
+  background: rgba(1, 7, 24, 0.72) !important;
   backdrop-filter: blur(20px) saturate(1.4) !important;
   border-bottom-color: rgba(0, 175, 255, 0.45) !important;
   box-shadow: 0 2px 28px rgba(0, 70, 180, 0.35) !important;
@@ -4092,7 +4102,7 @@ onUnmounted(() => {
 
 /* KPI 指标条：深色半透明 */
 .screen-kpi-ribbon {
-  background: rgba(2, 10, 32, 0.86) !important;
+  background: rgba(2, 10, 32, 0.68) !important;
   backdrop-filter: blur(16px) saturate(1.3) !important;
   border-color: rgba(0, 170, 255, 0.55) !important;
   box-shadow: 0 0 22px rgba(0, 110, 220, 0.30), inset 0 1px 0 rgba(160, 220, 255, 0.20) !important;
@@ -4139,8 +4149,8 @@ onUnmounted(() => {
 /* 左右面板：半透明玻璃，悬浮在地图上 */
 .screen-panel--left,
 .screen-panel--right {
-  background: rgba(2, 11, 36, 0.82) !important;
-  backdrop-filter: blur(18px) saturate(1.4) !important;
+  background: rgba(2, 11, 36, 0.60) !important;
+  backdrop-filter: blur(22px) saturate(1.6) !important;
   border: 1px solid rgba(0, 175, 255, 0.52) !important;
   box-shadow:
     0 0 36px rgba(0, 90, 220, 0.28),
@@ -4149,7 +4159,7 @@ onUnmounted(() => {
 
 /* 底部状态栏：半透明玻璃 */
 .screen-footer {
-  background: rgba(1, 8, 26, 0.84) !important;
+  background: rgba(1, 8, 26, 0.66) !important;
   backdrop-filter: blur(16px) saturate(1.3) !important;
   border-color: rgba(0, 175, 255, 0.50) !important;
   box-shadow: 0 -2px 20px rgba(0, 70, 180, 0.26) !important;
