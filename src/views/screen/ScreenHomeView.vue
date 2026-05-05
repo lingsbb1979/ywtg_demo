@@ -441,6 +441,7 @@ interface AMapInstance {
   destroy: () => void
   getZoom: () => number
   setZoom: (zoom: number) => void
+  setStatus: (status: Record<string, boolean>) => void
 }
 interface AMapMarker {
   setMap: (map: AMapInstance | null) => void
@@ -526,6 +527,8 @@ const amapLoaded       = ref(false)
 let   amapInstance: AMapInstance | null = null
 let   amapMarkers: AMapMarker[]         = []
 let   amapInfoWindow: AMapInfoWindow | null = null
+// document-level mouseup handler 用于拖拽结束后重新锁定地图
+let   amapDocMouseupHandler: (() => void) | null = null
 
 /** 动态加载高德地图 JS API 脚本 */
 function loadAmapScript(): Promise<void> {
@@ -568,6 +571,25 @@ async function initAmapMap(): Promise<void> {
     })
 
     amapLoaded.value = true
+
+    // 默认锁定地图所有交互，仅允许从点位图标发起操作
+    amapInstance.setStatus({
+      dragEnable:       false,
+      zoomEnable:       false,
+      scrollWheel:      false,
+      doubleClickZoom:  false,
+      keyboardEnable:   false,
+      rotateEnable:     false,
+    })
+
+    // 打开拖拽结束后重新锁定的全局监听器
+    amapDocMouseupHandler = () => {
+      if (amapInstance) {
+        amapInstance.setStatus({ dragEnable: false })
+      }
+    }
+    document.addEventListener("mouseup", amapDocMouseupHandler)
+
     addAmapMarkers()
 
     // 自适应显示所有建筑点位，并把缩放保持在 12~14，优先保证街道名称可见。
@@ -622,6 +644,17 @@ function addAmapMarkers(): void {
 
     marker.on("click", () => {
       selectedPoint.value = pt
+    })
+
+    // 仅允许从点位图标发起拖拽；悬停在图标上时开启滚轮缩放
+    marker.on("mousedown", () => {
+      if (amapInstance) amapInstance.setStatus({ dragEnable: true })
+    })
+    marker.on("mouseover", () => {
+      if (amapInstance) amapInstance.setStatus({ zoomEnable: true, scrollWheel: true })
+    })
+    marker.on("mouseout", () => {
+      if (amapInstance) amapInstance.setStatus({ zoomEnable: false, scrollWheel: false })
     })
 
     marker.setMap(amapInstance)
@@ -990,6 +1023,10 @@ watch(hazardTypeStats, updateHazardTypeChart, { deep: true })
 onUnmounted(() => {
   clearInterval(timer)
   window.removeEventListener("resize", resizeAllCharts)
+  if (amapDocMouseupHandler) {
+    document.removeEventListener("mouseup", amapDocMouseupHandler)
+    amapDocMouseupHandler = null
+  }
   trendChart?.dispose()
   trendChart = null
   riskChart?.dispose()
